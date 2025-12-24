@@ -1,0 +1,448 @@
+/* ================= HERO SECTION ================= */
+.hero {
+    position: relative;
+    display: flex;
+    padding: 50px;
+    color: white;
+    height: 75vh;
+    width: auto;
+    justify-content: space-around;
+}
+
+.hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1;
+    filter: brightness(0.8);
+    overflow: hidden;
+}
+
+.hero-background img {
+    width: 100vw;
+    height: 100%;
+    object-fit: cover;
+    animation: kenburns 10s ease-in-out infinite alternate;
+}
+
+@keyframes kenburns {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.2);
+    }
+}
+
+.hero-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 8vh;
+}
+
+.hero-left h1,
+.hero h2 {
+    text-align: center;
+    font-family: "Feeling Passionate", cursive;
+}
+
+.hero-left h1 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.hero h2 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.hero-buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-top: 15px;
+    gap: 1rem;
+}
+
+.hero-right img {
+    width: 100%;
+    max-width: 400px;
+    border-radius: 10px;
+}
+
+/* Responsive Hero */
+@media (max-width: 768px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 30px;
+        width: fit-content;
+        height: inherit;
+    }
+
+    .hero-left,
+    .hero-right {
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-buttons {
+        flex-direction: column;
+    }
+
+    .hero-background {
+        filter: brightness(0.5);
+    }
+}
+
+/* ================= SERVICES SECTION ================= */
+.services {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px 0;
+    margin-top: -50vh;
+    z-index: 1;
+}
+
+.service {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow: hidden;
+    border-radius: 10px;
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 10px 20px #0003;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    color: #ffffff;
+    height: 150px;
+}
+
+.services .service:nth-child(1) {
+    background-color: #45b379;
+}
+.services .service:nth-child(2) {
+    background-color: #0d85ae;
+}
+.services .service:nth-child(3) {
+    background-color: #f49945;
+}
+.services .service:nth-child(4) {
+    background-color: #e83a68;
+}
+.services .service:nth-child(5) {
+    background-color: #6a4caf;
+}
+.services .service:nth-child(6) {
+    background-color: #ff6f61;
+}
+
+.service a {
+    color: #ffffff;
+}
+
+.service .service-header i {
+    font-size: 2rem;
+}
+
+.service:hover {
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.service .service-header {
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    gap: 10px;
+}
+
+.service p {
+    display: block;
+}
+
+.service .service-href {
+    display: none;
+}
+
+/* Responsive Services */
+@media (max-width: 992px) {
+    .services {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .service {
+        height: 180px;
+    }
+}
+
+@media (max-width: 600px) {
+    .services {
+        grid-template-columns: 1fr;
+        margin-top: 0;
+    }
+    .service {
+        height: 150px;
+        width: 90%;
+        margin: 0 auto;
+    }
+}
+
+/* ================= PROJECTS SECTION ================= */
+.container-projects {
+    margin: 2rem 0;
+    max-width: 1200px;
+    padding: 0 20px;
+}
+
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.project-card {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    text-align: center;
+    padding-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.project-card:hover {
+    transform: translateY(-5px);
+}
+
+.project-card img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.project-card h4 {
+    margin: 15px 0 10px;
+    font-size: 1.2rem;
+    color: #333;
+    padding: 0 10px;
+}
+
+.project-card p {
+    font-size: 0.95rem;
+    color: #666;
+    padding: 0 15px;
+}
+
+@media (max-width: 992px) {
+    .projects-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .projects-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .project-card h4 {
+        font-size: 1.1rem;
+    }
+
+    .project-card p {
+        font-size: 0.9rem;
+    }
+}
+
+/* ================= INIZIATIVE CAROUSEL ================= */
+.container-carousel {
+    max-width: 1200px;
+    /* margin: 0 auto; */
+    padding: 0 15px;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.iniziative-carousel,
+.swiper-wrapper,
+.swiper-slide {
+    box-sizing: border-box;
+}
+
+.iniziativa-card {
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 20px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    color: #fff;
+    overflow: hidden;
+    min-height: 280px;
+}
+
+.iniziativa-card .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.iniziativa-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.card-logo {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+
+    flex-shrink: 0;
+    object-fit: contain;
+    display: block;
+}
+
+.iniziativa-card img:not(.card-logo) {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    object-fit: cover;
+}
+
+.iniziativa-card h3 {
+    margin: 10px 0 8px;
+    font-weight: 700;
+    font-family: "Nunito", sans-serif;
+}
+
+.iniziativa-card p {
+    font-size: 0.9em;
+    color: #fff;
+    flex-grow: 1;
+    margin-bottom: 10px;
+    overflow-y: scroll;
+    height: 150px;
+}
+
+.iniziativa-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85em;
+    color: #eee;
+    text-align: left;
+}
+
+.iniziativa-card ul li {
+    margin-bottom: 5px;
+}
+
+.iniziativa-card ul li a {
+    color: #facf0a;
+    text-decoration: none;
+}
+
+.iniziativa-card ul li a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 992px) {
+    .container-carousel {
+        max-width: 100%;
+    }
+}
+
+/* ================= PARTNER SECTION ================= */ /* Specifico per il Wrapper dello slider Swiper */
+.swiper-partners {
+    position: relative;
+    padding: 1rem 0; /* Spazio verticale per eventuali pulsanti di navigazione */
+}
+/* Container compatibile con Swiper */
+.swiper-partners {
+    display: flex;
+    width: 100% !important;
+    gap: 2rem;
+    margin: 1rem;
+}
+
+/* Ogni partner è uno slide */
+.swiper-partners .partner {
+    flex: 0 0 auto;
+
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.swiper-partners .partner:hover {
+    transform: translateY(-5px);
+}
+
+.swiper-partners .partner-logo {
+    width: 100%;
+    height: 100px;
+    object-fit: contain;
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+
+.swiper-partners .partner-name {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.swiper-partners .partner-links a {
+    margin: 0 0.3rem;
+    font-size: 1.3rem;
+    text-decoration: none;
+    color: #1999d5;
+    transition: color 0.3s;
+}
+
+.swiper-partners .partner-links a:hover {
+    color: #0d6efd;
+}
+
+.swiper-button-prev,
+.swiper-button-next {
+    color: #2323235f !important;
+}
+
+/* Responsive: mobile */
+@media (max-width: 600px) {
+    .swiper-partners .partner {
+        width: 90%;
+        max-width: 320px;
+    }
+}

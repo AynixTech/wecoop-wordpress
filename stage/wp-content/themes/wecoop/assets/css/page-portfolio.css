@@ -1,0 +1,51 @@
+/* Stile generale per la sezione portfolio */
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Stile per ogni singolo progetto */
+.portfolio-item {
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: rgba(255, 255, 255, 0.1); /* Sfondo trasparente */
+    backdrop-filter: blur(10px); /* Effetto blur */
+    box-shadow: 0 10px 20px #0003;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+/* Contenitore dell'immagine principale */
+.portfolio-thumbnail {
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+}
+
+.portfolio-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+/* Titolo del progetto */
+.portfolio-title {
+    font-size: 20px;
+    font-weight: bold;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .portfolio-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+
+    .portfolio-title {
+        font-size: 18px;
+    }
+}

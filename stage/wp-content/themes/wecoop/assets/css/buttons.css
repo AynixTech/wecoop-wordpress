@@ -1,0 +1,52 @@
+.btn-primary {
+    background: linear-gradient(
+        20deg,
+        var(--aynix-primary-color),
+        var(--aynix-secondary-color),
+        var(--aynix-ternary-color)
+    );
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    filter: brightness(1.2);
+    outline: none;
+}
+
+.btn-secondary {
+    background: none;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: 2px solid;
+    border-image: linear-gradient(
+            20deg,
+            var(--aynix-primary-color),
+            var(--aynix-secondary-color),
+            var(--aynix-ternary-color)
+        )
+        1;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus {
+    background: linear-gradient(
+        20deg,
+        var(--aynix-primary-darker),
+        var(--aynix-secondary-darker),
+        var(--aynix-ternary-darker)
+    );
+    color: white;
+    outline: none;
+    border-radius: 5px;
+}
