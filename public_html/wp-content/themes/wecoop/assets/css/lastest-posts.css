@@ -1,0 +1,79 @@
+/* Container principale */
+.container-latest-posts {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Griglia degli articoli */
+.latest-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    justify-content: center;
+}
+
+/* Limita a massimo 4 colonne su schermi molto larghi */
+@media (min-width: 1500px) {
+    .latest-posts-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Card dell'articolo */
+.post-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    transition: transform 0.2s;
+    max-width: 370px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Effetto hover */
+.post-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Immagine dell'articolo */
+.post-thumbnail {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    object-fit: cover;
+}
+
+/* Titolo dell'articolo */
+.post-card h4 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #1999d5;
+}
+
+/* Link "Leggi di più" */
+.read-more {
+    display: inline-block;
+    margin-top: 10px;
+    color: #1999d5;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.read-more:hover {
+    text-decoration: underline;
+}
+
+/* Ottimizzazione mobile */
+@media (max-width: 600px) {
+    .latest-posts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .post-card {
+        max-width: 100%;
+    }
+}
