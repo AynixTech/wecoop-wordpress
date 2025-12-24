@@ -1,0 +1,267 @@
+/* WeCoop Reserved Area CSS */
+
+:root {
+    --wecoop-primary: #667eea;
+    --wecoop-secondary: #764ba2;
+    --wecoop-success: #10b981;
+    --wecoop-error: #ef4444;
+    --wecoop-text: #1f2937;
+    --wecoop-border: #e5e7eb;
+    --wecoop-bg: #f9fafb;
+}
+
+/* Login/Register Containers */
+.wecoop-login-wrapper,
+.wecoop-register-wrapper {
+    max-width: 450px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.wecoop-login-container,
+.wecoop-register-container {
+    background: white;
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wecoop-login-container h2,
+.wecoop-register-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--wecoop-text);
+}
+
+/* Forms */
+.wecoop-form .form-group {
+    margin-bottom: 20px;
+}
+
+.wecoop-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.wecoop-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--wecoop-text);
+}
+
+.wecoop-form label small {
+    font-weight: normal;
+    color: #6b7280;
+}
+
+.wecoop-form input[type="text"],
+.wecoop-form input[type="email"],
+.wecoop-form input[type="password"],
+.wecoop-form input[type="tel"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--wecoop-border);
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+.wecoop-form input:focus {
+    outline: none;
+    border-color: var(--wecoop-primary);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.wecoop-form .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: normal;
+}
+
+.wecoop-form .checkbox-group input[type="checkbox"] {
+    width: auto;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    width: 100%;
+    background: linear-gradient(135deg, var(--wecoop-primary) 0%, var(--wecoop-secondary) 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: white;
+    color: var(--wecoop-text);
+    border: 1px solid var(--wecoop-border);
+}
+
+.btn-secondary:hover {
+    background: var(--wecoop-bg);
+}
+
+.btn-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Messages */
+.wecoop-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.wecoop-message.success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid var(--wecoop-success);
+}
+
+.wecoop-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid var(--wecoop-error);
+}
+
+/* Form Links */
+.wecoop-form-links {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.wecoop-form-links p {
+    margin: 10px 0;
+    color: #6b7280;
+}
+
+.wecoop-form-links a {
+    color: var(--wecoop-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.wecoop-form-links a:hover {
+    text-decoration: underline;
+}
+
+/* Dashboard */
+.wecoop-dashboard {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--wecoop-border);
+}
+
+.dashboard-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.widget {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.widget h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: var(--wecoop-text);
+}
+
+.widget ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.widget ul li {
+    margin: 10px 0;
+}
+
+.widget a {
+    color: var(--wecoop-primary);
+    text-decoration: none;
+}
+
+.widget a:hover {
+    text-decoration: underline;
+}
+
+/* Profile Page */
+.wecoop-profile {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+.wecoop-profile h3 {
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--wecoop-border);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .wecoop-form .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .dashboard-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}
