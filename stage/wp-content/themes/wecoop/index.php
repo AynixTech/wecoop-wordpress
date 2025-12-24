@@ -93,7 +93,7 @@
                     </a>
                     <a href="/we-educate/" class="project-card" target="_blank">
                         <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/we-educate.jpg')); ?>" alt="WE-EDUCATE">
-                        <h4>WE-EDUCATE</h4>
+                        <h4>WE-EDUCATES</h4>
                         <p><?php echo theme_translate('projects.we_educate.description'); ?></p>
                     </a>
                     <a href="/we-work-2/" class="project-card" target="_blank">
