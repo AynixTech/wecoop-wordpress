@@ -5,7 +5,7 @@
         <!-- Hero Section -->
         <section class="hero">
             <div class="hero-background">
-                <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/la-gente-che-impila-insieme-le-mani-nel-parco-1.jpg" alt="<?php echo theme_translate('hero_section.image_alt'); ?>"/>
+                <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/la-gente-che-impila-insieme-le-mani-nel-parco-1.jpg')); ?>" alt="<?php echo theme_translate('hero_section.image_alt'); ?>"/>
             </div>
             <div class="hero-left">
                 <h1>
@@ -87,22 +87,22 @@
                 </div>
                 <div class="projects-grid">
                     <a href="/we-focus" class="project-card" target="_blank">
-                        <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/we-focus.jpg" alt="WE-FOCUS">
+                        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/we-focus.jpg')); ?>" alt="WE-FOCUS">
                         <h4>WE-FOCUS</h4>
                         <p><?php echo theme_translate('projects.we_focus.description'); ?></p>
                     </a>
                     <a href="/we-educate/" class="project-card" target="_blank">
-                        <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/we-educate.jpg" alt="WE-EDUCATE">
+                        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/we-educate.jpg')); ?>" alt="WE-EDUCATE">
                         <h4>WE-EDUCATE</h4>
                         <p><?php echo theme_translate('projects.we_educate.description'); ?></p>
                     </a>
                     <a href="/we-work-2/" class="project-card" target="_blank">
-                        <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/we-work.jpg" alt="WE-WORK">
+                        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/we-work.jpg')); ?>" alt="WE-WORK">
                         <h4>WE-WORK</h4>
                         <p><?php echo theme_translate('projects.we_work.description'); ?></p>
                     </a>
                     <a href="/ufficio-progettazione/" class="project-card" target="_blank">
-                        <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/progettazioni.jpg" alt="Ufficio Progettazione">
+                        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/progettazioni.jpg')); ?>" alt="Ufficio Progettazione">
                         <h4><?php echo theme_translate('projects.office.title'); ?></h4>
                         <p><?php echo theme_translate('projects.office.description'); ?></p>
                     </a>
@@ -121,17 +121,17 @@
                 <div class="swiper iniziative-carousel">
                     <div class="swiper-wrapper">
                         <div class="swiper-slide">
-                            <div class="iniziativa-card" style="background-image: url('https://www.stage.wecoop.org/wp-content/uploads/2025/05/casatutti_banner.jpg');">
+                            <div class="iniziativa-card" style="background-image: url('<?php echo esc_url(home_url('/wp-content/uploads/2025/05/casatutti_banner.jpg')); ?>');">                            
                                 <div class="overlay"></div>
-                                <img class="card-logo" src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/casatutti.png" alt="La Casa di tutti">
+                                <img class="card-logo" src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/casatutti.png')); ?>" alt="La Casa di tutti">
                                 <h3><?php echo theme_translate('initiatives.casatutti.title'); ?></h3>
                                 <p><?php echo theme_translate('initiatives.casatutti.description'); ?></p>
                             </div>
                         </div>
                         <div class="swiper-slide">
-                            <div class="iniziativa-card" style="background-image: url('https://www.stage.wecoop.org/wp-content/uploads/2025/05/bocadelpozo_banner.jpg');">
+                            <div class="iniziativa-card" style="background-image: url('<?php echo esc_url(home_url('/wp-content/uploads/2025/05/bocadelpozo_banner.jpg')); ?>');">                            
                                 <div class="overlay"></div>
-                                <img class="card-logo" src="https://www.stage.wecoop.org/wp-content/uploads/2025/05/bocadelpozo.png" alt="Calcio di strada">
+                                <img class="card-logo" src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/bocadelpozo.png')); ?>" alt="Calcio di strada">
                                 <h3><?php echo theme_translate('initiatives.calcio.title'); ?></h3>
                                 <p><?php echo theme_translate('initiatives.calcio.description'); ?></p>
                             </div>
@@ -184,7 +184,7 @@
                 <div class="swiper-wrapper">
                     <div class="swiper-slide">
                         <div class="partner">
-                            <img src="https://www.stage.wecoop.org/wp-content/uploads/2025/11/Logo-Uniuma.png" alt="Partner 1 Logo" class="partner-logo" />
+                            <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/11/Logo-Uniuma.png')); ?>" alt="Partner 1 Logo" class="partner-logo" />
                             <h3 class="partner-name">UNIUMA – S.S.M.L</h3>
                             <div class="partner-links">
                                 <a href="https://www.uniuma.it/" target="_blank" aria-label="Website"><i class="fas fa-globe"></i></a>
