@@ -3,8 +3,8 @@
     <div class="container-footer">
         <div class="col-md-4">
             <div class="logo-footer">
-                <a href="<?php echo home_url(); ?>">
-                    <img src="https://www.wecoop.org/wp-content/uploads/2025/05/wecooplogo2.png" alt="WeCoop footer logo" />
+                <a href="<?php echo esc_url(home_url()); ?>">
+                    <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/wecooplogo2.png')); ?>" alt="WeCoop footer logo" />
                 </a>
                 <p class="description"><?php echo theme_translate('footer.site_description'); ?></p>
                 <p class="description">WeCoop</p>
@@ -99,10 +99,10 @@
         </div>
 
         <div class="col-md-4 social-icons">
-            <h5><?php echo theme_translate('follow_us'); ?></h5>
+            <h5><?php echo esc_html(theme_translate('follow_us')); ?></h5>
             <ul>
-                <li><a href="https://www.facebook.com/profile.php?id=61568241435990" class="facebook"><i class="fa-brands fa-facebook"></i></a></li>
-                <li><a href="https://www.instagram.com/wecoop_aps?utm_source=qr&igsh=MXFraHN1cG4zNmh1ZA%3D%3D" class="instagram"><i class="fa-brands fa-instagram"></i></a></li>
+                <li><a href="https://www.facebook.com/profile.php?id=61568241435990" class="facebook" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a></li>
+                <li><a href="https://www.instagram.com/wecoop_aps?utm_source=qr&igsh=MXFraHN1cG4zNmh1ZA%3D%3D" class="instagram" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a></li>
             </ul>
         </div>
     </div>

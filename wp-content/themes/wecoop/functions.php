@@ -78,7 +78,21 @@ function theme_load_translation() {
     }
     
     $lang_file = get_template_directory() . "/languages/$lang.json";
-    return file_exists($lang_file) ? json_decode(file_get_contents($lang_file), true) : [];
+    
+    if (!file_exists($lang_file)) {
+        error_log("WeCoop Theme: Translation file not found - $lang_file");
+        return [];
+    }
+    
+    $content = file_get_contents($lang_file);
+    $translations = json_decode($content, true);
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        error_log("WeCoop Theme: JSON decode error in $lang_file - " . json_last_error_msg());
+        return [];
+    }
+    
+    return $translations;
 }
 
 function theme_translate($key) {
@@ -86,6 +100,11 @@ function theme_translate($key) {
     if (!$translations) {
         $translations = theme_load_translation();
     }
+    
+    if (!isset($translations[$key])) {
+        error_log("WeCoop Theme: Missing translation key - $key");
+    }
+    
     return $translations[$key] ?? $key;
 }
 
@@ -95,7 +114,6 @@ function theme_translate($key) {
 function wecoop_enqueue_fonts() {
     wp_enqueue_style('nunito-font', 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600&display=swap', [], null);
     wp_enqueue_style('merriweather-font', 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap', [], null);
-    wp_enqueue_style('feeling-passionate-font', 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap', [], null);
 
     wp_enqueue_style('wecoop-fonts', get_template_directory_uri() . '/assets/css/fonts.css', [], filemtime(get_template_directory() . '/assets/css/fonts.css'));
     wp_enqueue_style('font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css', [], '6.0.0', 'all');
@@ -139,10 +157,10 @@ add_action('wp_enqueue_scripts', 'wecoop_enqueue_request_delete_user_assets');
 function save_language_from_url() {
     if (isset($_GET['lang']) && in_array($_GET['lang'], ['it', 'en', 'es'])) {
         $lang = sanitize_text_field($_GET['lang']);
-        setcookie('site_lang', $lang, time() + (365 * 24 * 60 * 60), '/', '', false, false);
+        setcookie('site_lang', $lang, time() + (365 * 24 * 60 * 60), '/', '', is_ssl(), true);
     } elseif (isset($_GET['set_lang']) && in_array($_GET['set_lang'], ['it', 'en', 'es'])) {
         $lang = sanitize_text_field($_GET['set_lang']);
-        setcookie('site_lang', $lang, time() + (365 * 24 * 60 * 60), '/', '', false, false);
+        setcookie('site_lang', $lang, time() + (365 * 24 * 60 * 60), '/', '', is_ssl(), true);
         wp_redirect(remove_query_arg('set_lang'));
         exit;
     }

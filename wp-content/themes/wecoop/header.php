@@ -36,8 +36,8 @@
     </ul>
 </nav>
 <div class="header__logo">
-    <a href="<?php echo home_url(); ?>">
-        <img src="https://www.wecoop.org/wp-content/uploads/2025/05/wecooplogo2.png" alt="WeCoop logo" />
+    <a href="<?php echo esc_url(home_url()); ?>">
+        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/wecooplogo2.png')); ?>" alt="WeCoop logo" />
     </a>
 </div>
 
@@ -76,7 +76,5 @@
         modal.classList.toggle('active');
     }
 </script>
-
-<?php wp_footer(); ?>
 </body>
 </html>
