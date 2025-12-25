@@ -365,14 +365,6 @@ class WeCoop_Multilingual_Email {
                 <p style='margin: 5px 0;'><strong>{$t('member_approved_card_number_label')}</strong> {$data['numero_tessera']}</p>
             </div>
             
-            <h2>{$t('member_approved_card_title')}</h2>
-            <p>{$t('member_approved_card_text')}</p>
-            <p style='text-align: center; margin: 20px 0;'>
-                <a href='{$data['tessera_url']}' style='display: inline-block; padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>
-                    {$t('member_approved_card_button')}
-                </a>
-            </p>
-            
             <h2>{$t('member_approved_steps_title')}</h2>
             <ul style='line-height: 1.8;'>
                 <li>{$t('member_approved_step1')}</li>

@@ -1,0 +1,24 @@
+# WordPress locale
+wp-config-local.php
+
+# Database dumps (contengono dati sensibili)
+*.sql
+*.sql.gz
+*.sql.zip
+
+# Docker volumes
+db_data/
+
+# Mac
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+package-lock.json
+
+# Logs
+*.log
