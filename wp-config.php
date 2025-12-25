@@ -41,6 +41,10 @@ define( 'DB_CHARSET', 'utf8' );
 /** The database collate type. Don't change this if in doubt. */
 define( 'DB_COLLATE', '' );
 
+// Force WordPress URLs for local development
+define( 'WP_HOME', 'http://localhost:8000' );
+define( 'WP_SITEURL', 'http://localhost:8000' );
+
 /**#@+
  * Authentication unique keys and salts.
  *
@@ -62,6 +66,11 @@ define( 'LOGGED_IN_SALT',    'ylg&WQ08R*w9Z|#MjuELlX.,kh-VbskUOc84#d~Z9xf%+$ u-y
 define( 'NONCE_SALT',        'H8k/MQqY5GJOm<)oxuBGo3;5oHf@}}a^Mv|G<Gs J#z+>>TDP>PFAiFjCRo.VG$(' );
 define( 'WP_CACHE_KEY_SALT', '=dM**L2zGo<4`Zvu{9anAL^2S%H7DYl4I,a2,iGfoXcjpb(J-hrD]#fRGp>}w[zO' );
 
+/**
+ * JWT Authentication Configuration
+ */
+define('JWT_AUTH_SECRET_KEY', 'wecoop-jwt-2025-' . md5('kj2WK1xyB8AlcXSg2HdhcO0PFfsuvpt9WtAWw3PwFTrcdX97yLSf6rvcD1l8p9UJ'));
+define('JWT_AUTH_CORS_ENABLE', true);
 
 /**#@-*/
 
