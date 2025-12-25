@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  wordpress:
+    image: wordpress:latest
+    container_name: wecoop-local
+    ports:
+      - "8000:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      # Monta solo il tema e i plugin che stai sviluppando
+      - ./wp-content/themes:/var/www/html/wp-content/themes
+      - ./wp-content/plugins:/var/www/html/wp-content/plugins
+      - ./wp-content/uploads:/var/www/html/wp-content/uploads
+      - ./wp-content/mu-plugins:/var/www/html/wp-content/mu-plugins
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: wecoop-db
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: unless-stopped
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: wecoop-phpmyadmin
+    ports:
+      - "8001:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  db_data:
