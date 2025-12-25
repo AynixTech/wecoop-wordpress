@@ -562,6 +562,7 @@ class WECOOP_Eventi_Endpoint {
             $lang = $request->get_param('lang') ?? 'it';
             error_log('[MIEI-EVENTI] Lingua richiesta: ' . $lang);
             
+            // Cerca sia formato integer che string perché WordPress può salvare in entrambi i modi
             $args = [
                 'post_type' => 'evento',
                 'post_status' => 'publish',
@@ -569,13 +570,20 @@ class WECOOP_Eventi_Endpoint {
                 'orderby' => 'meta_value',
                 'meta_key' => 'data_inizio',
                 'order' => 'ASC',
-                'meta_query' => [[
-                    'key' => 'iscritti',
-                    'value' => serialize(strval($user_id)),
-                    'compare' => 'LIKE'
-                ]]
+                'meta_query' => [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'iscritti',
+                        'value' => sprintf(':"%d";', $user_id),
+                        'compare' => 'LIKE'
+                    ],
+                    [
+                        'key' => 'iscritti',
+                        'value' => sprintf('i:%d;', $user_id),
+                        'compare' => 'LIKE'
+                    ]
+                ]
             ];
-            error_log('[MIEI-EVENTI] Query args: ' . print_r($args, true));
             error_log('[MIEI-EVENTI] Query args: ' . print_r($args, true));
             
             $query = new WP_Query($args);
