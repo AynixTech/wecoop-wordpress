@@ -164,7 +164,13 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 throw new Exception('Impossibile creare prodotto virtuale');
             }
             
-            error_log('[WECOOP SERVIZI] Usando prodotto WC ID: ' . $product_id);
+            error_log('========================================');
+            error_log('[WECOOP SERVIZI] INIZIO CREAZIONE ORDINE');
+            error_log('[WECOOP SERVIZI] Richiesta ID: ' . $richiesta_id);
+            error_log('[WECOOP SERVIZI] User ID: ' . $user_id);
+            error_log('[WECOOP SERVIZI] Servizio: ' . $servizio);
+            error_log('[WECOOP SERVIZI] Importo: ' . $importo);
+            error_log('[WECOOP SERVIZI] Prodotto WC ID: ' . $product_id);
             
             // Abilita temporaneamente il checkout per guest
             add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; }, 999);
@@ -172,18 +178,24 @@ class WECOOP_Servizi_WooCommerce_Integration {
             add_filter('woocommerce_checkout_registration_required', '__return_false', 999);
             
             // Crea ordine WooCommerce associato all'utente
+            error_log('[WECOOP SERVIZI] Creazione ordine WC...');
             $order = wc_create_order([
                 'customer_id' => $user_id, // Ordine associato all'utente reale
                 'status' => 'pending'
             ]);
             
             if (is_wp_error($order)) {
+                error_log('[WECOOP SERVIZI] ERRORE wc_create_order: ' . $order->get_error_message());
                 throw new Exception($order->get_error_message());
             }
+            
+            error_log('[WECOOP SERVIZI] Ordine creato ID: ' . $order->get_id());
             
             // Salva meta dati per tracciamento interno
             $order->update_meta_data('_created_via', 'wecoop_servizi');
             $order->update_meta_data('_wecoop_richiesta_id', $richiesta_id);
+            
+            error_log('[WECOOP SERVIZI] Meta dati ordine salvati');
             
             // Imposta dati di fatturazione dall'utente/richiesta
             $user = get_userdata($user_id);
@@ -218,42 +230,85 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 error_log('[WECOOP SERVIZI] Dati fatturazione impostati: ' . $first_name . ' ' . $last_name . ' - ' . $email);
             }
             
-            // Aggiungi prodotto all'ordine usando il metodo standard WooCommerce
-            $product = wc_get_product($product_id);
-            if (!$product) {
-                throw new Exception('Prodotto virtuale non trovato');
+            // Salva prima l'ordine con i dati di fatturazione
+            error_log('[WECOOP SERVIZI] Salvataggio ordine...');
+            $order->save();
+            error_log('[WECOOP SERVIZI] Ordine salvato, inizio inserimento item...');
+            
+            // Aggiungi line item manualmente usando il database
+            global $wpdb;
+            
+            $item_name = $servizio . ' - Pratica ' . $numero_pratica;
+            error_log('[WECOOP SERVIZI] Nome item: ' . $item_name);
+            
+            // Inserisci l'item nella tabella order_items
+            $insert_result = $wpdb->insert(
+                $wpdb->prefix . 'woocommerce_order_items',
+                [
+                    'order_item_name' => $item_name,
+                    'order_item_type' => 'line_item',
+                    'order_id' => $order->get_id()
+                ],
+                ['%s', '%s', '%d']
+            );
+            
+            if ($insert_result === false) {
+                error_log('[WECOOP SERVIZI] ERRORE wpdb->insert: ' . $wpdb->last_error);
+                throw new Exception('Errore inserimento item: ' . $wpdb->last_error);
             }
             
-            // Aggiungi prodotto all'ordine (WooCommerce si occupa di creare l'item)
-            $item_id = $order->add_product($product, 1, [
-                'subtotal' => $importo,
-                'total' => $importo,
-            ]);
+            $item_id = $wpdb->insert_id;
             
             if (!$item_id) {
-                throw new Exception('Impossibile aggiungere prodotto all\'ordine');
+                error_log('[WECOOP SERVIZI] ERRORE: insert_id = 0');
+                throw new Exception('Impossibile creare line item');
             }
             
-            // Personalizza il nome dell'item
-            foreach ($order->get_items() as $item) {
-                $item->set_name($servizio . ' - Pratica ' . $numero_pratica);
-                $item->add_meta_data('_richiesta_servizio_id', $richiesta_id, true);
-                $item->add_meta_data('_numero_pratica', $numero_pratica, true);
-                $item->add_meta_data('_tipo_servizio', $servizio, true);
-                $item->save();
+            error_log('[WECOOP SERVIZI] ✅ Item ID creato: ' . $item_id);
+            
+            // Aggiungi meta dati dell'item
+            $item_meta = [
+                '_qty' => 1,
+                '_line_subtotal' => $importo,
+                '_line_total' => $importo,
+                '_line_subtotal_tax' => 0,
+                '_line_tax' => 0,
+                '_line_tax_data' => serialize([]),
+                '_richiesta_servizio_id' => $richiesta_id,
+                '_numero_pratica' => $numero_pratica,
+                '_tipo_servizio' => $servizio,
+            ];
+            
+            error_log('[WECOOP SERVIZI] Aggiunta meta dati item...');
+            foreach ($item_meta as $meta_key => $meta_value) {
+                $meta_result = wc_add_order_item_meta($item_id, $meta_key, $meta_value);
+                error_log('[WECOOP SERVIZI]   - ' . $meta_key . ': ' . ($meta_result ? 'OK' : 'FAILED'));
             }
+            
+            error_log('[WECOOP SERVIZI] ✅ Meta dati item aggiunti');
+            
+            // Aggiorna i totali dell'ordine
+            error_log('[WECOOP SERVIZI] Impostazione totale ordine a: ' . $importo);
+            $order->set_total($importo);
             $order->save();
             
-            // Calcola totali
-            $order->calculate_totals();
-            $order->save();
-            
-            // Verifica che l'item sia stato salvato
+            // Ricarica l'ordine per verificare
+            error_log('[WECOOP SERVIZI] Ricaricamento ordine...');
+            $order = wc_get_order($order->get_id());
             $saved_items = $order->get_items();
-            error_log('[WECOOP SERVIZI] Items salvati: ' . count($saved_items));
+            
+            error_log('[WECOOP SERVIZI] ✅ Items dopo reload: ' . count($saved_items));
+            
+            if (count($saved_items) > 0) {
+                foreach ($saved_items as $item) {
+                    error_log('[WECOOP SERVIZI]   - Item: ' . $item->get_name() . ' | Total: ' . $item->get_total());
+                }
+            } else {
+                error_log('[WECOOP SERVIZI] ❌ ERRORE: Nessun item trovato!');
+            }
             
             if (count($saved_items) === 0) {
-                throw new Exception('Errore: nessun item salvato nell\'ordine');
+                throw new Exception('Errore: nessun item trovato dopo il salvataggio');
             }
             
             // Aggiungi note
@@ -268,16 +323,18 @@ class WECOOP_Servizi_WooCommerce_Integration {
             
             // Log dettagliato ordine creato
             $payment_url = $order->get_checkout_payment_url(true);
-            error_log(sprintf(
-                '[WECOOP SERVIZI] Ordine WC #%d creato per richiesta #%s (€%s) - Status: %s - Needs Payment: %s',
-                $order->get_id(),
-                $numero_pratica,
-                number_format($importo, 2),
-                $order->get_status(),
-                $order->needs_payment() ? 'YES' : 'NO'
-            ));
+            error_log('[WECOOP SERVIZI] ========================================');
+            error_log('[WECOOP SERVIZI] ✅ ORDINE CREATO CON SUCCESSO');
+            error_log('[WECOOP SERVIZI] Order ID: ' . $order->get_id());
+            error_log('[WECOOP SERVIZI] Richiesta: ' . $numero_pratica);
+            error_log('[WECOOP SERVIZI] Importo: €' . number_format($importo, 2));
+            error_log('[WECOOP SERVIZI] Status: ' . $order->get_status());
+            error_log('[WECOOP SERVIZI] Needs Payment: ' . ($order->needs_payment() ? 'YES' : 'NO'));
             error_log('[WECOOP SERVIZI] Payment URL: ' . $payment_url);
             error_log('[WECOOP SERVIZI] Order Key: ' . $order->get_order_key());
+            error_log('[WECOOP SERVIZI] Total: ' . $order->get_total());
+            error_log('[WECOOP SERVIZI] Items Count: ' . count($order->get_items()));
+            error_log('[WECOOP SERVIZI] ========================================');
             
             // Collega ordine alla richiesta
             update_post_meta($richiesta_id, 'wc_order_id', $order->get_id());
@@ -293,7 +350,11 @@ class WECOOP_Servizi_WooCommerce_Integration {
             return $order->get_id();
             
         } catch (Exception $e) {
-            error_log('[WECOOP SERVIZI] Errore creazione ordine: ' . $e->getMessage());
+            error_log('[WECOOP SERVIZI] ❌❌❌ ERRORE CREAZIONE ORDINE ❌❌❌');
+            error_log('[WECOOP SERVIZI] Messaggio: ' . $e->getMessage());
+            error_log('[WECOOP SERVIZI] File: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('[WECOOP SERVIZI] Stack trace: ' . $e->getTraceAsString());
+            error_log('[WECOOP SERVIZI] ========================================');
             update_post_meta($richiesta_id, 'payment_error', $e->getMessage());
             return false;
         }
