@@ -1240,8 +1240,14 @@ class WECOOP_Servizi_Management {
         $user_id = get_post_meta($post_id, 'user_id', true);
         $dati_json = get_post_meta($post_id, 'dati', true);
         $dati = json_decode($dati_json, true) ?: [];
-        $order_id = get_post_meta($post_id, 'wc_order_id', true);
-        $payment_status = get_post_meta($post_id, 'payment_status', true);
+        
+        // Ottieni info pagamento dalla tabella wp_wecoop_pagamenti
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+        $payment = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
+            $post_id
+        ));
         
         // Se non c'è importo, prova a prenderlo dal listino
         if (!$importo || $importo == 0) {
@@ -1276,7 +1282,8 @@ class WECOOP_Servizi_Management {
             'awaiting_payment' => '💳 Da Pagare',
             'processing' => '🔄 In Lavorazione',
             'completed' => '✅ Completata',
-            'cancelled' => '❌ Annullata'
+            'cancelled' => '❌ Annullata',
+            'paid' => '✅ Pagato'
         ];
         
         $stato_colors = [
@@ -1284,7 +1291,8 @@ class WECOOP_Servizi_Management {
             'awaiting_payment' => '#9c27b0',
             'processing' => '#2196f3',
             'completed' => '#4caf50',
-            'cancelled' => '#f44336'
+            'cancelled' => '#f44336',
+            'paid' => '#4caf50'
         ];
         ?>
         <tr>
@@ -1318,10 +1326,18 @@ class WECOOP_Servizi_Management {
             <td>
                 <?php if ($importo): ?>
                     <strong>€ <?php echo number_format($importo, 2, ',', '.'); ?></strong>
-                    <?php if ($payment_status === 'paid'): ?>
-                        <span style="color: green;" title="Pagato">✓</span>
-                    <?php elseif ($order_id): ?>
-                        <span style="color: orange;" title="In attesa di pagamento">⏳</span>
+                    <?php if ($payment && in_array($payment->stato, ['paid', 'completed'])): ?>
+                        <br><span style="color: #4caf50; font-weight: bold;" title="Pagato il <?php echo $payment->paid_at; ?>">
+                            ✅ Pagato
+                        </span>
+                        <?php if ($payment->metodo_pagamento): ?>
+                            <br><small style="color: #666;">via <?php echo ucfirst($payment->metodo_pagamento); ?></small>
+                        <?php endif; ?>
+                        <?php if ($payment->transaction_id): ?>
+                            <br><small style="color: #999;" title="ID Transazione"><?php echo esc_html(substr($payment->transaction_id, 0, 20)); ?>...</small>
+                        <?php endif; ?>
+                    <?php elseif ($payment && $payment->stato === 'pending'): ?>
+                        <br><span style="color: orange;" title="In attesa di pagamento">⏳ Da pagare</span>
                     <?php endif; ?>
                 <?php else: ?>
                     <span style="color: #999;">—</span>
@@ -1337,27 +1353,18 @@ class WECOOP_Servizi_Management {
                 <button class="button button-small edit-richiesta" data-id="<?php echo $post_id; ?>">
                     👁️ Dettagli
                 </button>
-                <?php if (!$order_id): ?>
+                <?php if (!$payment || $payment->stato === 'pending'): ?>
                     <button class="button button-small button-primary open-payment-modal" 
                             data-id="<?php echo $post_id; ?>"
                             data-importo="<?php echo $importo ? esc_attr($importo) : ''; ?>"
                             data-servizio="<?php echo esc_attr($servizio); ?>"
                             data-categoria="<?php echo esc_attr($categoria); ?>"
                             title="Richiedi pagamento">
-                        💳 Richiedi Pagamento
+                        💳 <?php echo $payment ? 'Reinvia Richiesta' : 'Richiedi Pagamento'; ?>
                     </button>
-                <?php elseif ($order_id): ?>
-                    <?php $order = wc_get_order($order_id); ?>
-                    <?php if ($order && $order->needs_payment()): ?>
-                        <button class="button button-small send-payment-link" 
-                                data-id="<?php echo $post_id; ?>"
-                                title="Reinvia link pagamento">
-                            📧 Reinvia Link
-                        </button>
-                        <a href="<?php echo esc_url($order->get_checkout_payment_url()); ?>" 
-                           class="button button-small" 
-                           target="_blank"
-                           title="Copia link pagamento">
+                <?php elseif ($payment && in_array($payment->stato, ['paid', 'completed'])): ?>
+                    <span style="color: #4caf50; font-weight: bold;">✅ Pagato</span>
+                <?php endif; ?>
                             🔗 Link
                         </a>
                     <?php elseif ($order): ?>
