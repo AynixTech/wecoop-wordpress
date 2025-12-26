@@ -59,6 +59,9 @@ class WeCoop_Servizi {
     }
     
     private function load_dependencies() {
+        // Normalizer
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-servizi-normalizer.php';
+        
         // Post Types
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'post-types/class-richiesta-servizio.php';
         

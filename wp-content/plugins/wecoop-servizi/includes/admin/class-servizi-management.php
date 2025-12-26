@@ -66,6 +66,16 @@ class WECOOP_Servizi_Management {
             [__CLASS__, 'render_list']
         );
         
+        // Mappature servizi multilingua
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Mappature Servizi',
+            '🌐 Servizi Multilingua',
+            'manage_options',
+            'wecoop-servizi-mappature',
+            [__CLASS__, 'render_mappature']
+        );
+        
         // Pagina nascosta per dettaglio utente
         add_submenu_page(
             null, // Nessun menu parent = pagina nascosta
@@ -166,12 +176,13 @@ class WECOOP_Servizi_Management {
                     $stats['utenti_unici'][] = $user_id;
                 }
                 
-                // Servizi popolari
+                // Servizi popolari (normalizzato)
                 if ($servizio) {
-                    if (!isset($stats['servizi_popolari'][$servizio])) {
-                        $stats['servizi_popolari'][$servizio] = 0;
+                    $servizio_normalizzato = WECOOP_Servizi_Normalizer::normalize($servizio);
+                    if (!isset($stats['servizi_popolari'][$servizio_normalizzato])) {
+                        $stats['servizi_popolari'][$servizio_normalizzato] = 0;
                     }
-                    $stats['servizi_popolari'][$servizio]++;
+                    $stats['servizi_popolari'][$servizio_normalizzato]++;
                 }
                 
                 // Richieste per mese
@@ -1235,7 +1246,18 @@ class WECOOP_Servizi_Management {
         ?>
         <tr>
             <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
-            <td><?php echo esc_html($servizio); ?></td>
+            <td>
+                <?php 
+                $servizio_normalizzato = WECOOP_Servizi_Normalizer::normalize($servizio);
+                if ($servizio !== $servizio_normalizzato) {
+                    echo '<span title="Originale: ' . esc_attr($servizio) . '" style="border-bottom: 1px dotted #999; cursor: help;">';
+                    echo esc_html($servizio_normalizzato);
+                    echo '</span>';
+                } else {
+                    echo esc_html($servizio);
+                }
+                ?>
+            </td>
             <td><?php echo esc_html($categoria); ?></td>
             <td>
                 <?php if ($user_id) : ?>
@@ -2419,5 +2441,210 @@ class WECOOP_Servizi_Management {
         $stats['lifetime_values'] = array_slice($user_stats, 0, 10, true);
         
         return $stats;
+    }
+    
+    /**
+     * Render pagina mappature servizi multilingua
+     */
+    public static function render_mappature() {
+        // Salva nuova mappatura
+        if (isset($_POST['add_mapping']) && check_admin_referer('wecoop_add_mapping')) {
+            $variante = sanitize_text_field($_POST['variante']);
+            $canonico = sanitize_text_field($_POST['canonico']);
+            
+            if (!empty($variante) && !empty($canonico)) {
+                $custom_mappings = get_option('wecoop_servizi_custom_mappings', []);
+                $custom_mappings[$variante] = $canonico;
+                update_option('wecoop_servizi_custom_mappings', $custom_mappings);
+                
+                // Aggiungi anche al normalizer runtime
+                WECOOP_Servizi_Normalizer::add_mapping($variante, $canonico);
+                
+                echo '<div class="notice notice-success"><p>✅ Mappatura aggiunta con successo!</p></div>';
+            }
+        }
+        
+        // Elimina mappatura
+        if (isset($_GET['delete_mapping']) && check_admin_referer('wecoop_delete_mapping_' . $_GET['delete_mapping'], 'nonce')) {
+            $variante = sanitize_text_field($_GET['delete_mapping']);
+            $custom_mappings = get_option('wecoop_servizi_custom_mappings', []);
+            
+            if (isset($custom_mappings[$variante])) {
+                unset($custom_mappings[$variante]);
+                update_option('wecoop_servizi_custom_mappings', $custom_mappings);
+                echo '<div class="notice notice-success"><p>✅ Mappatura eliminata!</p></div>';
+            }
+        }
+        
+        // Carica mappature custom
+        $custom_mappings = get_option('wecoop_servizi_custom_mappings', []);
+        
+        // Carica mappature predefinite
+        $predefined_mappings = WECOOP_Servizi_Normalizer::get_map();
+        
+        // Raggruppa per servizio canonico
+        $grouped = [];
+        foreach (array_merge($predefined_mappings, $custom_mappings) as $variante => $canonico) {
+            if (!isset($grouped[$canonico])) {
+                $grouped[$canonico] = [];
+            }
+            $grouped[$canonico][] = [
+                'variante' => $variante,
+                'is_custom' => isset($custom_mappings[$variante])
+            ];
+        }
+        ksort($grouped);
+        
+        // Ottieni servizi unici dalle richieste
+        global $wpdb;
+        $servizi_usati = $wpdb->get_col("
+            SELECT DISTINCT meta_value 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key = 'servizio' 
+            AND meta_value != ''
+            ORDER BY meta_value
+        ");
+        
+        ?>
+        <div class="wrap">
+            <h1>🌐 Gestione Servizi Multilingua</h1>
+            <p class="description">
+                Questa pagina permette di mappare servizi con lo stesso significato ma in lingue diverse (es. "Permesso di Soggiorno" e "Permiso de Residencia").
+                <br>Le statistiche della dashboard raggrupperanno automaticamente i servizi mappati.
+            </p>
+            
+            <!-- Aggiungi nuova mappatura -->
+            <div class="postbox" style="margin: 20px 0;">
+                <div class="postbox-header">
+                    <h2>➕ Aggiungi Nuova Mappatura</h2>
+                </div>
+                <div class="inside">
+                    <form method="post" action="">
+                        <?php wp_nonce_field('wecoop_add_mapping'); ?>
+                        <table class="form-table">
+                            <tr>
+                                <th scope="row">
+                                    <label for="variante">Nome Variante <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <input type="text" name="variante" id="variante" class="regular-text" required 
+                                           list="servizi-esistenti" placeholder="es. Permiso de Residencia">
+                                    <datalist id="servizi-esistenti">
+                                        <?php foreach ($servizi_usati as $servizio): ?>
+                                            <option value="<?php echo esc_attr($servizio); ?>">
+                                        <?php endforeach; ?>
+                                    </datalist>
+                                    <p class="description">Il nome del servizio in un'altra lingua o variante</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row">
+                                    <label for="canonico">Servizio Canonico <span style="color: red;">*</span></label>
+                                </th>
+                                <td>
+                                    <input type="text" name="canonico" id="canonico" class="regular-text" required
+                                           list="servizi-canonici" placeholder="es. Permesso di Soggiorno">
+                                    <datalist id="servizi-canonici">
+                                        <?php foreach (WECOOP_Servizi_Normalizer::get_canonical_services() as $canonico): ?>
+                                            <option value="<?php echo esc_attr($canonico); ?>">
+                                        <?php endforeach; ?>
+                                    </datalist>
+                                    <p class="description">Il nome "principale" del servizio (solitamente in italiano)</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <p class="submit">
+                            <button type="submit" name="add_mapping" class="button button-primary">
+                                ➕ Aggiungi Mappatura
+                            </button>
+                        </p>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Statistiche -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">📚 Servizi Canonici</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;"><?php echo count($grouped); ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;">Servizi principali</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">🌍 Varianti Totali</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;"><?php echo count($predefined_mappings) + count($custom_mappings); ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;">Traduzioni e varianti</div>
+                </div>
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">⚙️ Mappature Custom</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;"><?php echo count($custom_mappings); ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;">Aggiunte manualmente</div>
+                </div>
+            </div>
+            
+            <!-- Lista mappature raggruppate -->
+            <div class="postbox">
+                <div class="postbox-header">
+                    <h2>📋 Mappature Esistenti</h2>
+                </div>
+                <div class="inside">
+                    <?php foreach ($grouped as $canonico => $varianti): ?>
+                        <div style="margin-bottom: 20px; padding: 15px; background: #f9f9f9; border-left: 4px solid #2271b1; border-radius: 4px;">
+                            <h3 style="margin: 0 0 10px 0; font-size: 16px; color: #2271b1;">
+                                🎯 <?php echo esc_html($canonico); ?>
+                                <span style="background: #2271b1; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 10px;">
+                                    <?php echo count($varianti); ?> varianti
+                                </span>
+                            </h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <?php foreach ($varianti as $item): ?>
+                                    <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; display: flex; align-items: center; gap: 8px;">
+                                        <span><?php echo esc_html($item['variante']); ?></span>
+                                        <?php if ($item['is_custom']): ?>
+                                            <span style="background: #00a32a; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">CUSTOM</span>
+                                            <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wecoop-servizi-mappature&delete_mapping=' . urlencode($item['variante'])), 'wecoop_delete_mapping_' . $item['variante'], 'nonce'); ?>" 
+                                               onclick="return confirm('Eliminare questa mappatura?');"
+                                               style="color: #d63638; text-decoration: none; font-size: 16px;" 
+                                               title="Elimina">❌</a>
+                                        <?php else: ?>
+                                            <span style="background: #999; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">PREDEFINITA</span>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            
+            <!-- Servizi non mappati -->
+            <?php
+            $servizi_non_mappati = [];
+            foreach ($servizi_usati as $servizio) {
+                $normalizzato = WECOOP_Servizi_Normalizer::normalize($servizio);
+                if ($normalizzato === $servizio && !isset($grouped[$servizio])) {
+                    $servizi_non_mappati[] = $servizio;
+                }
+            }
+            
+            if (!empty($servizi_non_mappati)):
+            ?>
+            <div class="postbox" style="border-left: 4px solid #ff9800;">
+                <div class="postbox-header">
+                    <h2>⚠️ Servizi Non Mappati (<?php echo count($servizi_non_mappati); ?>)</h2>
+                </div>
+                <div class="inside">
+                    <p class="description">Questi servizi non hanno una mappatura. Se sono in lingue diverse, aggiungili sopra.</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px;">
+                        <?php foreach ($servizi_non_mappati as $servizio): ?>
+                            <span style="background: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 6px; border: 1px solid #ffc107;">
+                                <?php echo esc_html($servizio); ?>
+                            </span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
     }
 }
