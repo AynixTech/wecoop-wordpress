@@ -530,29 +530,35 @@ class WeCoop_Multilingual_Email {
             <h1>{$t('service_payment_required_title')}</h1>
             <p>{$t('service_payment_required_intro')}</p>
             
-            <h2>{$t('service_payment_required_details')}</h2>
-            <div style='background: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; border-radius: 5px; margin: 20px 0;'>
-                <p style='margin: 8px 0;'><strong>{$t('service_payment_required_service_label')}</strong> {$data['servizio']}</p>
-                <p style='margin: 8px 0;'><strong>{$t('service_payment_required_practice_label')}</strong> {$data['numero_pratica']}</p>
-                <p style='margin: 8px 0; font-size: 20px; color: #2c3e50;'><strong>{$t('service_payment_required_amount_label')}</strong> <span style='color: #27ae60; font-weight: bold;'>{$data['importo']}</span></p>
-            </div>
+            <h2 style='color: #2c3e50; font-size: 18px; margin: 25px 0 15px 0;'>{$t('service_payment_required_details')}</h2>
+            <table style='width: 100%; max-width: 600px; background: #f8f9fa; border-left: 4px solid #3498db; border-radius: 5px; margin: 20px 0;' cellpadding='20' cellspacing='0'>
+                <tr><td>
+                    <p style='margin: 8px 0; font-size: 15px;'><strong style='color: #2c3e50;'>{$t('service_payment_required_service_label')}</strong><br>{$data['servizio']}</p>
+                    <p style='margin: 8px 0; font-size: 15px;'><strong style='color: #2c3e50;'>{$t('service_payment_required_practice_label')}</strong><br>{$data['numero_pratica']}</p>
+                    <p style='margin: 8px 0; font-size: 22px;'><strong style='color: #2c3e50;'>{$t('service_payment_required_amount_label')}</strong><br><span style='color: #27ae60; font-weight: bold; font-size: 28px;'>{$data['importo']}</span></p>
+                </td></tr>
+            </table>
             
-            <p>{$t('service_payment_required_action')}</p>
+            <p style='font-size: 16px; line-height: 1.6;'>{$t('service_payment_required_action')}</p>
             
-            <div style='background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60; margin: 20px 0;'>
-                <p style='margin: 0;'>✅ <strong>Metodi di pagamento accettati:</strong></p>
-                <p style='margin: 5px 0 0 0;'>💳 Carte di credito e debito • 🏦 Bonifico bancario • 💰 PayPal</p>
-            </div>
+            <table style='width: 100%; max-width: 600px; background: #e8f5e9; border-left: 4px solid #27ae60; border-radius: 5px; margin: 20px 0;' cellpadding='15' cellspacing='0'>
+                <tr><td>
+                    <p style='margin: 0; font-size: 15px;'><strong style='color: #2c3e50;'>💳 Metodi di pagamento accettati</strong></p>
+                    <p style='margin: 8px 0 0 0; font-size: 14px; color: #555;'>Carte di credito/debito • Bonifico bancario • PayPal</p>
+                </td></tr>
+            </table>
             
-            <p style='background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;'>
-                {$t('service_payment_required_note')}
-            </p>
+            <table style='width: 100%; max-width: 600px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 5px; margin: 20px 0;' cellpadding='15' cellspacing='0'>
+                <tr><td style='font-size: 14px; line-height: 1.5; color: #333;'>
+                    {$t('service_payment_required_note')}
+                </td></tr>
+            </table>
             
-            <p style='margin-top: 30px;'>{$t('service_payment_required_footer')}</p>
+            <p style='margin-top: 30px; font-size: 15px; line-height: 1.6;'>{$t('service_payment_required_footer')}</p>
             
-            <p style='font-size: 13px; color: #666; margin-top: 20px;'>
+            <p style='font-size: 13px; color: #666; margin-top: 20px; line-height: 1.5;'>
                 <strong>Hai bisogno di aiuto?</strong><br>
-                Contattaci a <a href='mailto:info@wecoop.org' style='color: #3498db;'>info@wecoop.org</a> o chiamaci al numero verde.
+                Contattaci a <a href='mailto:info@wecoop.org' style='color: #3498db; text-decoration: none;'>info@wecoop.org</a>
             </p>
         ";
     }

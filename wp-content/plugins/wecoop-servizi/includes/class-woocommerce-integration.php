@@ -129,10 +129,9 @@ class WECOOP_Servizi_WooCommerce_Integration {
             add_filter('pre_option_woocommerce_enable_checkout_login_reminder', function() { return 'no'; }, 999);
             add_filter('woocommerce_checkout_registration_required', '__return_false', 999);
             
-            // Crea ordine WooCommerce come GUEST (customer_id = 0)
-            // Questo evita che WooCommerce richieda login
+            // Crea ordine WooCommerce associato all'utente
             $order = wc_create_order([
-                'customer_id' => 0, // 0 = guest order
+                'customer_id' => $user_id, // Ordine associato all'utente reale
                 'status' => 'pending'
             ]);
             
@@ -140,9 +139,9 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 throw new Exception($order->get_error_message());
             }
             
-            // Salva user_id nei meta per tracciamento interno
-            $order->update_meta_data('_wecoop_user_id', $user_id);
+            // Salva meta dati per tracciamento interno
             $order->update_meta_data('_created_via', 'wecoop_servizi');
+            $order->update_meta_data('_wecoop_richiesta_id', $richiesta_id);
             
             // Imposta dati di fatturazione dall'utente/richiesta
             $user = get_userdata($user_id);
