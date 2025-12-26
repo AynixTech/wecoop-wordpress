@@ -210,13 +210,21 @@ class WECOOP_Servizi_Endpoint {
         $prezzi_servizi = get_option('wecoop_listino_servizi', []);
         $prezzi_categorie = get_option('wecoop_listino_categorie', []);
         
+        error_log("[WECOOP API] Richiesta #{$post_id} - Servizio: '{$servizio}', Categoria: '{$categoria}'");
+        error_log("[WECOOP API] Listino servizi: " . json_encode($prezzi_servizi));
+        error_log("[WECOOP API] Listino categorie: " . json_encode($prezzi_categorie));
+        
         // Cerca prezzo per servizio specifico
         if (isset($prezzi_servizi[$servizio])) {
             $importo = floatval($prezzi_servizi[$servizio]);
+            error_log("[WECOOP API] ✅ Trovato prezzo per servizio '{$servizio}': €{$importo}");
         }
         // Altrimenti cerca per categoria
         elseif ($categoria && isset($prezzi_categorie[$categoria])) {
             $importo = floatval($prezzi_categorie[$categoria]);
+            error_log("[WECOOP API] ✅ Trovato prezzo per categoria '{$categoria}': €{$importo}");
+        } else {
+            error_log("[WECOOP API] ❌ Nessun prezzo trovato per servizio '{$servizio}' o categoria '{$categoria}'");
         }
         
         if ($importo && $importo > 0) {
@@ -224,8 +232,12 @@ class WECOOP_Servizi_Endpoint {
             if (class_exists('WeCoop_Payment_System')) {
                 update_post_meta($post_id, 'stato', 'awaiting_payment');
                 $payment_id = WeCoop_Payment_System::create_payment($post_id);
-                error_log("[WECOOP API] Pagamento #{$payment_id} creato per richiesta #{$post_id}, servizio: {$servizio}, importo €{$importo}");
+                error_log("[WECOOP API] ✅ Pagamento #{$payment_id} creato per richiesta #{$post_id}, servizio: {$servizio}, importo €{$importo}");
+            } else {
+                error_log("[WECOOP API] ❌ Classe WeCoop_Payment_System non trovata!");
             }
+        } else {
+            error_log("[WECOOP API] ⚠️ Pagamento NON creato - importo: " . ($importo ?? 'null'));
         }
         
         // Invia email di conferma multilingua

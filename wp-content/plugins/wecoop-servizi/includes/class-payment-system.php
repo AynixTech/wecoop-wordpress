@@ -241,17 +241,35 @@ class WECOOP_Servizi_Payment_System {
         $richiesta_id = $request['richiesta_id'];
         $table_name = $wpdb->prefix . 'wecoop_pagamenti';
         
+        error_log("[WECOOP PAYMENT API] 🔍 Cercando pagamento per richiesta_id: {$richiesta_id}");
+        
         $payment = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM $table_name WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
             $richiesta_id
         ));
         
         if (!$payment) {
+            error_log("[WECOOP PAYMENT API] ❌ Nessun pagamento trovato per richiesta_id: {$richiesta_id}");
+            
+            // Log per debug - verifica se la richiesta esiste
+            $richiesta = get_post($richiesta_id);
+            if ($richiesta) {
+                $servizio = get_post_meta($richiesta_id, 'servizio', true);
+                $categoria = get_post_meta($richiesta_id, 'categoria', true);
+                $stato = get_post_meta($richiesta_id, 'stato', true);
+                error_log("[WECOOP PAYMENT API] ℹ️ Richiesta esiste - Servizio: '{$servizio}', Categoria: '{$categoria}', Stato: '{$stato}'");
+            } else {
+                error_log("[WECOOP PAYMENT API] ⚠️ Richiesta #{$richiesta_id} non esiste nel database!");
+            }
+            
             return new WP_Error('not_found', 'Pagamento non trovato', ['status' => 404]);
         }
         
+        error_log("[WECOOP PAYMENT API] ✅ Pagamento trovato - ID: {$payment->id}, Importo: €{$payment->importo}, Stato: {$payment->stato}");
+        
         $current_user_id = get_current_user_id();
         if ($payment->user_id != $current_user_id && !current_user_can('manage_options')) {
+            error_log("[WECOOP PAYMENT API] ❌ Accesso negato - User {$current_user_id} ha cercato pagamento di user {$payment->user_id}");
             return new WP_Error('forbidden', 'Non autorizzato', ['status' => 403]);
         }
         
