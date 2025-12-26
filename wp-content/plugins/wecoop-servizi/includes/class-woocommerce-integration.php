@@ -33,6 +33,21 @@ class WECOOP_Servizi_WooCommerce_Integration {
         add_filter('woocommerce_email_enabled_customer_processing_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
         add_filter('woocommerce_email_enabled_customer_completed_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
         add_filter('woocommerce_email_enabled_new_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
+        
+        // Carica template personalizzato per mostrare items in order-pay
+        add_action('wp', [__CLASS__, 'load_order_pay_template']);
+    }
+    
+    /**
+     * Carica template personalizzato per order-pay
+     */
+    public static function load_order_pay_template() {
+        if (is_wc_endpoint_url('order-pay')) {
+            $template_file = WECOOP_SERVIZI_PATH . 'templates/order-pay-items.php';
+            if (file_exists($template_file)) {
+                include_once $template_file;
+            }
+        }
     }
     
     /**
@@ -100,6 +115,13 @@ class WECOOP_Servizi_WooCommerce_Integration {
                     return true;
                 }
                 return $needs_payment;
+            }, 999, 2);
+            
+            // Forza visualizzazione contenuto ordine
+            add_filter('woocommerce_is_purchasable', '__return_true', 999);
+            add_filter('woocommerce_order_item_visible', '__return_true', 999);
+            add_filter('woocommerce_order_item_quantity_html', function($qty_html, $item) {
+                return $item->get_quantity();
             }, 999, 2);
         }
     }
