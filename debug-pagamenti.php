@@ -6,7 +6,7 @@
  */
 
 // Carica WordPress
-require_once('./wp-load.php');
+require_once(__DIR__ . '/public_html/wp-load.php');
 
 // Solo admin
 if (!current_user_can('manage_options')) {
