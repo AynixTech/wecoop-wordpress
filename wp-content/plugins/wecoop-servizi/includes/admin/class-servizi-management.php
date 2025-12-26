@@ -1563,6 +1563,12 @@ class WECOOP_Servizi_Management {
                 
                 $submitBtn.prop('disabled', true).text('⏳ Invio in corso...');
                 
+                console.log('🔄 Invio richiesta pagamento:', {
+                    richiestaId: richiestaId,
+                    importo: importo,
+                    updateStato: updateStato
+                });
+                
                 $.ajax({
                     url: ajaxurl,
                     method: 'POST',
@@ -1574,17 +1580,25 @@ class WECOOP_Servizi_Management {
                         nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
                     },
                     success: function(response) {
+                        console.log('✅ Risposta server:', response);
                         if (response.success) {
                             alert('✅ ' + response.data);
                             $('#payment-request-modal').fadeOut(200);
                             location.reload();
                         } else {
+                            console.error('❌ Errore server:', response.data);
                             alert('❌ Errore: ' + response.data);
                             $submitBtn.prop('disabled', false).text(originalText);
                         }
                     },
-                    error: function() {
-                        alert('❌ Errore di comunicazione con il server');
+                    error: function(xhr, status, error) {
+                        console.error('❌ Errore AJAX:', {
+                            status: status,
+                            error: error,
+                            responseText: xhr.responseText,
+                            statusCode: xhr.status
+                        });
+                        alert('❌ Errore di comunicazione con il server. Controlla la console (F12) per dettagli.');
                         $submitBtn.prop('disabled', false).text(originalText);
                     }
                 });
@@ -2020,80 +2034,127 @@ class WECOOP_Servizi_Management {
      * AJAX: Invia richiesta di pagamento
      */
     public static function ajax_send_payment_request() {
-        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        error_log('🔄 WeCoop: Inizio ajax_send_payment_request');
+        error_log('🔄 WeCoop: POST data: ' . print_r($_POST, true));
+        
+        try {
+            check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+            error_log('✅ WeCoop: Nonce verificato');
+        } catch (Exception $e) {
+            error_log('❌ WeCoop: Nonce non valido: ' . $e->getMessage());
+            wp_send_json_error('Nonce non valido: ' . $e->getMessage());
+        }
         
         if (!current_user_can('manage_options')) {
+            error_log('❌ WeCoop: Permessi insufficienti');
             wp_send_json_error('Permessi insufficienti');
         }
+        error_log('✅ WeCoop: Permessi verificati');
         
         // Verifica che WooCommerce sia attivo
         if (!class_exists('WooCommerce')) {
+            error_log('❌ WeCoop: WooCommerce non attivo');
             wp_send_json_error('WooCommerce non è installato o attivato. Attiva WooCommerce per utilizzare questa funzionalità.');
         }
+        error_log('✅ WeCoop: WooCommerce attivo');
         
         // Carica l'integrazione se non è già caricata
         if (!class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+            error_log('⚠️ WeCoop: Caricamento integrazione WooCommerce...');
             $integration_file = WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
+            error_log('🔍 WeCoop: Percorso file: ' . $integration_file);
+            error_log('🔍 WeCoop: File esiste: ' . (file_exists($integration_file) ? 'SI' : 'NO'));
             if (file_exists($integration_file)) {
                 require_once $integration_file;
                 WECOOP_Servizi_WooCommerce_Integration::init();
+                error_log('✅ WeCoop: Integrazione WooCommerce caricata');
             } else {
+                error_log('❌ WeCoop: File integrazione non trovato');
                 wp_send_json_error('File di integrazione WooCommerce non trovato.');
             }
+        } else {
+            error_log('✅ WeCoop: Integrazione WooCommerce già caricata');
         }
         
         $richiesta_id = absint($_POST['richiesta_id']);
         $importo_input = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
         $update_stato = isset($_POST['update_stato']) && $_POST['update_stato'] === '1';
         
+        error_log('📊 WeCoop: Richiesta ID: ' . $richiesta_id);
+        error_log('📊 WeCoop: Importo input: ' . $importo_input);
+        error_log('📊 WeCoop: Update stato: ' . ($update_stato ? 'SI' : 'NO'));
+        
         // Se viene fornito un importo dal modal, aggiornalo
         if ($importo_input > 0) {
             update_post_meta($richiesta_id, 'importo', $importo_input);
             $importo = $importo_input;
+            error_log('✅ WeCoop: Importo aggiornato a: ' . $importo);
         } else {
             // Altrimenti usa quello esistente
             $importo = get_post_meta($richiesta_id, 'importo', true);
+            error_log('📋 WeCoop: Importo esistente: ' . $importo);
         }
         
         // Verifica importo
         if (!$importo || $importo <= 0) {
+            error_log('❌ WeCoop: Importo non valido: ' . $importo);
             wp_send_json_error('Importo non specificato. Inserisci un importo valido.');
         }
+        error_log('✅ WeCoop: Importo valido: ' . $importo);
         
         // Verifica se esiste già un ordine
         $order_id = get_post_meta($richiesta_id, 'wc_order_id', true);
+        error_log('🔍 WeCoop: Order ID esistente: ' . ($order_id ? $order_id : 'NESSUNO'));
         
         if ($order_id) {
             // Ordine già esistente, reinvia email
+            error_log('📧 WeCoop: Reinvio email per ordine esistente #' . $order_id);
             $order = wc_get_order($order_id);
             if (!$order) {
+                error_log('❌ WeCoop: Ordine non trovato');
                 wp_send_json_error('Ordine non trovato.');
             }
             
             // Reinvia email
             if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+                error_log('📧 WeCoop: Invio email pagamento...');
                 WECOOP_Servizi_WooCommerce_Integration::invia_email_pagamento($richiesta_id, $order_id);
+                error_log('✅ WeCoop: Email inviata con successo');
                 wp_send_json_success('Email con link di pagamento reinviata!');
             } else {
+                error_log('❌ WeCoop: Classe integrazione non disponibile');
                 wp_send_json_error('Integrazione WooCommerce non disponibile.');
             }
         } else {
+            error_log('🆕 WeCoop: Creazione nuovo ordine');
             // Cambia stato se richiesto
             if ($update_stato) {
+                error_log('📝 WeCoop: Aggiornamento stato a awaiting_payment');
                 update_post_meta($richiesta_id, 'stato', 'awaiting_payment');
             }
             
             // Crea nuovo ordine e invia email
             if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
-                $new_order_id = WECOOP_Servizi_WooCommerce_Integration::crea_ordine_woocommerce($richiesta_id);
-                
-                if ($new_order_id) {
-                    wp_send_json_success('Ordine creato e richiesta di pagamento inviata! (€' . number_format($importo, 2) . ')');
-                } else {
-                    $error = get_post_meta($richiesta_id, 'payment_error', true);
-                    wp_send_json_error('Errore creazione ordine: ' . $error);
+                error_log('🏗️ WeCoop: Chiamata crea_ordine_woocommerce...');
+                try {
+                    $new_order_id = WECOOP_Servizi_WooCommerce_Integration::crea_ordine_woocommerce($richiesta_id);
+                    error_log('🔍 WeCoop: Risultato creazione ordine: ' . ($new_order_id ? $new_order_id : 'FALSE'));
+                    
+                    if ($new_order_id) {
+                        error_log('✅ WeCoop: Ordine creato con successo #' . $new_order_id);
+                        wp_send_json_success('Ordine creato e richiesta di pagamento inviata! (€' . number_format($importo, 2) . ')');
+                    } else {
+                        $error = get_post_meta($richiesta_id, 'payment_error', true);
+                        error_log('❌ WeCoop: Errore creazione ordine: ' . $error);
+                        wp_send_json_error('Errore creazione ordine: ' . $error);
+                    }
+                } catch (Exception $e) {
+                    error_log('❌ WeCoop: Exception durante creazione ordine: ' . $e->getMessage());
+                    error_log('❌ WeCoop: Stack trace: ' . $e->getTraceAsString());
+                    wp_send_json_error('Errore durante creazione ordine: ' . $e->getMessage());
                 }
             } else {
+                error_log('❌ WeCoop: Classe integrazione non disponibile (dopo caricamento)');
                 wp_send_json_error('Integrazione WooCommerce non disponibile.');
             }
         }
