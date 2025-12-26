@@ -153,6 +153,19 @@ class WECOOP_Servizi_Payment_System {
     }
     
     /**
+     * Ottieni pagamento per richiesta ID
+     */
+    public static function get_payment_by_richiesta($richiesta_id) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'wecoop_pagamenti';
+        
+        return $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
+            $richiesta_id
+        ));
+    }
+    
+    /**
      * Aggiorna stato pagamento
      */
     public static function update_payment_status($payment_id, $stato, $data = []) {
