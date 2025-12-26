@@ -213,6 +213,12 @@ class WECOOP_Servizi_Payment_System {
             'permission_callback' => [__CLASS__, 'api_check_permission'],
         ]);
         
+        register_rest_route('wecoop/v1', '/payment/richiesta/(?P<richiesta_id>\d+)', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'api_get_payment_by_richiesta'],
+            'permission_callback' => [__CLASS__, 'api_check_permission'],
+        ]);
+        
         register_rest_route('wecoop/v1', '/payments/user/(?P<user_id>\d+)', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'api_get_user_payments'],
@@ -228,6 +234,42 @@ class WECOOP_Servizi_Payment_System {
     
     public static function api_check_permission($request) {
         return is_user_logged_in();
+    }
+    
+    public static function api_get_payment_by_richiesta($request) {
+        global $wpdb;
+        $richiesta_id = $request['richiesta_id'];
+        $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+        
+        $payment = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
+            $richiesta_id
+        ));
+        
+        if (!$payment) {
+            return new WP_Error('not_found', 'Pagamento non trovato', ['status' => 404]);
+        }
+        
+        $current_user_id = get_current_user_id();
+        if ($payment->user_id != $current_user_id && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non autorizzato', ['status' => 403]);
+        }
+        
+        $servizio = get_post_meta($payment->richiesta_id, 'servizio', true);
+        $numero_pratica = get_post_meta($payment->richiesta_id, 'numero_pratica', true);
+        
+        return [
+            'id' => $payment->id,
+            'importo' => floatval($payment->importo),
+            'stato' => $payment->stato,
+            'servizio' => $servizio,
+            'numero_pratica' => $numero_pratica,
+            'metodo_pagamento' => $payment->metodo_pagamento,
+            'transaction_id' => $payment->transaction_id,
+            'stripe_payment_intent_id' => $payment->stripe_payment_intent_id,
+            'created_at' => $payment->created_at,
+            'paid_at' => $payment->paid_at,
+        ];
     }
     
     public static function api_get_payment($request) {
