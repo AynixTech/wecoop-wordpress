@@ -218,29 +218,30 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 error_log('[WECOOP SERVIZI] Dati fatturazione impostati: ' . $first_name . ' ' . $last_name . ' - ' . $email);
             }
             
-            // Aggiungi prodotto all'ordine con prezzo personalizzato
+            // Aggiungi prodotto all'ordine usando il metodo standard WooCommerce
             $product = wc_get_product($product_id);
             if (!$product) {
                 throw new Exception('Prodotto virtuale non trovato');
             }
             
-            // Crea item dal prodotto
-            $item = new WC_Order_Item_Product();
-            $item->set_props([
-                'product' => $product,
-                'quantity' => 1,
+            // Aggiungi prodotto all'ordine (WooCommerce si occupa di creare l'item)
+            $item_id = $order->add_product($product, 1, [
                 'subtotal' => $importo,
                 'total' => $importo,
-                'name' => $servizio . ' - Pratica ' . $numero_pratica,
             ]);
             
-            // Meta dati personalizzati
-            $item->add_meta_data('_richiesta_servizio_id', $richiesta_id, true);
-            $item->add_meta_data('_numero_pratica', $numero_pratica, true);
-            $item->add_meta_data('_tipo_servizio', $servizio, true);
+            if (!$item_id) {
+                throw new Exception('Impossibile aggiungere prodotto all\'ordine');
+            }
             
-            // Aggiungi item all'ordine
-            $order->add_item($item);
+            // Personalizza il nome dell'item
+            foreach ($order->get_items() as $item) {
+                $item->set_name($servizio . ' - Pratica ' . $numero_pratica);
+                $item->add_meta_data('_richiesta_servizio_id', $richiesta_id, true);
+                $item->add_meta_data('_numero_pratica', $numero_pratica, true);
+                $item->add_meta_data('_tipo_servizio', $servizio, true);
+                $item->save();
+            }
             $order->save();
             
             // Calcola totali
