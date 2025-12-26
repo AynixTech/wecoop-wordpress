@@ -24,6 +24,24 @@ class WECOOP_Servizi_WooCommerce_Integration {
         
         // Aggiungi meta box per vedere ordine collegato
         add_action('add_meta_boxes', [__CLASS__, 'add_order_metabox']);
+        
+        // Permetti pagamento ordini senza login se hanno chiave valida
+        add_action('template_redirect', [__CLASS__, 'allow_guest_payment']);
+    }
+    
+    /**
+     * Permetti agli utenti di pagare senza login se hanno il link con chiave corretta
+     */
+    public static function allow_guest_payment() {
+        if (!is_checkout() && !is_order_received_page()) {
+            return;
+        }
+        
+        // Se c'è un parametro key, permetti l'accesso guest
+        if (isset($_GET['key'])) {
+            add_filter('woocommerce_enable_guest_checkout', '__return_true');
+            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; });
+        }
     }
     
     /**
@@ -80,6 +98,10 @@ class WECOOP_Servizi_WooCommerce_Integration {
         }
         
         try {
+            // Abilita temporaneamente il checkout per guest
+            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; });
+            add_filter('pre_option_woocommerce_enable_checkout_login_reminder', function() { return 'no'; });
+            
             // Crea ordine WooCommerce
             $order = wc_create_order([
                 'customer_id' => $user_id,
@@ -88,6 +110,39 @@ class WECOOP_Servizi_WooCommerce_Integration {
             
             if (is_wp_error($order)) {
                 throw new Exception($order->get_error_message());
+            }
+            
+            // Imposta dati di fatturazione dall'utente/richiesta
+            $user = get_userdata($user_id);
+            if ($user) {
+                // Prepara dati di fatturazione
+                $first_name = $dati['nome'] ?? $user->first_name ?? '';
+                $last_name = $dati['cognome'] ?? $user->last_name ?? '';
+                $email = $dati['email'] ?? $user->user_email ?? '';
+                $phone = $dati['telefono'] ?? $dati['cellulare'] ?? '';
+                $address = $dati['indirizzo'] ?? $dati['via'] ?? '';
+                $city = $dati['citta'] ?? $dati['comune'] ?? '';
+                $postcode = $dati['cap'] ?? '';
+                
+                // Usa i metodi setter di WooCommerce per garantire la persistenza
+                $order->set_billing_first_name($first_name);
+                $order->set_billing_last_name($last_name);
+                $order->set_billing_email($email);
+                $order->set_billing_phone($phone);
+                $order->set_billing_address_1($address);
+                $order->set_billing_city($city);
+                $order->set_billing_postcode($postcode);
+                $order->set_billing_country('IT');
+                
+                // Imposta anche i dati di spedizione uguali
+                $order->set_shipping_first_name($first_name);
+                $order->set_shipping_last_name($last_name);
+                $order->set_shipping_address_1($address);
+                $order->set_shipping_city($city);
+                $order->set_shipping_postcode($postcode);
+                $order->set_shipping_country('IT');
+                
+                error_log('[WECOOP SERVIZI] Dati fatturazione impostati: ' . $first_name . ' ' . $last_name . ' - ' . $email);
             }
             
             // Aggiungi prodotto virtuale come line item
