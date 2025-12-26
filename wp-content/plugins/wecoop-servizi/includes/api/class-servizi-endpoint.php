@@ -231,6 +231,10 @@ class WECOOP_Servizi_Endpoint {
             // Crea il pagamento usando WeCoop_Payment_System
             if (class_exists('WeCoop_Payment_System')) {
                 update_post_meta($post_id, 'stato', 'awaiting_payment');
+                // 🔥 SALVA user_id e importo nei post_meta PRIMA di creare il pagamento
+                update_post_meta($post_id, 'user_id', $current_user_id);
+                update_post_meta($post_id, 'importo', $importo);
+                
                 $payment_id = WeCoop_Payment_System::create_payment($post_id);
                 error_log("[WECOOP API] ✅ Pagamento #{$payment_id} creato per richiesta #{$post_id}, servizio: {$servizio}, importo €{$importo}");
             } else {
