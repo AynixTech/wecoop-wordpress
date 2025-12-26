@@ -1,5 +1,10 @@
 # WordPress locale
 wp-config-local.php
+wp-config-stripe.php
+
+# Composer
+vendor/
+composer.lock
 
 # Database dumps (contengono dati sensibili)
 *.sql
