@@ -44,6 +44,26 @@ class WECOOP_Servizi_Management {
             30
         );
         
+        // Dashboard Analytics
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Dashboard Analytics',
+            '📊 Dashboard',
+            'manage_options',
+            'wecoop-richieste-dashboard',
+            [__CLASS__, 'render_dashboard']
+        );
+        
+        // Lista richieste (rinominato)
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Tutte le Richieste',
+            '📋 Tutte le Richieste',
+            'manage_options',
+            'wecoop-richieste-servizi',
+            [__CLASS__, 'render_list']
+        );
+        
         // Pagina nascosta per dettaglio utente
         add_submenu_page(
             null, // Nessun menu parent = pagina nascosta
@@ -69,49 +89,394 @@ class WECOOP_Servizi_Management {
     /**
      * Dashboard
      */
+    /**
+     * Dashboard Analytics Completa
+     */
     public static function render_dashboard() {
-        $stats = self::get_statistics();
+        // Ottieni tutte le richieste
+        $all_richieste = new WP_Query([
+            'post_type' => 'richiesta_servizio',
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ]);
+        
+        // Statistiche globali
+        $stats = [
+            'totale' => 0,
+            'pending' => 0,
+            'awaiting_payment' => 0,
+            'processing' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+            'importo_totale' => 0,
+            'importo_pagato' => 0,
+            'importo_attesa' => 0,
+            'tasso_conversione' => 0,
+            'tempo_medio_completamento' => 0,
+            'utenti_unici' => [],
+            'servizi_popolari' => [],
+            'richieste_per_mese' => [],
+            'entrate_per_mese' => []
+        ];
+        
+        $tempi_completamento = [];
+        $oggi = strtotime('today');
+        $questo_mese = date('Y-m');
+        $mese_scorso = date('Y-m', strtotime('-1 month'));
+        
+        $stats_mese_corrente = ['totale' => 0, 'importo' => 0];
+        $stats_mese_scorso = ['totale' => 0, 'importo' => 0];
+        
+        if ($all_richieste->have_posts()) {
+            while ($all_richieste->have_posts()) {
+                $all_richieste->the_post();
+                $post_id = get_the_ID();
+                $stato = get_post_meta($post_id, 'stato', true);
+                $importo = floatval(get_post_meta($post_id, 'importo', true));
+                $payment_status = get_post_meta($post_id, 'payment_status', true);
+                $user_id = get_post_meta($post_id, 'user_id', true);
+                $servizio = get_post_meta($post_id, 'servizio', true);
+                $data_richiesta = get_the_date('Y-m-d');
+                $mese = date('Y-m', strtotime($data_richiesta));
+                
+                $stats['totale']++;
+                
+                if (isset($stats[$stato])) {
+                    $stats[$stato]++;
+                }
+                
+                if ($importo > 0) {
+                    $stats['importo_totale'] += $importo;
+                    
+                    if ($payment_status === 'paid' || $stato === 'completed') {
+                        $stats['importo_pagato'] += $importo;
+                    } elseif ($stato === 'awaiting_payment' || $payment_status === 'pending') {
+                        $stats['importo_attesa'] += $importo;
+                    }
+                }
+                
+                // Utenti unici
+                if ($user_id && !in_array($user_id, $stats['utenti_unici'])) {
+                    $stats['utenti_unici'][] = $user_id;
+                }
+                
+                // Servizi popolari
+                if ($servizio) {
+                    if (!isset($stats['servizi_popolari'][$servizio])) {
+                        $stats['servizi_popolari'][$servizio] = 0;
+                    }
+                    $stats['servizi_popolari'][$servizio]++;
+                }
+                
+                // Richieste per mese
+                if (!isset($stats['richieste_per_mese'][$mese])) {
+                    $stats['richieste_per_mese'][$mese] = 0;
+                }
+                $stats['richieste_per_mese'][$mese]++;
+                
+                // Entrate per mese
+                if ($payment_status === 'paid' || $stato === 'completed') {
+                    if (!isset($stats['entrate_per_mese'][$mese])) {
+                        $stats['entrate_per_mese'][$mese] = 0;
+                    }
+                    $stats['entrate_per_mese'][$mese] += $importo;
+                }
+                
+                // Stats mese corrente vs scorso
+                if (strpos($data_richiesta, $questo_mese) === 0) {
+                    $stats_mese_corrente['totale']++;
+                    if ($payment_status === 'paid') {
+                        $stats_mese_corrente['importo'] += $importo;
+                    }
+                } elseif (strpos($data_richiesta, $mese_scorso) === 0) {
+                    $stats_mese_scorso['totale']++;
+                    if ($payment_status === 'paid') {
+                        $stats_mese_scorso['importo'] += $importo;
+                    }
+                }
+                
+                // Tempo medio completamento
+                if ($stato === 'completed') {
+                    $data_creazione = strtotime(get_the_date('Y-m-d H:i:s'));
+                    $data_completamento = strtotime(get_post_meta($post_id, 'payment_paid_at', true) ?: get_the_modified_date('Y-m-d H:i:s'));
+                    $giorni = ($data_completamento - $data_creazione) / 86400;
+                    if ($giorni >= 0) {
+                        $tempi_completamento[] = $giorni;
+                    }
+                }
+            }
+            wp_reset_postdata();
+        }
+        
+        // Calcoli finali
+        $stats['utenti_unici_count'] = count($stats['utenti_unici']);
+        $stats['tasso_conversione'] = $stats['totale'] > 0 ? round(($stats['completed'] / $stats['totale']) * 100, 1) : 0;
+        $stats['tempo_medio_completamento'] = !empty($tempi_completamento) ? round(array_sum($tempi_completamento) / count($tempi_completamento), 1) : 0;
+        
+        // Ordina servizi popolari
+        arsort($stats['servizi_popolari']);
+        $top_servizi = array_slice($stats['servizi_popolari'], 0, 5, true);
+        
+        // Trend mese corrente
+        $trend_richieste = $stats_mese_scorso['totale'] > 0 
+            ? round((($stats_mese_corrente['totale'] - $stats_mese_scorso['totale']) / $stats_mese_scorso['totale']) * 100, 1)
+            : 0;
+        $trend_entrate = $stats_mese_scorso['importo'] > 0
+            ? round((($stats_mese_corrente['importo'] - $stats_mese_scorso['importo']) / $stats_mese_scorso['importo']) * 100, 1)
+            : 0;
+        
         ?>
         <div class="wrap">
-            <h1>Dashboard Richieste Servizi</h1>
+            <h1>📊 Dashboard Analytics - Richieste Servizi</h1>
             
-            <div class="wecoop-stats-grid">
-                <div class="wecoop-stat-card pending">
-                    <div class="stat-icon">⏳</div>
-                    <div class="stat-content">
-                        <div class="stat-number"><?php echo $stats['pending']; ?></div>
-                        <div class="stat-label">In Attesa</div>
+            <!-- KPI Principali -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                <!-- Totale Richieste -->
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">📋 Totale Richieste</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;"><?php echo $stats['totale']; ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;">
+                        <?php echo $trend_richieste > 0 ? '📈' : '📉'; ?> 
+                        <?php echo abs($trend_richieste); ?>% vs mese scorso
                     </div>
                 </div>
                 
-                <div class="wecoop-stat-card processing">
-                    <div class="stat-icon">🔄</div>
-                    <div class="stat-content">
-                        <div class="stat-number"><?php echo $stats['processing']; ?></div>
-                        <div class="stat-label">In Lavorazione</div>
+                <!-- Importo Totale Pagato -->
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">💰 Totale Incassato</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;">€ <?php echo number_format($stats['importo_pagato'], 2, ',', '.'); ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;">
+                        <?php echo $trend_entrate > 0 ? '📈' : '📉'; ?>
+                        <?php echo abs($trend_entrate); ?>% vs mese scorso
                     </div>
                 </div>
                 
-                <div class="wecoop-stat-card completed">
-                    <div class="stat-icon">✅</div>
-                    <div class="stat-content">
-                        <div class="stat-number"><?php echo $stats['completed']; ?></div>
-                        <div class="stat-label">Completate</div>
+                <!-- In Attesa di Pagamento -->
+                <div style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">⏳ In Attesa Pagamento</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;">€ <?php echo number_format($stats['importo_attesa'], 2, ',', '.'); ?></div>
+                    <div style="font-size: 12px; opacity: 0.8;"><?php echo $stats['awaiting_payment']; ?> richieste da pagare</div>
+                </div>
+                
+                <!-- Tasso Conversione -->
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="font-size: 14px; opacity: 0.9;">📊 Tasso Completamento</div>
+                    <div style="font-size: 36px; font-weight: bold; margin: 10px 0;"><?php echo $stats['tasso_conversione']; ?>%</div>
+                    <div style="font-size: 12px; opacity: 0.8;"><?php echo $stats['completed']; ?> completate / <?php echo $stats['totale']; ?> totali</div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 20px 0;">
+                <!-- Statistiche per Stato -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>📈 Richieste per Stato</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="wp-list-table widefat" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Stato</th>
+                                    <th>Quantità</th>
+                                    <th>Percentuale</th>
+                                    <th>Visualizzazione</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php
+                                $stati = [
+                                    'pending' => ['⏳ In Attesa', '#ff9800'],
+                                    'awaiting_payment' => ['💳 Da Pagare', '#9c27b0'],
+                                    'processing' => ['🔄 In Lavorazione', '#2196f3'],
+                                    'completed' => ['✅ Completate', '#4caf50'],
+                                    'cancelled' => ['❌ Annullate', '#f44336']
+                                ];
+                                
+                                foreach ($stati as $stato => $info):
+                                    $count = $stats[$stato];
+                                    $perc = $stats['totale'] > 0 ? round(($count / $stats['totale']) * 100, 1) : 0;
+                                ?>
+                                <tr>
+                                    <td><strong><?php echo $info[0]; ?></strong></td>
+                                    <td><?php echo $count; ?></td>
+                                    <td><?php echo $perc; ?>%</td>
+                                    <td>
+                                        <div style="background: #f0f0f0; height: 20px; border-radius: 10px; overflow: hidden;">
+                                            <div style="background: <?php echo $info[1]; ?>; width: <?php echo $perc; ?>%; height: 100%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 
-                <div class="wecoop-stat-card total">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-content">
-                        <div class="stat-number"><?php echo $stats['total']; ?></div>
-                        <div class="stat-label">Totale</div>
+                <!-- Metriche Chiave -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>🎯 Metriche Chiave</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="form-table" style="margin: 0;">
+                            <tr>
+                                <th>👥 Utenti Unici:</th>
+                                <td><strong><?php echo $stats['utenti_unici_count']; ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>⏱️ Tempo Medio:</th>
+                                <td><strong><?php echo $stats['tempo_medio_completamento']; ?> giorni</strong></td>
+                            </tr>
+                            <tr>
+                                <th>💵 Ticket Medio:</th>
+                                <td>
+                                    <strong>€ <?php 
+                                    echo $stats['completed'] > 0 
+                                        ? number_format($stats['importo_pagato'] / $stats['completed'], 2, ',', '.') 
+                                        : '0,00'; 
+                                    ?></strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>📅 Questo Mese:</th>
+                                <td><strong><?php echo $stats_mese_corrente['totale']; ?> richieste</strong></td>
+                            </tr>
+                            <tr>
+                                <th>💰 Entrate Mese:</th>
+                                <td><strong>€ <?php echo number_format($stats_mese_corrente['importo'], 2, ',', '.'); ?></strong></td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
             
-            <h2>Ultime Richieste</h2>
-            <?php self::render_recent_requests(); ?>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                <!-- Top 5 Servizi Popolari -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>🏆 Top 5 Servizi Più Richiesti</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="wp-list-table widefat" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Servizio</th>
+                                    <th>Richieste</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($top_servizi)): ?>
+                                    <?php foreach ($top_servizi as $servizio => $count): 
+                                        $perc = round(($count / $stats['totale']) * 100, 1);
+                                    ?>
+                                    <tr>
+                                        <td><?php echo esc_html($servizio); ?></td>
+                                        <td><strong><?php echo $count; ?></strong></td>
+                                        <td><?php echo $perc; ?>%</td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: #999;">Nessun dato disponibile</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Richieste Ultime -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>🕒 Ultime 5 Richieste</h2>
+                    </div>
+                    <div class="inside">
+                        <?php
+                        $recent = new WP_Query([
+                            'post_type' => 'richiesta_servizio',
+                            'posts_per_page' => 5,
+                            'orderby' => 'date',
+                            'order' => 'DESC'
+                        ]);
+                        ?>
+                        <table class="wp-list-table widefat" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>N. Pratica</th>
+                                    <th>Servizio</th>
+                                    <th>Stato</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($recent->have_posts()): ?>
+                                    <?php while ($recent->have_posts()): $recent->the_post(); 
+                                        $numero_pratica = get_post_meta(get_the_ID(), 'numero_pratica', true);
+                                        $servizio = get_post_meta(get_the_ID(), 'servizio', true);
+                                        $stato = get_post_meta(get_the_ID(), 'stato', true);
+                                        
+                                        $stato_icons = [
+                                            'pending' => '⏳',
+                                            'awaiting_payment' => '💳',
+                                            'processing' => '🔄',
+                                            'completed' => '✅',
+                                            'cancelled' => '❌'
+                                        ];
+                                    ?>
+                                    <tr>
+                                        <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
+                                        <td><?php echo esc_html(substr($servizio, 0, 30)) . (strlen($servizio) > 30 ? '...' : ''); ?></td>
+                                        <td><?php echo $stato_icons[$stato] ?? ''; ?></td>
+                                    </tr>
+                                    <?php endwhile; wp_reset_postdata(); ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: #999;">Nessuna richiesta</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Azioni Rapide -->
+            <div class="postbox" style="margin: 20px 0;">
+                <div class="postbox-header">
+                    <h2>⚡ Azioni Rapide</h2>
+                </div>
+                <div class="inside">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                        <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi'); ?>" class="button button-primary button-large" style="height: auto; padding: 15px; text-align: center;">
+                            📋 Vedi Tutte le Richieste
+                        </a>
+                        <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=awaiting_payment'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #9c27b0; color: white; border-color: #7b1fa2;">
+                            💳 Da Pagare (<?php echo $stats['awaiting_payment']; ?>)
+                        </a>
+                        <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=pending'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #ff9800; color: white; border-color: #f57c00;">
+                            ⏳ In Attesa (<?php echo $stats['pending']; ?>)
+                        </a>
+                        <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=processing'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #2196f3; color: white; border-color: #1976d2;">
+                            🔄 In Lavorazione (<?php echo $stats['processing']; ?>)
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
+        
+        <style>
+            .postbox .inside {
+                padding: 15px;
+            }
+            .form-table th {
+                padding: 8px 10px;
+                font-weight: 600;
+            }
+            .form-table td {
+                padding: 8px 10px;
+            }
+        </style>
         <?php
     }
     
