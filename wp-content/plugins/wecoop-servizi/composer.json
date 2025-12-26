@@ -1,0 +1,14 @@
+{
+    "name": "wecoop/wecoop-servizi",
+    "description": "WeCoop Servizi Plugin with Stripe Integration",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=7.4",
+        "stripe/stripe-php": "^19.1"
+    },
+    "autoload": {
+        "classmap": [
+            "includes/"
+        ]
+    }
+}
