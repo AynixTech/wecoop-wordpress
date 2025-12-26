@@ -86,6 +86,19 @@ class WeCoop_Multilingual_Email {
             'password_reset_warning' => '<strong>Importante:</strong> Se non hai richiesto tu questa operazione, ignora questa email.',
             'password_reset_expiry' => 'Il link scadrà tra 24 ore.',
             'password_reset_button_text' => 'Reimposta Password',
+            
+            // Pagamento servizio richiesto
+            'service_payment_required_subject' => '💳 Pagamento Richiesto - Pratica {numero_pratica}',
+            'service_payment_required_title' => 'Ciao {nome}, completa il pagamento',
+            'service_payment_required_intro' => 'La tua richiesta per il servizio <strong>{servizio}</strong> è stata presa in carico!',
+            'service_payment_required_details' => 'Dettagli del servizio:',
+            'service_payment_required_service_label' => 'Servizio:',
+            'service_payment_required_practice_label' => 'Numero Pratica:',
+            'service_payment_required_amount_label' => 'Importo da pagare:',
+            'service_payment_required_action' => 'Per procedere, completa il pagamento cliccando sul pulsante qui sotto:',
+            'service_payment_required_button_text' => '💳 Paga Ora',
+            'service_payment_required_footer' => 'Una volta completato il pagamento, inizieremo immediatamente a lavorare sulla tua richiesta.',
+            'service_payment_required_note' => '<strong>Nota:</strong> Il link di pagamento è sicuro e protetto. Accettiamo tutte le principali carte di credito.',
         ],
         
         'en' => [
@@ -159,6 +172,19 @@ class WeCoop_Multilingual_Email {
             'password_reset_warning' => '<strong>Important:</strong> If you didn\'t request this, please ignore this email.',
             'password_reset_expiry' => 'The link will expire in 24 hours.',
             'password_reset_button_text' => 'Reset Password',
+            
+            // Service payment required
+            'service_payment_required_subject' => '💳 Payment Required - Case {numero_pratica}',
+            'service_payment_required_title' => 'Hi {nome}, complete your payment',
+            'service_payment_required_intro' => 'Your request for the service <strong>{servizio}</strong> has been accepted!',
+            'service_payment_required_details' => 'Service details:',
+            'service_payment_required_service_label' => 'Service:',
+            'service_payment_required_practice_label' => 'Case Number:',
+            'service_payment_required_amount_label' => 'Amount to pay:',
+            'service_payment_required_action' => 'To proceed, complete the payment by clicking the button below:',
+            'service_payment_required_button_text' => '💳 Pay Now',
+            'service_payment_required_footer' => 'Once payment is completed, we will immediately start working on your request.',
+            'service_payment_required_note' => '<strong>Note:</strong> The payment link is secure and protected. We accept all major credit cards.',
         ],
         
         'fr' => [

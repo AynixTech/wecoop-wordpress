@@ -134,10 +134,19 @@ class WECOOP_Richiesta_Servizio_CPT {
                 </select>
             </div>
             
-            <div class="servizio-field servizio-full">
+            <div class="servizio-field">
+                <label>Importo (€)</label>
+                <input type="number" name="importo" step="0.01" min="0" 
+                       value="<?php echo esc_attr(get_post_meta($post->ID, 'importo', true)); ?>" 
+                       placeholder="0.00">
+                <p class="description">Importo del servizio per generare pagamento</p>
+            </div>
+            
+            <div class="servizio-field">
                 <label>Stato *</label>
                 <select name="stato" required>
                     <option value="pending" <?php selected($stato, 'pending'); ?>>In Attesa</option>
+                    <option value="awaiting_payment" <?php selected($stato, 'awaiting_payment'); ?>>Da Pagare</option>
                     <option value="processing" <?php selected($stato, 'processing'); ?>>In Lavorazione</option>
                     <option value="completed" <?php selected($stato, 'completed'); ?>>Completata</option>
                     <option value="cancelled" <?php selected($stato, 'cancelled'); ?>>Annullata</option>
@@ -165,8 +174,8 @@ class WECOOP_Richiesta_Servizio_CPT {
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
         if (!current_user_can('edit_post', $post_id)) return;
         
-        // Campi base
-        $fields = ['servizio', 'categoria', 'dati', 'stato', 'user_id', 'socio_id'];
+        // Campi base (aggiungi 'importo')
+        $fields = ['servizio', 'categoria', 'dati', 'stato', 'user_id', 'socio_id', 'importo'];
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
@@ -248,12 +257,14 @@ class WECOOP_Richiesta_Servizio_CPT {
                 $stato = get_post_meta($post_id, 'stato', true);
                 $colors = [
                     'pending' => '#ff9800',
+                    'awaiting_payment' => '#9c27b0',
                     'processing' => '#2196f3',
                     'completed' => '#4caf50',
                     'cancelled' => '#f44336'
                 ];
                 $labels = [
                     'pending' => 'In Attesa',
+                    'awaiting_payment' => 'Da Pagare',
                     'processing' => 'In Lavorazione',
                     'completed' => 'Completata',
                     'cancelled' => 'Annullata'

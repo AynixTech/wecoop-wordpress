@@ -67,6 +67,11 @@ class WeCoop_Servizi {
         
         // Admin
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'admin/class-servizi-management.php';
+        
+        // WooCommerce Integration
+        if (class_exists('WooCommerce')) {
+            require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
+        }
     }
     
     private function init_hooks() {
@@ -81,6 +86,9 @@ class WeCoop_Servizi {
         }
         if (class_exists('WECOOP_Servizi_Management')) {
             WECOOP_Servizi_Management::init();
+        }
+        if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+            WECOOP_Servizi_WooCommerce_Integration::init();
         }
     }
     
