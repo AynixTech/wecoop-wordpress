@@ -1365,16 +1365,6 @@ class WECOOP_Servizi_Management {
                 <?php elseif ($payment && in_array($payment->stato, ['paid', 'completed'])): ?>
                     <span style="color: #4caf50; font-weight: bold;">✅ Pagato</span>
                 <?php endif; ?>
-                            🔗 Link
-                        </a>
-                    <?php elseif ($order): ?>
-                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $order_id . '&action=edit')); ?>" 
-                           class="button button-small" 
-                           target="_blank">
-                            📦 Ordine #<?php echo $order_id; ?>
-                        </a>
-                    <?php endif; ?>
-                <?php endif; ?>
                 <button class="button button-small button-link-delete delete-richiesta" 
                         data-id="<?php echo $post_id; ?>"
                         title="Elimina richiesta">
