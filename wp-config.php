@@ -68,6 +68,14 @@ define( 'WP_CACHE_KEY_SALT', '=dM**L2zGo<4`Zvu{9anAL^2S%H7DYl4I,a2,iGfoXcjpb(J-h
 define('JWT_AUTH_SECRET_KEY', 'wecoop-jwt-2025-' . md5('kj2WK1xyB8AlcXSg2HdhcO0PFfsuvpt9WtAWw3PwFTrcdX97yLSf6rvcD1l8p9UJ'));
 define('JWT_AUTH_CORS_ENABLE', true);
 define('JWT_AUTH_ISS', 'https://www.wecoop.org');
+
+/**
+ * Stripe Configuration
+ */
+if (file_exists(__DIR__ . '/wp-config-stripe.php')) {
+	require_once __DIR__ . '/wp-config-stripe.php';
+}
+
 /**#@-*/
 
 /**
@@ -80,6 +88,7 @@ $table_prefix = 'wp57384_';
 
 
 /* Add any custom values between this line and the "stop editing" line. */
+
 
 
 
