@@ -290,7 +290,9 @@ class WECOOP_Servizi_Payment_System {
         $numero_pratica = get_post_meta($payment->richiesta_id, 'numero_pratica', true);
         
         return [
-            'id' => $payment->id,
+            'id' => intval($payment->id),
+            'richiesta_id' => intval($payment->richiesta_id),
+            'user_id' => intval($payment->user_id),
             'importo' => floatval($payment->importo),
             'stato' => $payment->stato,
             'servizio' => $servizio,
