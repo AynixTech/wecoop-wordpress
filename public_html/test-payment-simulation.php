@@ -4,15 +4,21 @@
  * URL: https://www.wecoop.org/test-payment-simulation.php
  */
 
+// Mostra errori
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+echo "Loading WordPress...<br>";
+
 require_once(__DIR__ . '/wp-load.php');
 
+echo "WordPress loaded!<br>";
+
 if (!current_user_can('manage_options')) {
-    die('Accesso negato');
+    die('Accesso negato - devi essere amministratore');
 }
 
-// Simula parametri order-pay
-$_GET['key'] = 'wc_order_test123';
-$_GET['pay_for_order'] = 'true';
+echo "User check passed!<br>";
 
 header('Content-Type: text/html; charset=utf-8');
 ?>
