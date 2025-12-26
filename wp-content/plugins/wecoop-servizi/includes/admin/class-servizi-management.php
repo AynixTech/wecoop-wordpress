@@ -2037,13 +2037,8 @@ class WECOOP_Servizi_Management {
         error_log('🔄 WeCoop: Inizio ajax_send_payment_request');
         error_log('🔄 WeCoop: POST data: ' . print_r($_POST, true));
         
-        try {
-            check_ajax_referer('wecoop_servizi_nonce', 'nonce');
-            error_log('✅ WeCoop: Nonce verificato');
-        } catch (Exception $e) {
-            error_log('❌ WeCoop: Nonce non valido: ' . $e->getMessage());
-            wp_send_json_error('Nonce non valido: ' . $e->getMessage());
-        }
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        error_log('✅ WeCoop: Nonce verificato');
         
         if (!current_user_can('manage_options')) {
             error_log('❌ WeCoop: Permessi insufficienti');
