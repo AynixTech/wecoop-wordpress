@@ -83,6 +83,47 @@ class WECOOP_Servizi_WooCommerce_Integration {
         error_log('[WECOOP] is_order_received_page: ' . (is_order_received_page() ? 'YES' : 'NO'));
         error_log('[WECOOP] GET params: ' . print_r($_GET, true));
         
+        // Debug visivo nella pagina
+        if (isset($_GET['key']) && (is_checkout() || is_order_received_page())) {
+            add_action('wp_footer', function() {
+                global $wp;
+                if (isset($wp->query_vars['order-pay'])) {
+                    $order_id = absint($wp->query_vars['order-pay']);
+                    $order = wc_get_order($order_id);
+                    
+                    echo '<div style="position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #0f0; padding: 20px; font-family: monospace; font-size: 12px; z-index: 999999; max-height: 300px; overflow-y: auto;">';
+                    echo '<strong style="color: #ff0;">🔍 WECOOP DEBUG - Order-Pay</strong><br>';
+                    
+                    if ($order) {
+                        echo '✅ Order ID: ' . $order->get_id() . '<br>';
+                        echo '✅ Status: ' . $order->get_status() . '<br>';
+                        echo '✅ Total: ' . $order->get_total() . ' €<br>';
+                        echo '✅ Needs Payment: ' . ($order->needs_payment() ? 'YES' : 'NO') . '<br>';
+                        
+                        $items = $order->get_items();
+                        echo '✅ Items Count: ' . count($items) . '<br>';
+                        
+                        if (!empty($items)) {
+                            echo '<strong style="color: #0ff;">Items:</strong><br>';
+                            foreach ($items as $item) {
+                                echo '  - ' . $item->get_name() . ' (€' . $item->get_total() . ')<br>';
+                            }
+                        }
+                        
+                        $gateways = WC()->payment_gateways->get_available_payment_gateways();
+                        echo '<strong style="color: #0ff;">Payment Gateways:</strong> ' . count($gateways) . '<br>';
+                        foreach ($gateways as $id => $gateway) {
+                            echo '  - ' . $gateway->get_title() . ' (' . $id . ')<br>';
+                        }
+                    } else {
+                        echo '❌ Order NOT FOUND<br>';
+                    }
+                    
+                    echo '</div>';
+                }
+            });
+        }
+        
         // Previeni conflitti con endpoint GDPR
         if (isset($_GET['action']) && $_GET['action'] === 'delete_customer') {
             error_log('[WECOOP] Skipping: GDPR delete_customer action');
