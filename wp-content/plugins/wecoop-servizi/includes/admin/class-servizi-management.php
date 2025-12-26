@@ -30,6 +30,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_normalize_all_servizi', [__CLASS__, 'ajax_normalize_all_servizi']);
         add_action('wp_ajax_save_listino_prezzi', [__CLASS__, 'ajax_save_listino_prezzi']);
         add_action('wp_ajax_bulk_delete_richieste', [__CLASS__, 'ajax_bulk_delete_richieste']);
+        add_action('wp_ajax_get_prezzo_listino', [__CLASS__, 'ajax_get_prezzo_listino']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -1339,7 +1340,9 @@ class WECOOP_Servizi_Management {
                 <?php if (!$order_id): ?>
                     <button class="button button-small button-primary open-payment-modal" 
                             data-id="<?php echo $post_id; ?>"
-                            data-importo="<?php echo esc_attr($importo); ?>"
+                            data-importo="<?php echo $importo ? esc_attr($importo) : ''; ?>"
+                            data-servizio="<?php echo esc_attr($servizio); ?>"
+                            data-categoria="<?php echo esc_attr($categoria); ?>"
                             title="Richiedi pagamento">
                         💳 Richiedi Pagamento
                     </button>
@@ -1542,7 +1545,29 @@ class WECOOP_Servizi_Management {
                 e.preventDefault();
                 
                 const richiestaId = $(this).data('id');
-                const importo = $(this).data('importo');
+                let importo = $(this).data('importo');
+                const servizio = $(this).data('servizio');
+                const categoria = $(this).data('categoria');
+                
+                // Se importo non è presente, prova a prenderlo dal listino via AJAX
+                if (!importo || importo == 0 || importo == '') {
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        async: false, // Sincrono per avere il valore subito
+                        data: {
+                            action: 'get_prezzo_listino',
+                            nonce: '<?php echo wp_create_nonce("wecoop_servizi_nonce"); ?>',
+                            servizio: servizio,
+                            categoria: categoria
+                        },
+                        success: function(response) {
+                            if (response.success && response.data.prezzo) {
+                                importo = response.data.prezzo;
+                            }
+                        }
+                    });
+                }
                 
                 // Popola il form
                 $('#payment_richiesta_id').val(richiestaId);
@@ -3442,5 +3467,39 @@ class WECOOP_Servizi_Management {
         update_option('wecoop_listino_categorie', $categorie);
         
         wp_send_json_success('Listino prezzi salvato con successo!');
+    }
+    
+    /**
+     * AJAX: Ottieni prezzo dal listino
+     */
+    public static function ajax_get_prezzo_listino() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $servizio = sanitize_text_field($_POST['servizio']);
+        $categoria = sanitize_text_field($_POST['categoria']);
+        
+        $prezzi_servizi = get_option('wecoop_listino_servizi', []);
+        $prezzi_categorie = get_option('wecoop_listino_categorie', []);
+        
+        $prezzo = null;
+        
+        // Cerca per servizio
+        if (isset($prezzi_servizi[$servizio])) {
+            $prezzo = floatval($prezzi_servizi[$servizio]);
+        }
+        // Altrimenti cerca per categoria
+        elseif ($categoria && isset($prezzi_categorie[$categoria])) {
+            $prezzo = floatval($prezzi_categorie[$categoria]);
+        }
+        
+        if ($prezzo && $prezzo > 0) {
+            wp_send_json_success(['prezzo' => $prezzo]);
+        } else {
+            wp_send_json_error('Prezzo non trovato nel listino');
+        }
     }
 }
