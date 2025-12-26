@@ -33,6 +33,11 @@ class WECOOP_Servizi_WooCommerce_Integration {
      * Permetti agli utenti di pagare senza login se hanno il link con chiave corretta
      */
     public static function allow_guest_payment() {
+        // Previeni conflitti con endpoint GDPR
+        if (isset($_GET['action']) && $_GET['action'] === 'delete_customer') {
+            return;
+        }
+        
         if (!is_checkout() && !is_order_received_page()) {
             return;
         }
@@ -51,6 +56,17 @@ class WECOOP_Servizi_WooCommerce_Integration {
             
             // Permetti il checkout anche se l'utente è loggato
             add_filter('woocommerce_checkout_registration_required', '__return_false', 999);
+            
+            // Permetti il pagamento di ordini pending
+            add_filter('woocommerce_valid_order_statuses_for_payment', function($statuses) {
+                if (!in_array('pending', $statuses)) {
+                    $statuses[] = 'pending';
+                }
+                if (!in_array('on-hold', $statuses)) {
+                    $statuses[] = 'on-hold';
+                }
+                return $statuses;
+            }, 999);
         }
     }
     
@@ -186,6 +202,19 @@ class WECOOP_Servizi_WooCommerce_Integration {
             // Salva l'ordine
             $order->save();
             
+            // Log dettagliato ordine creato
+            $payment_url = $order->get_checkout_payment_url(true);
+            error_log(sprintf(
+                '[WECOOP SERVIZI] Ordine WC #%d creato per richiesta #%s (€%s) - Status: %s - Needs Payment: %s',
+                $order->get_id(),
+                $numero_pratica,
+                number_format($importo, 2),
+                $order->get_status(),
+                $order->needs_payment() ? 'YES' : 'NO'
+            ));
+            error_log('[WECOOP SERVIZI] Payment URL: ' . $payment_url);
+            error_log('[WECOOP SERVIZI] Order Key: ' . $order->get_order_key());
+            
             // Collega ordine alla richiesta
             update_post_meta($richiesta_id, 'wc_order_id', $order->get_id());
             update_post_meta($richiesta_id, 'payment_status', 'pending');
@@ -193,13 +222,6 @@ class WECOOP_Servizi_WooCommerce_Integration {
             
             // Salva link richiesta nell'ordine
             update_post_meta($order->get_id(), '_richiesta_servizio_id', $richiesta_id);
-            
-            error_log(sprintf(
-                '[WECOOP SERVIZI] Ordine WC #%d creato per richiesta #%s (€%s)',
-                $order->get_id(),
-                $numero_pratica,
-                number_format($importo, 2)
-            ));
             
             // Invia email con link pagamento
             self::invia_email_pagamento($richiesta_id, $order->get_id());
@@ -218,18 +240,35 @@ class WECOOP_Servizi_WooCommerce_Integration {
      */
     public static function invia_email_pagamento($richiesta_id, $order_id) {
         $order = wc_get_order($order_id);
-        if (!$order) return;
+        if (!$order) {
+            error_log("[WECOOP SERVIZI] Ordine non trovato: $order_id");
+            return;
+        }
         
         $user_id = get_post_meta($richiesta_id, 'user_id', true);
         $user = get_userdata($user_id);
-        if (!$user) return;
+        if (!$user) {
+            error_log("[WECOOP SERVIZI] Utente non trovato: $user_id");
+            return;
+        }
+        
+        // Assicurati che l'ordine sia in uno stato pagabile
+        $current_status = $order->get_status();
+        if (!in_array($current_status, ['pending', 'on-hold'])) {
+            $order->update_status('pending', 'Ordine reimpostato a pending per pagamento');
+            error_log("[WECOOP SERVIZI] Ordine $order_id reimpostato da $current_status a pending");
+        }
         
         $servizio = get_post_meta($richiesta_id, 'servizio', true);
         $numero_pratica = get_post_meta($richiesta_id, 'numero_pratica', true);
         $importo = get_post_meta($richiesta_id, 'importo', true);
         
-        // URL pagamento
-        $payment_url = $order->get_checkout_payment_url();
+        // URL pagamento - usa metodo sicuro
+        $payment_url = $order->get_checkout_payment_url(true); // true = force SSL
+        
+        error_log("[WECOOP SERVIZI] URL pagamento generato: $payment_url");
+        error_log("[WECOOP SERVIZI] Stato ordine: " . $order->get_status());
+        error_log("[WECOOP SERVIZI] Order needs payment: " . ($order->needs_payment() ? 'YES' : 'NO'));
         
         // Invia email multilingua se disponibile
         if (class_exists('WeCoop_Multilingual_Email')) {

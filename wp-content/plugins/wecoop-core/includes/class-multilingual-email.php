@@ -361,6 +361,8 @@ class WeCoop_Multilingual_Email {
                 return self::build_service_approved_content($lang, $data);
             case 'service_rejected':
                 return self::build_service_rejected_content($lang, $data);
+            case 'service_payment_required':
+                return self::build_service_payment_required_content($lang, $data);
             case 'event_registered':
                 return self::build_event_registered_content($lang, $data);
             case 'event_unregistered':
@@ -513,6 +515,45 @@ class WeCoop_Multilingual_Email {
             <p>{$t('password_reset_intro')}</p>
             <p>{$t('password_reset_warning')}</p>
             <p>{$t('password_reset_expiry')}</p>
+        ";
+    }
+    
+    /**
+     * Template: Pagamento servizio richiesto
+     */
+    private static function build_service_payment_required_content($lang, $data) {
+        $t = function($key) use ($lang, $data) {
+            return self::get_translation($key, $lang, $data);
+        };
+        
+        return "
+            <h1>{$t('service_payment_required_title')}</h1>
+            <p>{$t('service_payment_required_intro')}</p>
+            
+            <h2>{$t('service_payment_required_details')}</h2>
+            <div style='background: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; border-radius: 5px; margin: 20px 0;'>
+                <p style='margin: 8px 0;'><strong>{$t('service_payment_required_service_label')}</strong> {$data['servizio']}</p>
+                <p style='margin: 8px 0;'><strong>{$t('service_payment_required_practice_label')}</strong> {$data['numero_pratica']}</p>
+                <p style='margin: 8px 0; font-size: 20px; color: #2c3e50;'><strong>{$t('service_payment_required_amount_label')}</strong> <span style='color: #27ae60; font-weight: bold;'>{$data['importo']}</span></p>
+            </div>
+            
+            <p>{$t('service_payment_required_action')}</p>
+            
+            <div style='background: #e8f5e9; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60; margin: 20px 0;'>
+                <p style='margin: 0;'>✅ <strong>Metodi di pagamento accettati:</strong></p>
+                <p style='margin: 5px 0 0 0;'>💳 Carte di credito e debito • 🏦 Bonifico bancario • 💰 PayPal</p>
+            </div>
+            
+            <p style='background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;'>
+                {$t('service_payment_required_note')}
+            </p>
+            
+            <p style='margin-top: 30px;'>{$t('service_payment_required_footer')}</p>
+            
+            <p style='font-size: 13px; color: #666; margin-top: 20px;'>
+                <strong>Hai bisogno di aiuto?</strong><br>
+                Contattaci a <a href='mailto:info@wecoop.org' style='color: #3498db;'>info@wecoop.org</a> o chiamaci al numero verde.
+            </p>
         ";
     }
 }
