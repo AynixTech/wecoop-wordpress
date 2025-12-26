@@ -37,10 +37,20 @@ class WECOOP_Servizi_WooCommerce_Integration {
             return;
         }
         
-        // Se c'è un parametro key, permetti l'accesso guest
+        // Se c'è un parametro key nell'URL, forza checkout guest
         if (isset($_GET['key'])) {
-            add_filter('woocommerce_enable_guest_checkout', '__return_true');
-            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; });
+            // Forza checkout guest
+            add_filter('woocommerce_enable_guest_checkout', '__return_true', 999);
+            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; }, 999);
+            add_filter('woocommerce_checkout_login_message', '__return_false', 999);
+            add_filter('woocommerce_enable_signup_and_login_from_checkout', '__return_false', 999);
+            add_filter('option_woocommerce_enable_checkout_login_reminder', '__return_false', 999);
+            
+            // Nascondi form di login
+            remove_action('woocommerce_before_checkout_form', 'woocommerce_checkout_login_form', 10);
+            
+            // Permetti il checkout anche se l'utente è loggato
+            add_filter('woocommerce_checkout_registration_required', '__return_false', 999);
         }
     }
     
@@ -99,18 +109,24 @@ class WECOOP_Servizi_WooCommerce_Integration {
         
         try {
             // Abilita temporaneamente il checkout per guest
-            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; });
-            add_filter('pre_option_woocommerce_enable_checkout_login_reminder', function() { return 'no'; });
+            add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; }, 999);
+            add_filter('pre_option_woocommerce_enable_checkout_login_reminder', function() { return 'no'; }, 999);
+            add_filter('woocommerce_checkout_registration_required', '__return_false', 999);
             
-            // Crea ordine WooCommerce
+            // Crea ordine WooCommerce come GUEST (customer_id = 0)
+            // Questo evita che WooCommerce richieda login
             $order = wc_create_order([
-                'customer_id' => $user_id,
+                'customer_id' => 0, // 0 = guest order
                 'status' => 'pending'
             ]);
             
             if (is_wp_error($order)) {
                 throw new Exception($order->get_error_message());
             }
+            
+            // Salva user_id nei meta per tracciamento interno
+            $order->update_meta_data('_wecoop_user_id', $user_id);
+            $order->update_meta_data('_created_via', 'wecoop_servizi');
             
             // Imposta dati di fatturazione dall'utente/richiesta
             $user = get_userdata($user_id);

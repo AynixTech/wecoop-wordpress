@@ -36,6 +36,7 @@ class WeCoop_Email_Template_Unified {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo esc_html($subject); ?></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -92,10 +93,19 @@ class WeCoop_Email_Template_Unified {
         }
         .social-links a {
             display: inline-block;
-            margin: 0 10px;
+            margin: 0 15px;
             color: #ffffff;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 16px;
+            transition: opacity 0.3s;
+        }
+        .social-links a:hover {
+            opacity: 0.8;
+        }
+        .social-links i {
+            font-size: 24px;
+            margin-right: 8px;
+            vertical-align: middle;
         }
         .social-links img {
             width: 32px;
@@ -148,20 +158,12 @@ class WeCoop_Email_Template_Unified {
             <div class="social-links">
                 <strong>Seguici sui social:</strong><br><br>
                 
-                <a href="https://www.facebook.com/wecoop.org" target="_blank" style="color: #ffffff;">
-                    🔵 Facebook
+                <a href="https://www.facebook.com/profile.php?id=61568241435990" target="_blank" style="color: #ffffff;">
+                    <i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook
                 </a>
                 
-                <a href="https://www.instagram.com/wecoop.org" target="_blank" style="color: #ffffff;">
-                    📷 Instagram
-                </a>
-                
-                <a href="https://www.linkedin.com/company/wecoop" target="_blank" style="color: #ffffff;">
-                    💼 LinkedIn
-                </a>
-                
-                <a href="https://twitter.com/wecoop.org" target="_blank" style="color: #ffffff;">
-                    🐦 Twitter
+                <a href="https://www.instagram.com/wecoop_aps" target="_blank" style="color: #ffffff;">
+                    <i class="fab fa-instagram" style="color: #e4405f;"></i> Instagram
                 </a>
             </div>
             
