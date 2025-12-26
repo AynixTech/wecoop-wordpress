@@ -203,18 +203,28 @@ class WECOOP_Servizi_Endpoint {
         ]);
         
         // 🔥 Crea pagamento se il servizio lo richiede
-        $servizi_a_pagamento = self::get_servizi_a_pagamento();
         $payment_id = null;
         $importo = null;
         
-        if (isset($servizi_a_pagamento[$servizio])) {
-            $importo = $servizi_a_pagamento[$servizio];
-            
+        // Ottieni prezzo dal listino esistente in wp_options
+        $prezzi_servizi = get_option('wecoop_listino_servizi', []);
+        $prezzi_categorie = get_option('wecoop_listino_categorie', []);
+        
+        // Cerca prezzo per servizio specifico
+        if (isset($prezzi_servizi[$servizio])) {
+            $importo = floatval($prezzi_servizi[$servizio]);
+        }
+        // Altrimenti cerca per categoria
+        elseif ($categoria && isset($prezzi_categorie[$categoria])) {
+            $importo = floatval($prezzi_categorie[$categoria]);
+        }
+        
+        if ($importo && $importo > 0) {
             // Crea il pagamento usando WeCoop_Payment_System
             if (class_exists('WeCoop_Payment_System')) {
                 update_post_meta($post_id, 'stato', 'awaiting_payment');
                 $payment_id = WeCoop_Payment_System::create_payment($post_id);
-                error_log("[WECOOP API] Pagamento #{$payment_id} creato per richiesta #{$post_id}, importo €{$importo}");
+                error_log("[WECOOP API] Pagamento #{$payment_id} creato per richiesta #{$post_id}, servizio: {$servizio}, importo €{$importo}");
             }
         }
         
@@ -249,36 +259,6 @@ class WECOOP_Servizi_Endpoint {
             'payment_id' => $payment_id,
             'importo' => $importo
         ], 201);
-    }
-    
-    /**
-     * Definisce quali servizi richiedono pagamento e l'importo
-     * 
-     * @return array Array associativo servizio => importo
-     */
-    private static function get_servizi_a_pagamento() {
-        return [
-            // Servizi Fiscali
-            'Richiesta CUD' => 10.00,
-            'Richiesta 730' => 50.00,
-            'Richiesta ISEE' => 30.00,
-            'Richiesta RED' => 25.00,
-            'Richiesta Certificazione Unica' => 15.00,
-            'Assistenza Fiscale' => 80.00,
-            'Compilazione Modello F24' => 20.00,
-            
-            // Servizi Immigrazione
-            'Permesso di Soggiorno' => 50.00,
-            'Rinnovo Permesso di Soggiorno' => 50.00,
-            'Ricongiungimento Familiare' => 100.00,
-            'Cittadinanza Italiana' => 150.00,
-            'Carta di Soggiorno' => 80.00,
-            
-            // Altri servizi comuni
-            'Patronato' => 30.00,
-            'Pratiche INPS' => 40.00,
-            'Pratiche INAIL' => 40.00,
-        ];
     }
     
     /**
