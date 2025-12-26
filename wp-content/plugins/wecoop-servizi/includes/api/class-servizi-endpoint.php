@@ -258,6 +258,7 @@ class WECOOP_Servizi_Endpoint {
      */
     private static function get_servizi_a_pagamento() {
         return [
+            // Servizi Fiscali
             'Richiesta CUD' => 10.00,
             'Richiesta 730' => 50.00,
             'Richiesta ISEE' => 30.00,
@@ -265,7 +266,18 @@ class WECOOP_Servizi_Endpoint {
             'Richiesta Certificazione Unica' => 15.00,
             'Assistenza Fiscale' => 80.00,
             'Compilazione Modello F24' => 20.00,
-            // Aggiungi altri servizi qui
+            
+            // Servizi Immigrazione
+            'Permesso di Soggiorno' => 50.00,
+            'Rinnovo Permesso di Soggiorno' => 50.00,
+            'Ricongiungimento Familiare' => 100.00,
+            'Cittadinanza Italiana' => 150.00,
+            'Carta di Soggiorno' => 80.00,
+            
+            // Altri servizi comuni
+            'Patronato' => 30.00,
+            'Pratiche INPS' => 40.00,
+            'Pratiche INAIL' => 40.00,
         ];
     }
     
