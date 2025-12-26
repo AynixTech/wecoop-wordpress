@@ -257,7 +257,10 @@ class WECOOP_Servizi_Endpoint {
                     'servizio' => $servizio,
                     'data' => get_the_date('d/m/Y H:i', $post_id),
                     'numero_pratica' => $numero_pratica,
-                    'button_url' => home_url('/servizi/')
+                    'button_url' => "wecoop://app/richieste/{$post_id}", // Deep link
+                    'web_url' => home_url('/servizi/'),
+                    'deep_link_home' => 'wecoop://app/home',
+                    'deep_link_richieste' => 'wecoop://app/richieste'
                 ],
                 $current_user_id,
                 $request

@@ -121,22 +121,80 @@ class WECOOP_Servizi_Payment_System {
         $user_id = get_post_meta($richiesta_id, 'user_id', true);
         $importo = get_post_meta($richiesta_id, 'importo', true);
         $servizio = get_post_meta($richiesta_id, 'servizio', true);
+        $numero_pratica = get_post_meta($richiesta_id, 'numero_pratica', true);
         
         $user = get_userdata($user_id);
         if (!$user) return;
         
-        $payment_url = home_url('/pagamento/?id=' . $payment_id);
+        // Deep link per aprire pagamento nell'app
+        $deep_link_pagamento = "wecoop://app/pagamento/{$richiesta_id}";
+        $deep_link_richiesta = "wecoop://app/richieste/{$richiesta_id}";
+        $web_payment_url = home_url('/pagamento/?id=' . $payment_id);
         
-        $subject = 'Richiesta di Pagamento - WeCoop';
-        $message = "Ciao {$user->display_name},\n\n";
-        $message .= "È richiesto un pagamento per il servizio: {$servizio}\n";
-        $message .= "Importo: €" . number_format($importo, 2) . "\n\n";
-        $message .= "Paga tramite questo link:\n{$payment_url}\n\n";
-        $message .= "Grazie,\nIl team WeCoop";
+        $subject = '💳 Richiesta di Pagamento - WeCoop';
         
-        wp_mail($user->user_email, $subject, $message);
+        // Email HTML
+        $message = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #2271b1; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
+        .button { display: inline-block; padding: 12px 30px; background: #2271b1; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; font-weight: bold; }
+        .button-secondary { background: #4caf50; }
+        .info-box { background: white; padding: 15px; border-left: 4px solid #2271b1; margin: 20px 0; }
+        .footer { text-align: center; color: #999; font-size: 12px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💳 Richiesta di Pagamento</h1>
+        </div>
+        <div class="content">
+            <p>Ciao <strong>' . esc_html($user->display_name) . '</strong>,</p>
+            
+            <p>È richiesto un pagamento per il tuo servizio:</p>
+            
+            <div class="info-box">
+                <p><strong>Servizio:</strong> ' . esc_html($servizio) . '</p>
+                <p><strong>Pratica:</strong> ' . esc_html($numero_pratica) . '</p>
+                <p><strong>Importo:</strong> <span style="font-size: 24px; color: #2271b1;">€' . number_format($importo, 2, ',', '.') . '</span></p>
+            </div>
+            
+            <p><strong>Apri nell\'app WeCoop per pagare:</strong></p>
+            <p style="text-align: center;">
+                <a href="' . esc_url($deep_link_pagamento) . '" class="button button-secondary">📱 Apri nell\'App e Paga</a>
+            </p>
+            
+            <p style="text-align: center; margin: 20px 0;">oppure</p>
+            
+            <p style="text-align: center;">
+                <a href="' . esc_url($deep_link_richiesta) . '" class="button">👁️ Vedi Dettagli Richiesta</a>
+            </p>
+            
+            <p style="font-size: 12px; color: #666; margin-top: 30px;">
+                Se hai problemi ad aprire l\'app, usa questo link: <a href="' . esc_url($web_payment_url) . '">' . esc_html($web_payment_url) . '</a>
+            </p>
+            
+            <div class="footer">
+                <p>Grazie per aver scelto WeCoop! 🤝</p>
+                <p>Il team WeCoop</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>';
         
-        error_log("[WECOOP PAYMENT] Email inviata a {$user->user_email}");
+        // Header per email HTML
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        
+        wp_mail($user->user_email, $subject, $message, $headers);
+        
+        error_log("[WECOOP PAYMENT] Email inviata a {$user->user_email} - Deep link: {$deep_link_pagamento}");
     }
     
     /**

@@ -105,17 +105,17 @@ $table_prefix = 'wp57384_';
  * @link https://wordpress.org/support/article/debugging-in-wordpress/
  */
 if ( ! defined( 'WP_DEBUG' ) ) {
-	define( 'WP_DEBUG', true );
+	define( 'WP_DEBUG', false );
 }
 
 // Log errors to wp-content/debug.log instead of displaying them
 if ( ! defined( 'WP_DEBUG_LOG' ) ) {
-	define( 'WP_DEBUG_LOG', true );
+	define( 'WP_DEBUG_LOG', false );
 }
 
 // Don't display errors on the site
 if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
-	define( 'WP_DEBUG_DISPLAY', true ); // Mostra errori a schermo
+	define( 'WP_DEBUG_DISPLAY', false ); // Mostra errori a schermo
 }
 
 // Suppress deprecated notices (optional - removes the specific notices you're seeing)
