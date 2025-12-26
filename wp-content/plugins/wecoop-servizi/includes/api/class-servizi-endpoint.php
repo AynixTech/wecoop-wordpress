@@ -202,47 +202,40 @@ class WECOOP_Servizi_Endpoint {
             'post_title' => $numero_pratica . ' - ' . $servizio
         ]);
         
-        // 🔥 Crea pagamento se il servizio lo richiede
+        // ⚠️ PAGAMENTI GESTITI SOLO DA BACKOFFICE
+        // La creazione automatica dei pagamenti è disabilitata
+        // Gli admin possono richiedere pagamento dal pannello wp-admin
         $payment_id = null;
         $importo = null;
         
-        // Ottieni prezzo dal listino esistente in wp_options
+        // Ottieni prezzo dal listino (solo per salvarlo nei meta, NON crea pagamento)
         $prezzi_servizi = get_option('wecoop_listino_servizi', []);
         $prezzi_categorie = get_option('wecoop_listino_categorie', []);
         
         error_log("[WECOOP API] Richiesta #{$post_id} - Servizio: '{$servizio}', Categoria: '{$categoria}'");
-        error_log("[WECOOP API] Listino servizi: " . json_encode($prezzi_servizi));
-        error_log("[WECOOP API] Listino categorie: " . json_encode($prezzi_categorie));
         
         // Cerca prezzo per servizio specifico
         if (isset($prezzi_servizi[$servizio])) {
             $importo = floatval($prezzi_servizi[$servizio]);
-            error_log("[WECOOP API] ✅ Trovato prezzo per servizio '{$servizio}': €{$importo}");
+            error_log("[WECOOP API] ✅ Prezzo trovato per servizio '{$servizio}': €{$importo}");
         }
         // Altrimenti cerca per categoria
         elseif ($categoria && isset($prezzi_categorie[$categoria])) {
             $importo = floatval($prezzi_categorie[$categoria]);
-            error_log("[WECOOP API] ✅ Trovato prezzo per categoria '{$categoria}': €{$importo}");
+            error_log("[WECOOP API] ✅ Prezzo trovato per categoria '{$categoria}': €{$importo}");
         } else {
-            error_log("[WECOOP API] ❌ Nessun prezzo trovato per servizio '{$servizio}' o categoria '{$categoria}'");
+            error_log("[WECOOP API] ℹ️ Nessun prezzo predefinito per '{$servizio}' o '{$categoria}'");
         }
         
+        // Salva l'importo suggerito (se trovato) ma NON crea il pagamento
         if ($importo && $importo > 0) {
-            // Crea il pagamento usando WeCoop_Payment_System
-            if (class_exists('WeCoop_Payment_System')) {
-                update_post_meta($post_id, 'stato', 'awaiting_payment');
-                // 🔥 SALVA user_id e importo nei post_meta PRIMA di creare il pagamento
-                update_post_meta($post_id, 'user_id', $current_user_id);
-                update_post_meta($post_id, 'importo', $importo);
-                
-                $payment_id = WeCoop_Payment_System::create_payment($post_id);
-                error_log("[WECOOP API] ✅ Pagamento #{$payment_id} creato per richiesta #{$post_id}, servizio: {$servizio}, importo €{$importo}");
-            } else {
-                error_log("[WECOOP API] ❌ Classe WeCoop_Payment_System non trovata!");
-            }
-        } else {
-            error_log("[WECOOP API] ⚠️ Pagamento NON creato - importo: " . ($importo ?? 'null'));
+            update_post_meta($post_id, 'importo', $importo);
+            error_log("[WECOOP API] ℹ️ Importo suggerito €{$importo} salvato - pagamento da creare manualmente da backoffice");
         }
+        
+        // Stato iniziale sempre "pending" - admin deciderà se richiedere pagamento
+        update_post_meta($post_id, 'stato', 'pending');
+        update_post_meta($post_id, 'user_id', $current_user_id);
         
         // Invia email di conferma multilingua
         if (class_exists('WeCoop_Multilingual_Email')) {
@@ -274,9 +267,9 @@ class WECOOP_Servizi_Endpoint {
             'id' => $post_id,
             'numero_pratica' => $numero_pratica,
             'data_richiesta' => get_the_date('Y-m-d H:i:s', $post_id),
-            'requires_payment' => ($payment_id !== null),
-            'payment_id' => $payment_id,
-            'importo' => $importo
+            'requires_payment' => false, // Sempre false - pagamenti gestiti da backoffice
+            'payment_id' => null,
+            'importo' => $importo // Importo suggerito (se disponibile nel listino)
         ], 201);
     }
     
