@@ -158,6 +158,14 @@ class WECOOP_Servizi_WooCommerce_Integration {
         }
         
         try {
+            // Ottieni o crea il prodotto virtuale generico per i servizi
+            $product_id = self::get_or_create_service_product();
+            if (!$product_id) {
+                throw new Exception('Impossibile creare prodotto virtuale');
+            }
+            
+            error_log('[WECOOP SERVIZI] Usando prodotto WC ID: ' . $product_id);
+            
             // Abilita temporaneamente il checkout per guest
             add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; }, 999);
             add_filter('pre_option_woocommerce_enable_checkout_login_reminder', function() { return 'no'; }, 999);
@@ -210,42 +218,41 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 error_log('[WECOOP SERVIZI] Dati fatturazione impostati: ' . $first_name . ' ' . $last_name . ' - ' . $email);
             }
             
-            // Aggiungi prodotto virtuale come line item
+            // Aggiungi prodotto all'ordine con prezzo personalizzato
+            $product = wc_get_product($product_id);
+            if (!$product) {
+                throw new Exception('Prodotto virtuale non trovato');
+            }
+            
+            // Crea item dal prodotto
             $item = new WC_Order_Item_Product();
-            $item->set_name($servizio . ' - Pratica ' . $numero_pratica);
-            $item->set_quantity(1);
-            $item->set_subtotal($importo);
-            $item->set_total($importo);
-            $item->set_subtotal_tax(0);
-            $item->set_total_tax(0);
+            $item->set_props([
+                'product' => $product,
+                'quantity' => 1,
+                'subtotal' => $importo,
+                'total' => $importo,
+                'name' => $servizio . ' - Pratica ' . $numero_pratica,
+            ]);
             
             // Meta dati personalizzati
             $item->add_meta_data('_richiesta_servizio_id', $richiesta_id, true);
             $item->add_meta_data('_numero_pratica', $numero_pratica, true);
             $item->add_meta_data('_tipo_servizio', $servizio, true);
             
-            // Aggiungi item all'ordine e ottieni l'ID
-            $item_id = $order->add_item($item);
-            
-            error_log('[WECOOP SERVIZI] Item ID: ' . $item_id);
-            
-            // Salva l'ordine per persistere l'item
+            // Aggiungi item all'ordine
+            $order->add_item($item);
             $order->save();
             
-            // Calcola totali (questo ricalcola anche gli items)
+            // Calcola totali
             $order->calculate_totals();
-            
-            // Salva nuovamente con i totali calcolati
             $order->save();
             
-            // Verifica che l'item sia stato salvato correttamente
+            // Verifica che l'item sia stato salvato
             $saved_items = $order->get_items();
-            error_log('[WECOOP SERVIZI] Item aggiunto: ' . $servizio . ' - ' . number_format($importo, 2) . '€');
-            error_log('[WECOOP SERVIZI] Totale ordine: ' . $order->get_total());
-            error_log('[WECOOP SERVIZI] Items count: ' . count($saved_items));
+            error_log('[WECOOP SERVIZI] Items salvati: ' . count($saved_items));
             
             if (count($saved_items) === 0) {
-                throw new Exception('Errore: Item non salvato correttamente');
+                throw new Exception('Errore: nessun item salvato nell\'ordine');
             }
             
             // Aggiungi note
@@ -364,6 +371,37 @@ class WECOOP_Servizi_WooCommerce_Integration {
             
             wp_mail($user->user_email, $subject, $message);
         }
+    }
+    
+    /**
+     * Ottieni o crea un prodotto virtuale generico per i servizi
+     */
+    private static function get_or_create_service_product() {
+        // Cerca prodotto esistente
+        $product_id = get_option('wecoop_servizi_virtual_product_id');
+        
+        if ($product_id && get_post($product_id)) {
+            return $product_id;
+        }
+        
+        // Crea nuovo prodotto virtuale
+        $product = new WC_Product_Simple();
+        $product->set_name('Servizio WeCoop');
+        $product->set_status('private'); // Nascosto dal catalogo
+        $product->set_catalog_visibility('hidden');
+        $product->set_virtual(true);
+        $product->set_sold_individually(true);
+        $product->set_price(0); // Il prezzo verrà sovrascritto dinamicamente
+        $product->set_regular_price(0);
+        
+        $product_id = $product->save();
+        
+        if ($product_id) {
+            update_option('wecoop_servizi_virtual_product_id', $product_id);
+            error_log('[WECOOP SERVIZI] Creato prodotto virtuale ID: ' . $product_id);
+        }
+        
+        return $product_id;
     }
     
     /**
