@@ -202,6 +202,22 @@ class WECOOP_Servizi_Endpoint {
             'post_title' => $numero_pratica . ' - ' . $servizio
         ]);
         
+        // 🔥 Crea pagamento se il servizio lo richiede
+        $servizi_a_pagamento = self::get_servizi_a_pagamento();
+        $payment_id = null;
+        $importo = null;
+        
+        if (isset($servizi_a_pagamento[$servizio])) {
+            $importo = $servizi_a_pagamento[$servizio];
+            
+            // Crea il pagamento usando WeCoop_Payment_System
+            if (class_exists('WeCoop_Payment_System')) {
+                update_post_meta($post_id, 'stato', 'awaiting_payment');
+                $payment_id = WeCoop_Payment_System::create_payment($post_id);
+                error_log("[WECOOP API] Pagamento #{$payment_id} creato per richiesta #{$post_id}, importo €{$importo}");
+            }
+        }
+        
         // Invia email di conferma multilingua
         if (class_exists('WeCoop_Multilingual_Email')) {
             $user = get_user_by('ID', $current_user_id);
@@ -228,8 +244,29 @@ class WECOOP_Servizi_Endpoint {
             'message' => 'Richiesta ricevuta con successo',
             'id' => $post_id,
             'numero_pratica' => $numero_pratica,
-            'data_richiesta' => get_the_date('Y-m-d H:i:s', $post_id)
+            'data_richiesta' => get_the_date('Y-m-d H:i:s', $post_id),
+            'requires_payment' => ($payment_id !== null),
+            'payment_id' => $payment_id,
+            'importo' => $importo
         ], 201);
+    }
+    
+    /**
+     * Definisce quali servizi richiedono pagamento e l'importo
+     * 
+     * @return array Array associativo servizio => importo
+     */
+    private static function get_servizi_a_pagamento() {
+        return [
+            'Richiesta CUD' => 10.00,
+            'Richiesta 730' => 50.00,
+            'Richiesta ISEE' => 30.00,
+            'Richiesta RED' => 25.00,
+            'Richiesta Certificazione Unica' => 15.00,
+            'Assistenza Fiscale' => 80.00,
+            'Compilazione Modello F24' => 20.00,
+            // Aggiungi altri servizi qui
+        ];
     }
     
     /**
@@ -259,6 +296,14 @@ class WECOOP_Servizi_Endpoint {
         
         $dati_json = get_post_meta($richiesta->ID, 'dati', true);
         
+        // Verifica se esiste un pagamento associato
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+        $pagamento = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
+            $richiesta->ID
+        ));
+        
         $data = [
             'id' => $richiesta->ID,
             'numero_pratica' => get_post_meta($richiesta->ID, 'numero_pratica', true),
@@ -268,7 +313,11 @@ class WECOOP_Servizi_Endpoint {
             'stato' => get_post_meta($richiesta->ID, 'stato', true),
             'user_id' => $user_id,
             'socio_id' => get_post_meta($richiesta->ID, 'socio_id', true),
-            'data_creazione' => $richiesta->post_date
+            'data_creazione' => $richiesta->post_date,
+            'has_payment' => ($pagamento !== null),
+            'payment_id' => $pagamento ? $pagamento->id : null,
+            'payment_status' => $pagamento ? $pagamento->stato : null,
+            'importo' => $pagamento ? floatval($pagamento->importo) : null
         ];
         
         return new WP_REST_Response([
