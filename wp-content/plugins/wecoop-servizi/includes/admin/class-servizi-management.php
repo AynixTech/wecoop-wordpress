@@ -24,6 +24,10 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_save_richiesta_servizio', [__CLASS__, 'ajax_save_richiesta']);
         add_action('wp_ajax_delete_richiesta_servizio', [__CLASS__, 'ajax_delete_richiesta']);
         add_action('wp_ajax_update_stato_richiesta', [__CLASS__, 'ajax_update_stato']);
+        add_action('wp_ajax_send_payment_request', [__CLASS__, 'ajax_send_payment_request']);
+        
+        // Row actions
+        add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
     }
     
     /**
@@ -143,6 +147,7 @@ class WECOOP_Servizi_Management {
                 <select name="stato">
                     <option value="">Tutti gli stati</option>
                     <option value="pending" <?php selected($stato_filter, 'pending'); ?>>In Attesa</option>
+                    <option value="awaiting_payment" <?php selected($stato_filter, 'awaiting_payment'); ?>>Da Pagare</option>
                     <option value="processing" <?php selected($stato_filter, 'processing'); ?>>In Lavorazione</option>
                     <option value="completed" <?php selected($stato_filter, 'completed'); ?>>Completata</option>
                     <option value="cancelled" <?php selected($stato_filter, 'cancelled'); ?>>Annullata</option>
@@ -159,6 +164,7 @@ class WECOOP_Servizi_Management {
                         <th>Servizio</th>
                         <th>Categoria</th>
                         <th>Richiedente</th>
+                        <th>Importo</th>
                         <th>Data</th>
                         <th>Stato</th>
                         <th>Azioni</th>
@@ -171,7 +177,7 @@ class WECOOP_Servizi_Management {
                         <?php endwhile; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="7">Nessuna richiesta trovata.</td>
+                            <td colspan="8">Nessuna richiesta trovata.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -205,9 +211,12 @@ class WECOOP_Servizi_Management {
         $servizio = get_post_meta($post_id, 'servizio', true);
         $categoria = get_post_meta($post_id, 'categoria', true);
         $stato = get_post_meta($post_id, 'stato', true) ?: 'pending';
+        $importo = get_post_meta($post_id, 'importo', true);
         $user_id = get_post_meta($post_id, 'user_id', true);
         $dati_json = get_post_meta($post_id, 'dati', true);
         $dati = json_decode($dati_json, true) ?: [];
+        $order_id = get_post_meta($post_id, 'wc_order_id', true);
+        $payment_status = get_post_meta($post_id, 'payment_status', true);
         
         // Ottieni nome richiedente dai dati
         $nome_richiedente = $dati['nome_completo'] ?? '';
@@ -224,9 +233,18 @@ class WECOOP_Servizi_Management {
         
         $stato_labels = [
             'pending' => '⏳ In Attesa',
+            'awaiting_payment' => '💳 Da Pagare',
             'processing' => '🔄 In Lavorazione',
             'completed' => '✅ Completata',
             'cancelled' => '❌ Annullata'
+        ];
+        
+        $stato_colors = [
+            'pending' => '#ff9800',
+            'awaiting_payment' => '#9c27b0',
+            'processing' => '#2196f3',
+            'completed' => '#4caf50',
+            'cancelled' => '#f44336'
         ];
         ?>
         <tr>
@@ -242,22 +260,56 @@ class WECOOP_Servizi_Management {
                     <?php echo esc_html($nome_richiedente); ?>
                 <?php endif; ?>
             </td>
+            <td>
+                <?php if ($importo): ?>
+                    <strong>€ <?php echo number_format($importo, 2, ',', '.'); ?></strong>
+                    <?php if ($payment_status === 'paid'): ?>
+                        <span style="color: green;" title="Pagato">✓</span>
+                    <?php elseif ($order_id): ?>
+                        <span style="color: orange;" title="In attesa di pagamento">⏳</span>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <span style="color: #999;">—</span>
+                <?php endif; ?>
+            </td>
             <td><?php echo get_the_date('d/m/Y H:i'); ?></td>
             <td>
-                <select class="stato-select" data-richiesta-id="<?php echo $post_id; ?>">
-                    <option value="pending" <?php selected($stato, 'pending'); ?>>⏳ In Attesa</option>
-                    <option value="processing" <?php selected($stato, 'processing'); ?>>🔄 In Lavorazione</option>
-                    <option value="completed" <?php selected($stato, 'completed'); ?>>✅ Completata</option>
-                    <option value="cancelled" <?php selected($stato, 'cancelled'); ?>>❌ Annullata</option>
-                </select>
+                <span style="background: <?php echo $stato_colors[$stato] ?? '#999'; ?>; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; display: inline-block;">
+                    <?php echo $stato_labels[$stato] ?? $stato; ?>
+                </span>
             </td>
             <td>
                 <button class="button button-small edit-richiesta" data-id="<?php echo $post_id; ?>">
-                    Modifica
+                    👁️ Dettagli
                 </button>
-                <button class="button button-small button-link-delete delete-richiesta" data-id="<?php echo $post_id; ?>">
-                    Elimina
-                </button>
+                <?php if ($importo && !$order_id): ?>
+                    <button class="button button-small button-primary send-payment-request" 
+                            data-id="<?php echo $post_id; ?>"
+                            title="Invia richiesta di pagamento">
+                        💳 Richiedi Pagamento
+                    </button>
+                <?php elseif ($order_id): ?>
+                    <?php $order = wc_get_order($order_id); ?>
+                    <?php if ($order && $order->needs_payment()): ?>
+                        <button class="button button-small send-payment-request" 
+                                data-id="<?php echo $post_id; ?>"
+                                title="Reinvia link pagamento">
+                            📧 Reinvia Link
+                        </button>
+                        <a href="<?php echo esc_url($order->get_checkout_payment_url()); ?>" 
+                           class="button button-small" 
+                           target="_blank"
+                           title="Copia link pagamento">
+                            🔗 Link
+                        </a>
+                    <?php elseif ($order): ?>
+                        <a href="<?php echo esc_url(admin_url('post.php?post=' . $order_id . '&action=edit')); ?>" 
+                           class="button button-small" 
+                           target="_blank">
+                            📦 Ordine #<?php echo $order_id; ?>
+                        </a>
+                    <?php endif; ?>
+                <?php endif; ?>
             </td>
         </tr>
         <?php
@@ -325,7 +377,45 @@ class WECOOP_Servizi_Management {
         
         <script>
         jQuery(document).ready(function($) {
-            // Cambio stato rapido
+            // Invia richiesta di pagamento
+            $(document).on('click', '.send-payment-request, .send-payment-link', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $(this).data('id');
+                const $button = $(this);
+                const originalText = $button.text();
+                
+                if (!confirm('Confermi l\'invio della richiesta di pagamento all\'utente?')) {
+                    return;
+                }
+                
+                $button.prop('disabled', true).text('⏳ Invio...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'send_payment_request',
+                        richiesta_id: richiestaId,
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ ' + response.data);
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $button.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $button.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+            
+            // Cambio stato rapido (se hai ancora il select)
             $('.stato-select').on('change', function() {
                 const richiestaId = $(this).data('richiesta-id');
                 const nuovoStato = $(this).val();
@@ -347,6 +437,7 @@ class WECOOP_Servizi_Management {
                     success: function(response) {
                         if (response.success) {
                             alert('Stato aggiornato con successo!');
+                            location.reload();
                         } else {
                             alert('Errore: ' + response.data);
                         }
@@ -656,5 +747,86 @@ class WECOOP_Servizi_Management {
         update_post_meta($richiesta_id, 'stato', $stato);
         
         wp_send_json_success('Stato aggiornato');
+    }
+    
+    /**
+     * AJAX: Invia richiesta di pagamento
+     */
+    public static function ajax_send_payment_request() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $richiesta_id = absint($_POST['richiesta_id']);
+        
+        // Verifica importo
+        $importo = get_post_meta($richiesta_id, 'importo', true);
+        if (!$importo || $importo <= 0) {
+            wp_send_json_error('Importo non specificato. Imposta un importo nella richiesta.');
+        }
+        
+        // Verifica se esiste già un ordine
+        $order_id = get_post_meta($richiesta_id, 'wc_order_id', true);
+        
+        if ($order_id) {
+            // Ordine già esistente, reinvia email
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                wp_send_json_error('Ordine non trovato.');
+            }
+            
+            // Reinvia email
+            if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+                WECOOP_Servizi_WooCommerce_Integration::invia_email_pagamento($richiesta_id, $order_id);
+                wp_send_json_success('Email con link di pagamento reinviata!');
+            } else {
+                wp_send_json_error('Integrazione WooCommerce non disponibile.');
+            }
+        } else {
+            // Crea nuovo ordine e invia email
+            update_post_meta($richiesta_id, 'stato', 'awaiting_payment');
+            
+            if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+                $new_order_id = WECOOP_Servizi_WooCommerce_Integration::crea_ordine_woocommerce($richiesta_id);
+                
+                if ($new_order_id) {
+                    wp_send_json_success('Ordine creato e richiesta di pagamento inviata!');
+                } else {
+                    $error = get_post_meta($richiesta_id, 'payment_error', true);
+                    wp_send_json_error('Errore creazione ordine: ' . $error);
+                }
+            } else {
+                wp_send_json_error('Integrazione WooCommerce non disponibile.');
+            }
+        }
+    }
+    
+    /**
+     * Aggiungi row actions alla lista post standard
+     */
+    public static function add_row_actions($actions, $post) {
+        if ($post->post_type === 'richiesta_servizio') {
+            $importo = get_post_meta($post->ID, 'importo', true);
+            $order_id = get_post_meta($post->ID, 'wc_order_id', true);
+            
+            if ($importo && !$order_id) {
+                $actions['send_payment'] = sprintf(
+                    '<a href="#" class="send-payment-link" data-id="%d">💳 Richiedi Pagamento</a>',
+                    $post->ID
+                );
+            } elseif ($order_id) {
+                $order = wc_get_order($order_id);
+                if ($order && $order->needs_payment()) {
+                    $actions['resend_payment'] = sprintf(
+                        '<a href="#" class="send-payment-link" data-id="%d">📧 Reinvia Link</a>',
+                        $post->ID
+                    );
+                }
+            }
+        }
+        
+        return $actions;
     }
 }
