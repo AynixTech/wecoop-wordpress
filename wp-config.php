@@ -106,11 +106,11 @@ if ( ! defined( 'WP_DEBUG_LOG' ) ) {
 
 // Don't display errors on the site
 if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
-	define( 'WP_DEBUG_DISPLAY', false );
+	define( 'WP_DEBUG_DISPLAY', true ); // Mostra errori a schermo
 }
 
 // Suppress deprecated notices (optional - removes the specific notices you're seeing)
-@ini_set( 'display_errors', 0 );
+@ini_set( 'display_errors', 1 );
 
 define( 'FS_METHOD', 'direct' );
 define( 'COOKIEHASH', 'a89c81cd3eeea5503dc0907f67d44e6e' );
