@@ -386,9 +386,30 @@ class WECOOP_Servizi_Endpoint {
                 $dati_json = get_post_meta($post_id, 'dati', true);
                 $dati = json_decode($dati_json, true) ?: [];
                 
+                // Ottieni info pagamento dalla tabella wp_wecoop_pagamenti
+                global $wpdb;
+                $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+                $payment = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM $table_name WHERE richiesta_id = %d ORDER BY created_at DESC LIMIT 1",
+                    $post_id
+                ));
+                
+                $pagamento_ricevuto = false;
+                $pagamento_metodo = null;
+                $pagamento_data = null;
+                $pagamento_transazione_id = null;
+                
+                if ($payment) {
+                    $pagamento_ricevuto = in_array($payment->stato, ['paid', 'completed']);
+                    $pagamento_metodo = $payment->metodo_pagamento;
+                    $pagamento_data = $payment->paid_at;
+                    $pagamento_transazione_id = $payment->transaction_id;
+                }
+                
                 // Etichette stato
                 $stato_labels = [
                     'pending' => 'In attesa',
+                    'awaiting_payment' => 'In attesa di pagamento',
                     'pending_payment' => 'In attesa di pagamento',
                     'processing' => 'In lavorazione',
                     'completed' => 'Completata',
@@ -406,13 +427,13 @@ class WECOOP_Servizi_Endpoint {
                     'prezzo' => get_post_meta($post_id, 'prezzo', true),
                     'prezzo_formattato' => get_post_meta($post_id, 'prezzo', true) ? '€ ' . number_format((float)get_post_meta($post_id, 'prezzo', true), 2, ',', '.') : null,
                     'pagamento' => [
-                        'ricevuto' => get_post_meta($post_id, 'pagamento_ricevuto', true) == '1',
-                        'metodo' => get_post_meta($post_id, 'pagamento_metodo', true),
-                        'data' => get_post_meta($post_id, 'pagamento_data', true),
-                        'transazione_id' => get_post_meta($post_id, 'pagamento_transazione_id', true)
+                        'ricevuto' => $pagamento_ricevuto,
+                        'metodo' => $pagamento_metodo,
+                        'data' => $pagamento_data,
+                        'transazione_id' => $pagamento_transazione_id
                     ],
                     'payment_link' => get_post_meta($post_id, 'payment_link', true),
-                    'puo_pagare' => $stato === 'pending_payment' && get_post_meta($post_id, 'pagamento_ricevuto', true) != '1',
+                    'puo_pagare' => in_array($stato, ['awaiting_payment', 'pending_payment']) && !$pagamento_ricevuto,
                     'dati' => $dati
                 ];
             }
