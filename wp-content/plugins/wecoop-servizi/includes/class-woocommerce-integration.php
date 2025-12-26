@@ -42,10 +42,20 @@ class WECOOP_Servizi_WooCommerce_Integration {
      * Carica template personalizzato per order-pay
      */
     public static function load_order_pay_template() {
+        error_log('[WECOOP] load_order_pay_template chiamato');
+        error_log('[WECOOP] is_wc_endpoint_url(order-pay): ' . (is_wc_endpoint_url('order-pay') ? 'YES' : 'NO'));
+        error_log('[WECOOP] Current URL: ' . $_SERVER['REQUEST_URI']);
+        
         if (is_wc_endpoint_url('order-pay')) {
             $template_file = WECOOP_SERVIZI_PATH . 'templates/order-pay-items.php';
+            error_log('[WECOOP] Template file path: ' . $template_file);
+            error_log('[WECOOP] Template exists: ' . (file_exists($template_file) ? 'YES' : 'NO'));
+            
             if (file_exists($template_file)) {
+                error_log('[WECOOP] ✅ Caricamento template order-pay-items.php');
                 include_once $template_file;
+            } else {
+                error_log('[WECOOP] ❌ Template NON trovato!');
             }
         }
     }
@@ -68,17 +78,27 @@ class WECOOP_Servizi_WooCommerce_Integration {
      * Permetti agli utenti di pagare senza login se hanno il link con chiave corretta
      */
     public static function allow_guest_payment() {
+        error_log('[WECOOP] allow_guest_payment chiamato');
+        error_log('[WECOOP] is_checkout: ' . (is_checkout() ? 'YES' : 'NO'));
+        error_log('[WECOOP] is_order_received_page: ' . (is_order_received_page() ? 'YES' : 'NO'));
+        error_log('[WECOOP] GET params: ' . print_r($_GET, true));
+        
         // Previeni conflitti con endpoint GDPR
         if (isset($_GET['action']) && $_GET['action'] === 'delete_customer') {
+            error_log('[WECOOP] Skipping: GDPR delete_customer action');
             return;
         }
         
         if (!is_checkout() && !is_order_received_page()) {
+            error_log('[WECOOP] Skipping: Non è checkout né order-received');
             return;
         }
         
         // Se c'è un parametro key nell'URL, forza checkout guest
         if (isset($_GET['key'])) {
+            error_log('[WECOOP] ✅ Parametro KEY trovato: ' . $_GET['key']);
+            error_log('[WECOOP] Applicazione filtri per guest payment...');
+            
             // Forza checkout guest
             add_filter('woocommerce_enable_guest_checkout', '__return_true', 999);
             add_filter('pre_option_woocommerce_enable_guest_checkout', function() { return 'yes'; }, 999);
@@ -100,20 +120,17 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 if (!in_array('on-hold', $statuses)) {
                     $statuses[] = 'on-hold';
                 }
+                error_log('[WECOOP] Valid payment statuses: ' . implode(', ', $statuses));
                 return $statuses;
-            }, 999);
-            
-            // Forza disponibilità metodi di pagamento
-            add_filter('woocommerce_available_payment_gateways', function($gateways) {
-                // Assicura che tutti i gateway siano disponibili
-                return $gateways;
             }, 999);
             
             // Forza needs_payment a true
             add_filter('woocommerce_order_needs_payment', function($needs_payment, $order) {
                 if ($order && in_array($order->get_status(), ['pending', 'on-hold']) && $order->get_total() > 0) {
+                    error_log('[WECOOP] Order #' . $order->get_id() . ' needs payment: FORCED TRUE');
                     return true;
                 }
+                error_log('[WECOOP] Order needs payment: ' . ($needs_payment ? 'YES' : 'NO'));
                 return $needs_payment;
             }, 999, 2);
             
@@ -123,6 +140,10 @@ class WECOOP_Servizi_WooCommerce_Integration {
             add_filter('woocommerce_order_item_quantity_html', function($qty_html, $item) {
                 return $item->get_quantity();
             }, 999, 2);
+            
+            error_log('[WECOOP] ✅ Tutti i filtri applicati');
+        } else {
+            error_log('[WECOOP] Nessun parametro KEY trovato');
         }
     }
     

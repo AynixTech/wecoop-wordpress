@@ -7,18 +7,34 @@
 
 if (!defined('ABSPATH')) exit;
 
+error_log('=== ORDER PAY TEMPLATE CARICATO ===');
+
 // Questo file viene incluso quando si visualizza la pagina order-pay
 // per assicurarsi che gli items vengano mostrati
 
 add_action('woocommerce_order_details_before_order_table', function($order) {
-    if (!$order) return;
+    error_log('[ORDER PAY] Hook woocommerce_order_details_before_order_table chiamato');
+    
+    if (!$order) {
+        error_log('[ORDER PAY] ERRORE: Ordine NULL');
+        return;
+    }
+    
+    error_log('[ORDER PAY] Order ID: ' . $order->get_id());
+    error_log('[ORDER PAY] Order Status: ' . $order->get_status());
+    error_log('[ORDER PAY] Order Total: ' . $order->get_total());
     
     $items = $order->get_items();
     
+    error_log('[ORDER PAY] Items count: ' . count($items));
+    
     if (empty($items)) {
         echo '<div class="woocommerce-notice woocommerce-notice--error">Nessun articolo trovato in questo ordine.</div>';
+        error_log('[ORDER PAY] NESSUN ITEM TROVATO!');
         return;
     }
+    
+    error_log('[ORDER PAY] Rendering tabella items...');
     
     echo '<h2>Dettagli dell\'ordine</h2>';
     echo '<table class="shop_table order_details">';
@@ -29,6 +45,7 @@ add_action('woocommerce_order_details_before_order_table', function($order) {
     echo '<tbody>';
     
     foreach ($items as $item_id => $item) {
+        error_log('[ORDER PAY] Item: ' . $item->get_name() . ' - Total: ' . $item->get_total());
         echo '<tr class="order_item">';
         echo '<td class="product-name">';
         echo '<strong>' . esc_html($item->get_name()) . '</strong>';
@@ -48,4 +65,8 @@ add_action('woocommerce_order_details_before_order_table', function($order) {
     echo '</tr>';
     echo '</tfoot>';
     echo '</table>';
+    
+    error_log('[ORDER PAY] Tabella renderizzata con successo');
 }, 5);
+
+error_log('=== ORDER PAY TEMPLATE: Hook registrato ===');
