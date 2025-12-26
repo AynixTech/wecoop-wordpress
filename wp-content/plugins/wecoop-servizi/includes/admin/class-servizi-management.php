@@ -1242,6 +1242,21 @@ class WECOOP_Servizi_Management {
         $order_id = get_post_meta($post_id, 'wc_order_id', true);
         $payment_status = get_post_meta($post_id, 'payment_status', true);
         
+        // Se non c'è importo, prova a prenderlo dal listino
+        if (!$importo || $importo == 0) {
+            $prezzi_servizi = get_option('wecoop_listino_servizi', []);
+            $prezzi_categorie = get_option('wecoop_listino_categorie', []);
+            
+            // Cerca per servizio
+            if (isset($prezzi_servizi[$servizio])) {
+                $importo = floatval($prezzi_servizi[$servizio]);
+            }
+            // Altrimenti cerca per categoria
+            elseif ($categoria && isset($prezzi_categorie[$categoria])) {
+                $importo = floatval($prezzi_categorie[$categoria]);
+            }
+        }
+        
         // Ottieni nome richiedente dai dati
         $nome_richiedente = $dati['nome_completo'] ?? '';
         if (!$nome_richiedente && $user_id) {
