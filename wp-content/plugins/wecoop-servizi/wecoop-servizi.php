@@ -67,11 +67,15 @@ class WeCoop_Servizi {
         
         // API
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'api/class-servizi-endpoint.php';
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'api/class-stripe-payment-intent.php';
         
         // Admin
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'admin/class-servizi-management.php';
         
-        // WooCommerce Integration
+        // Sistema Pagamenti Custom
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-payment-system.php';
+        
+        // WooCommerce Integration (deprecato)
         if (class_exists('WooCommerce')) {
             require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
         }
