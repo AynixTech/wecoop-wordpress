@@ -28,6 +28,8 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_export_richieste_csv', [__CLASS__, 'ajax_export_csv']);
         add_action('wp_ajax_get_dashboard_data', [__CLASS__, 'ajax_get_dashboard_data']);
         add_action('wp_ajax_normalize_all_servizi', [__CLASS__, 'ajax_normalize_all_servizi']);
+        add_action('wp_ajax_save_listino_prezzi', [__CLASS__, 'ajax_save_listino_prezzi']);
+        add_action('wp_ajax_bulk_delete_richieste', [__CLASS__, 'ajax_bulk_delete_richieste']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -75,6 +77,16 @@ class WECOOP_Servizi_Management {
             'manage_options',
             'wecoop-servizi-mappature',
             [__CLASS__, 'render_mappature']
+        );
+        
+        // Listino Prezzi
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Listino Prezzi',
+            '💰 Listino Prezzi',
+            'manage_options',
+            'wecoop-servizi-listino',
+            [__CLASS__, 'render_listino']
         );
         
         // Pagina nascosta per dettaglio utente
@@ -1155,9 +1167,22 @@ class WECOOP_Servizi_Management {
                 <a href="?page=wecoop-richieste-list" class="button">Reset</a>
             </form>
             
-            <table class="wp-list-table widefat fixed striped">
+            <div class="tablenav top">
+                <div class="alignleft actions bulkactions">
+                    <select id="bulk-action-selector-top">
+                        <option value="-1">Azioni di massa</option>
+                        <option value="delete">Elimina</option>
+                    </select>
+                    <button type="button" id="doaction" class="button action">Applica</button>
+                </div>
+            </div>
+            
+            <table class="wp-list-table widefat fixed striped" id="richieste-table">
                 <thead>
                     <tr>
+                        <td class="manage-column column-cb check-column">
+                            <input type="checkbox" id="cb-select-all">
+                        </td>
                         <th>Numero Pratica</th>
                         <th>Servizio</th>
                         <th>Categoria</th>
@@ -1175,7 +1200,7 @@ class WECOOP_Servizi_Management {
                         <?php endwhile; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="8">Nessuna richiesta trovata.</td>
+                            <td colspan="9">Nessuna richiesta trovata.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1198,6 +1223,7 @@ class WECOOP_Servizi_Management {
         </div>
         
         <?php self::render_edit_modal(); ?>
+        <?php self::render_payment_modal(); ?>
         <?php
     }
     
@@ -1246,6 +1272,9 @@ class WECOOP_Servizi_Management {
         ];
         ?>
         <tr>
+            <th scope="row" class="check-column">
+                <input type="checkbox" class="richiesta-checkbox" value="<?php echo $post_id; ?>">
+            </th>
             <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
             <td>
                 <?php 
@@ -1292,16 +1321,17 @@ class WECOOP_Servizi_Management {
                 <button class="button button-small edit-richiesta" data-id="<?php echo $post_id; ?>">
                     👁️ Dettagli
                 </button>
-                <?php if ($importo && !$order_id): ?>
-                    <button class="button button-small button-primary send-payment-request" 
+                <?php if (!$order_id): ?>
+                    <button class="button button-small button-primary open-payment-modal" 
                             data-id="<?php echo $post_id; ?>"
-                            title="Invia richiesta di pagamento">
+                            data-importo="<?php echo esc_attr($importo); ?>"
+                            title="Richiedi pagamento">
                         💳 Richiedi Pagamento
                     </button>
                 <?php elseif ($order_id): ?>
                     <?php $order = wc_get_order($order_id); ?>
                     <?php if ($order && $order->needs_payment()): ?>
-                        <button class="button button-small send-payment-request" 
+                        <button class="button button-small send-payment-link" 
                                 data-id="<?php echo $post_id; ?>"
                                 title="Reinvia link pagamento">
                             📧 Reinvia Link
@@ -1320,6 +1350,11 @@ class WECOOP_Servizi_Management {
                         </a>
                     <?php endif; ?>
                 <?php endif; ?>
+                <button class="button button-small button-link-delete delete-richiesta" 
+                        data-id="<?php echo $post_id; ?>"
+                        title="Elimina richiesta">
+                    🗑️ Elimina
+                </button>
             </td>
         </tr>
         <?php
@@ -1385,6 +1420,66 @@ class WECOOP_Servizi_Management {
                 </div>
             </div>
         </div>
+        <?php
+    }
+    
+    /**
+     * Modal richiesta pagamento
+     */
+    private static function render_payment_modal() {
+        ?>
+        <div id="payment-request-modal" style="display:none;">
+            <div class="wecoop-modal-backdrop"></div>
+            <div class="wecoop-modal-content" style="max-width: 500px;">
+                <div class="wecoop-modal-header">
+                    <h2>💳 Richiesta di Pagamento</h2>
+                    <button class="wecoop-modal-close">&times;</button>
+                </div>
+                <div class="wecoop-modal-body">
+                    <form id="payment-request-form">
+                        <input type="hidden" id="payment_richiesta_id" name="richiesta_id">
+                        
+                        <div class="form-field">
+                            <label for="payment_importo">
+                                Importo (€) <span style="color: red;">*</span>
+                            </label>
+                            <input type="number" 
+                                   id="payment_importo" 
+                                   name="importo" 
+                                   step="0.01" 
+                                   min="0.01" 
+                                   required 
+                                   placeholder="es. 50.00"
+                                   style="width: 100%; padding: 8px; font-size: 16px;">
+                            <p class="description">Inserisci l'importo da richiedere al cliente</p>
+                        </div>
+                        
+                        <div class="form-field" style="margin-top: 15px;">
+                            <label>
+                                <input type="checkbox" id="payment_update_stato" name="update_stato" checked>
+                                Cambia stato in "Da Pagare"
+                            </label>
+                        </div>
+                        
+                        <div style="background: #f0f6fc; border-left: 4px solid #2271b1; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                            <strong>📧 Cosa succede:</strong>
+                            <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+                                <li>Viene creato un ordine WooCommerce</li>
+                                <li>Il cliente riceve un'email con il link di pagamento</li>
+                                <li>L'importo viene salvato nella richiesta</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="wecoop-modal-footer">
+                            <button type="button" class="button wecoop-modal-close">Annulla</button>
+                            <button type="submit" class="button button-primary">
+                                💳 Invia Richiesta di Pagamento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
         
         <script>
         jQuery(document).ready(function($) {
@@ -1422,6 +1517,167 @@ class WECOOP_Servizi_Management {
                     error: function() {
                         alert('❌ Errore di comunicazione con il server');
                         $button.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+            
+            // Apri modal pagamento
+            $(document).on('click', '.open-payment-modal', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $(this).data('id');
+                const importo = $(this).data('importo');
+                
+                // Popola il form
+                $('#payment_richiesta_id').val(richiestaId);
+                $('#payment_importo').val(importo || '');
+                
+                // Mostra modal
+                $('#payment-request-modal').fadeIn(200);
+            });
+            
+            // Chiudi modal pagamento
+            $(document).on('click', '#payment-request-modal .wecoop-modal-close, #payment-request-modal .wecoop-modal-backdrop', function(e) {
+                e.preventDefault();
+                $('#payment-request-modal').fadeOut(200);
+            });
+            
+            // Submit form pagamento
+            $('#payment-request-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $('#payment_richiesta_id').val();
+                const importo = $('#payment_importo').val();
+                const updateStato = $('#payment_update_stato').is(':checked');
+                const $submitBtn = $(this).find('button[type="submit"]');
+                const originalText = $submitBtn.text();
+                
+                if (!importo || parseFloat(importo) <= 0) {
+                    alert('❌ Inserisci un importo valido');
+                    return;
+                }
+                
+                if (!confirm('Confermi l\'invio della richiesta di pagamento di €' + importo + '?')) {
+                    return;
+                }
+                
+                $submitBtn.prop('disabled', true).text('⏳ Invio in corso...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'send_payment_request',
+                        richiesta_id: richiestaId,
+                        importo: importo,
+                        update_stato: updateStato ? '1' : '0',
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ ' + response.data);
+                            $('#payment-request-modal').fadeOut(200);
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $submitBtn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $submitBtn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+            
+            // Select all checkbox
+            $('#cb-select-all').on('change', function() {
+                $('.richiesta-checkbox').prop('checked', $(this).prop('checked'));
+            });
+            
+            // Bulk delete action
+            $('#doaction').on('click', function(e) {
+                e.preventDefault();
+                
+                const action = $('#bulk-action-selector-top').val();
+                if (action !== 'delete') {
+                    return;
+                }
+                
+                const selected = [];
+                $('.richiesta-checkbox:checked').each(function() {
+                    selected.push($(this).val());
+                });
+                
+                if (selected.length === 0) {
+                    alert('❌ Seleziona almeno una richiesta da eliminare');
+                    return;
+                }
+                
+                if (!confirm('⚠️ SEI SICURO di voler eliminare ' + selected.length + ' richiesta/e?\n\nQuesta azione NON può essere annullata!')) {
+                    return;
+                }
+                
+                const $btn = $(this);
+                $btn.prop('disabled', true).text('Eliminazione...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'bulk_delete_richieste',
+                        richieste_ids: selected,
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ ' + response.data);
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $btn.prop('disabled', false).text('Applica');
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $btn.prop('disabled', false).text('Applica');
+                    }
+                });
+            });
+            
+            // Single delete
+            $(document).on('click', '.delete-richiesta', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $(this).data('id');
+                const $btn = $(this);
+                
+                if (!confirm('⚠️ SEI SICURO di voler eliminare questa richiesta?\n\nQuesta azione NON può essere annullata!')) {
+                    return;
+                }
+                
+                $btn.prop('disabled', true).text('⏳ Eliminazione...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'bulk_delete_richieste',
+                        richieste_ids: [richiestaId],
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ Richiesta eliminata con successo');
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $btn.prop('disabled', false).text('🗑️ Elimina');
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $btn.prop('disabled', false).text('🗑️ Elimina');
                     }
                 });
             });
@@ -1771,11 +2027,21 @@ class WECOOP_Servizi_Management {
         }
         
         $richiesta_id = absint($_POST['richiesta_id']);
+        $importo_input = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
+        $update_stato = isset($_POST['update_stato']) && $_POST['update_stato'] === '1';
+        
+        // Se viene fornito un importo dal modal, aggiornalo
+        if ($importo_input > 0) {
+            update_post_meta($richiesta_id, 'importo', $importo_input);
+            $importo = $importo_input;
+        } else {
+            // Altrimenti usa quello esistente
+            $importo = get_post_meta($richiesta_id, 'importo', true);
+        }
         
         // Verifica importo
-        $importo = get_post_meta($richiesta_id, 'importo', true);
         if (!$importo || $importo <= 0) {
-            wp_send_json_error('Importo non specificato. Imposta un importo nella richiesta.');
+            wp_send_json_error('Importo non specificato. Inserisci un importo valido.');
         }
         
         // Verifica se esiste già un ordine
@@ -1796,14 +2062,17 @@ class WECOOP_Servizi_Management {
                 wp_send_json_error('Integrazione WooCommerce non disponibile.');
             }
         } else {
-            // Crea nuovo ordine e invia email
-            update_post_meta($richiesta_id, 'stato', 'awaiting_payment');
+            // Cambia stato se richiesto
+            if ($update_stato) {
+                update_post_meta($richiesta_id, 'stato', 'awaiting_payment');
+            }
             
+            // Crea nuovo ordine e invia email
             if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
                 $new_order_id = WECOOP_Servizi_WooCommerce_Integration::crea_ordine_woocommerce($richiesta_id);
                 
                 if ($new_order_id) {
-                    wp_send_json_success('Ordine creato e richiesta di pagamento inviata!');
+                    wp_send_json_success('Ordine creato e richiesta di pagamento inviata! (€' . number_format($importo, 2) . ')');
                 } else {
                     $error = get_post_meta($richiesta_id, 'payment_error', true);
                     wp_send_json_error('Errore creazione ordine: ' . $error);
@@ -2820,5 +3089,234 @@ class WECOOP_Servizi_Management {
         error_log('WeCoop: Normalizzazione servizi completata - ' . json_encode($stats));
         
         wp_send_json_success($stats);
+    }
+    
+    /**
+     * AJAX Bulk delete richieste
+     */
+    public static function ajax_bulk_delete_richieste() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $richieste_ids = isset($_POST['richieste_ids']) ? array_map('absint', $_POST['richieste_ids']) : [];
+        
+        if (empty($richieste_ids)) {
+            wp_send_json_error('Nessuna richiesta selezionata');
+        }
+        
+        $deleted = 0;
+        $errors = [];
+        
+        foreach ($richieste_ids as $richiesta_id) {
+            // Verifica che sia effettivamente una richiesta servizio
+            if (get_post_type($richiesta_id) !== 'richiesta_servizio') {
+                $errors[] = "ID $richiesta_id non è una richiesta valida";
+                continue;
+            }
+            
+            // Elimina ordine WooCommerce associato se esiste
+            $order_id = get_post_meta($richiesta_id, 'wc_order_id', true);
+            if ($order_id) {
+                $order = wc_get_order($order_id);
+                if ($order) {
+                    $order->delete(true); // true = force delete
+                }
+            }
+            
+            // Elimina la richiesta
+            $result = wp_delete_post($richiesta_id, true); // true = force delete, skip trash
+            
+            if ($result) {
+                $deleted++;
+            } else {
+                $errors[] = "Impossibile eliminare richiesta #$richiesta_id";
+            }
+        }
+        
+        if ($deleted > 0) {
+            $message = "Eliminate $deleted richiesta/e con successo";
+            if (!empty($errors)) {
+                $message .= ". Errori: " . implode(', ', $errors);
+            }
+            wp_send_json_success($message);
+        } else {
+            wp_send_json_error('Nessuna richiesta eliminata. Errori: ' . implode(', ', $errors));
+        }
+    }
+    
+    /**
+     * Render pagina Listino Prezzi
+     */
+    public static function render_listino() {
+        // Ottieni normalizer per la lista dei servizi
+        $servizi_standard = WECOOP_Servizi_Normalizer::get_servizi_standard();
+        $categorie_standard = WECOOP_Servizi_Normalizer::get_categorie_standard();
+        
+        // Carica prezzi salvati
+        $prezzi_servizi = get_option('wecoop_listino_servizi', []);
+        $prezzi_categorie = get_option('wecoop_listino_categorie', []);
+        
+        ?>
+        <div class="wrap">
+            <h1>💰 Listino Prezzi Servizi</h1>
+            
+            <p class="description">
+                Configura i prezzi standard per ogni servizio e categoria. Questi valori verranno utilizzati 
+                come suggerimento quando crei una richiesta di pagamento.
+            </p>
+            
+            <form id="listino-prezzi-form">
+                <h2>Servizi Principali</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Servizio</th>
+                            <th style="width: 30%;">Codice</th>
+                            <th style="width: 20%;">Prezzo (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($servizi_standard as $key => $nome): ?>
+                            <tr>
+                                <td><strong><?php echo esc_html($nome); ?></strong></td>
+                                <td><code><?php echo esc_html($key); ?></code></td>
+                                <td>
+                                    <input type="number" 
+                                           name="servizio[<?php echo esc_attr($key); ?>]" 
+                                           value="<?php echo esc_attr($prezzi_servizi[$key] ?? ''); ?>" 
+                                           step="0.01" 
+                                           min="0" 
+                                           placeholder="0.00"
+                                           style="width: 100px;">
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <h2 style="margin-top: 30px;">Categorie Specifiche</h2>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th style="width: 50%;">Categoria</th>
+                            <th style="width: 30%;">Codice</th>
+                            <th style="width: 20%;">Prezzo (€)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($categorie_standard as $key => $nome): ?>
+                            <tr>
+                                <td><?php echo esc_html($nome); ?></td>
+                                <td><code><?php echo esc_html($key); ?></code></td>
+                                <td>
+                                    <input type="number" 
+                                           name="categoria[<?php echo esc_attr($key); ?>]" 
+                                           value="<?php echo esc_attr($prezzi_categorie[$key] ?? ''); ?>" 
+                                           step="0.01" 
+                                           min="0" 
+                                           placeholder="0.00"
+                                           style="width: 100px;">
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                
+                <p class="submit">
+                    <button type="submit" class="button button-primary button-large">
+                        💾 Salva Listino Prezzi
+                    </button>
+                </p>
+            </form>
+            
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; border-radius: 4px;">
+                <strong>ℹ️ Come funziona:</strong>
+                <ul style="margin: 8px 0 0 20px;">
+                    <li>I prezzi qui configurati sono solo <strong>suggerimenti</strong></li>
+                    <li>Quando richiedi un pagamento, il sistema cercherà prima il prezzo della categoria specifica</li>
+                    <li>Se non trova la categoria, utilizzerà il prezzo del servizio principale</li>
+                    <li>Puoi sempre modificare l'importo nella modale di pagamento</li>
+                    <li>Lascia vuoto per non avere suggerimenti</li>
+                </ul>
+            </div>
+        </div>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            $('#listino-prezzi-form').on('submit', function(e) {
+                e.preventDefault();
+                
+                const $form = $(this);
+                const $btn = $form.find('button[type="submit"]');
+                const originalText = $btn.text();
+                
+                $btn.prop('disabled', true).text('💾 Salvataggio...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'save_listino_prezzi',
+                        form_data: $form.serialize(),
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ ' + response.data);
+                            $btn.prop('disabled', false).text(originalText);
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $btn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+        });
+        </script>
+        <?php
+    }
+    
+    /**
+     * AJAX salva listino prezzi
+     */
+    public static function ajax_save_listino_prezzi() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        parse_str($_POST['form_data'], $data);
+        
+        $servizi = [];
+        $categorie = [];
+        
+        if (isset($data['servizio'])) {
+            foreach ($data['servizio'] as $key => $prezzo) {
+                if ($prezzo !== '' && floatval($prezzo) >= 0) {
+                    $servizi[$key] = floatval($prezzo);
+                }
+            }
+        }
+        
+        if (isset($data['categoria'])) {
+            foreach ($data['categoria'] as $key => $prezzo) {
+                if ($prezzo !== '' && floatval($prezzo) >= 0) {
+                    $categorie[$key] = floatval($prezzo);
+                }
+            }
+        }
+        
+        update_option('wecoop_listino_servizi', $servizi);
+        update_option('wecoop_listino_categorie', $categorie);
+        
+        wp_send_json_success('Listino prezzi salvato con successo!');
     }
 }
