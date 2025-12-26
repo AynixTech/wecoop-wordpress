@@ -2026,6 +2026,22 @@ class WECOOP_Servizi_Management {
             wp_send_json_error('Permessi insufficienti');
         }
         
+        // Verifica che WooCommerce sia attivo
+        if (!class_exists('WooCommerce')) {
+            wp_send_json_error('WooCommerce non è installato o attivato. Attiva WooCommerce per utilizzare questa funzionalità.');
+        }
+        
+        // Carica l'integrazione se non è già caricata
+        if (!class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+            $integration_file = WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
+            if (file_exists($integration_file)) {
+                require_once $integration_file;
+                WECOOP_Servizi_WooCommerce_Integration::init();
+            } else {
+                wp_send_json_error('File di integrazione WooCommerce non trovato.');
+            }
+        }
+        
         $richiesta_id = absint($_POST['richiesta_id']);
         $importo_input = isset($_POST['importo']) ? floatval($_POST['importo']) : 0;
         $update_stato = isset($_POST['update_stato']) && $_POST['update_stato'] === '1';
