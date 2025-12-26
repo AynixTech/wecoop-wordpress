@@ -16,8 +16,7 @@ class WECOOP_Servizi_WooCommerce_Integration {
      * Inizializza
      */
     public static function init() {
-        // Hook quando lo stato della richiesta cambia
-        add_action('transition_post_status', [__CLASS__, 'on_status_change'], 10, 3);
+        // Hook quando salvi una richiesta servizio
         add_action('save_post_richiesta_servizio', [__CLASS__, 'on_richiesta_save'], 20, 3);
         
         // Hook quando lo stato dell'ordine WooCommerce cambia
