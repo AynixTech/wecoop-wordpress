@@ -27,6 +27,26 @@ class WECOOP_Servizi_WooCommerce_Integration {
         
         // Permetti pagamento ordini senza login se hanno chiave valida
         add_action('template_redirect', [__CLASS__, 'allow_guest_payment']);
+        
+        // Disabilita email automatiche WooCommerce per ordini creati da noi
+        add_filter('woocommerce_email_enabled_customer_on_hold_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_processing_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_customer_completed_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
+        add_filter('woocommerce_email_enabled_new_order', [__CLASS__, 'disable_wc_emails'], 10, 2);
+    }
+    
+    /**
+     * Disabilita email WooCommerce per ordini creati da WeCoop Servizi
+     */
+    public static function disable_wc_emails($enabled, $order) {
+        if (!$order) return $enabled;
+        
+        $created_via = $order->get_meta('_created_via');
+        if ($created_via === 'wecoop_servizi') {
+            return false; // Disabilita email WooCommerce
+        }
+        
+        return $enabled;
     }
     
     /**
@@ -67,6 +87,20 @@ class WECOOP_Servizi_WooCommerce_Integration {
                 }
                 return $statuses;
             }, 999);
+            
+            // Forza disponibilità metodi di pagamento
+            add_filter('woocommerce_available_payment_gateways', function($gateways) {
+                // Assicura che tutti i gateway siano disponibili
+                return $gateways;
+            }, 999);
+            
+            // Forza needs_payment a true
+            add_filter('woocommerce_order_needs_payment', function($needs_payment, $order) {
+                if ($order && in_array($order->get_status(), ['pending', 'on-hold']) && $order->get_total() > 0) {
+                    return true;
+                }
+                return $needs_payment;
+            }, 999, 2);
         }
     }
     
@@ -182,14 +216,37 @@ class WECOOP_Servizi_WooCommerce_Integration {
             $item->set_quantity(1);
             $item->set_subtotal($importo);
             $item->set_total($importo);
+            $item->set_subtotal_tax(0);
+            $item->set_total_tax(0);
             
             // Meta dati personalizzati
             $item->add_meta_data('_richiesta_servizio_id', $richiesta_id, true);
             $item->add_meta_data('_numero_pratica', $numero_pratica, true);
             $item->add_meta_data('_tipo_servizio', $servizio, true);
             
-            $order->add_item($item);
+            // Aggiungi item all'ordine e ottieni l'ID
+            $item_id = $order->add_item($item);
+            
+            error_log('[WECOOP SERVIZI] Item ID: ' . $item_id);
+            
+            // Salva l'ordine per persistere l'item
+            $order->save();
+            
+            // Calcola totali (questo ricalcola anche gli items)
             $order->calculate_totals();
+            
+            // Salva nuovamente con i totali calcolati
+            $order->save();
+            
+            // Verifica che l'item sia stato salvato correttamente
+            $saved_items = $order->get_items();
+            error_log('[WECOOP SERVIZI] Item aggiunto: ' . $servizio . ' - ' . number_format($importo, 2) . '€');
+            error_log('[WECOOP SERVIZI] Totale ordine: ' . $order->get_total());
+            error_log('[WECOOP SERVIZI] Items count: ' . count($saved_items));
+            
+            if (count($saved_items) === 0) {
+                throw new Exception('Errore: Item non salvato correttamente');
+            }
             
             // Aggiungi note
             $order->add_order_note(sprintf(
