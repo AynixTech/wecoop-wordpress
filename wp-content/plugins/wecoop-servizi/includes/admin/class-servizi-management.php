@@ -27,6 +27,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_send_payment_request', [__CLASS__, 'ajax_send_payment_request']);
         add_action('wp_ajax_export_richieste_csv', [__CLASS__, 'ajax_export_csv']);
         add_action('wp_ajax_get_dashboard_data', [__CLASS__, 'ajax_get_dashboard_data']);
+        add_action('wp_ajax_normalize_all_servizi', [__CLASS__, 'ajax_normalize_all_servizi']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -2513,6 +2514,111 @@ class WECOOP_Servizi_Management {
                 <br>Le statistiche della dashboard raggrupperanno automaticamente i servizi mappati.
             </p>
             
+            <!-- Tool Migrazione -->
+            <div class="notice notice-info" style="margin: 20px 0; padding: 15px; position: relative;">
+                <h3 style="margin-top: 0;">🔄 Normalizza Richieste Esistenti</h3>
+                <p>
+                    Hai richieste create prima dell'implementazione delle chiavi standard? 
+                    Usa questo strumento per normalizzare automaticamente tutti i servizi e categorie esistenti.
+                </p>
+                <p>
+                    <strong>Cosa fa:</strong> Analizza tutte le richieste nel database e aggiorna i campi <code>servizio</code> e <code>categoria</code> 
+                    con i nomi italiani normalizzati (es. "Permiso de Residencia" → "Permesso di Soggiorno").
+                </p>
+                <button type="button" id="normalize-all-btn" class="button button-primary button-large">
+                    🔄 Normalizza Tutte le Richieste
+                </button>
+                <span id="normalize-status" style="margin-left: 15px; font-weight: bold;"></span>
+                
+                <div id="normalize-progress" style="margin-top: 15px; display: none;">
+                    <div style="background: #f0f0f0; height: 30px; border-radius: 15px; overflow: hidden; position: relative;">
+                        <div id="normalize-progress-bar" style="background: linear-gradient(90deg, #2271b1, #135e96); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #333; font-weight: bold; font-size: 12px;" id="normalize-progress-text">0%</div>
+                    </div>
+                </div>
+                
+                <div id="normalize-results" style="margin-top: 15px; display: none;"></div>
+            </div>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                $('#normalize-all-btn').on('click', function() {
+                    if (!confirm('Vuoi normalizzare tutte le richieste esistenti?\n\nQuesta operazione aggiornerà i campi servizio e categoria di tutte le richieste nel database.\n\nÈ sicuro e reversibile, ma potrebbe richiedere alcuni minuti.')) {
+                        return;
+                    }
+                    
+                    var $btn = $(this);
+                    var $status = $('#normalize-status');
+                    var $progress = $('#normalize-progress');
+                    var $progressBar = $('#normalize-progress-bar');
+                    var $progressText = $('#normalize-progress-text');
+                    var $results = $('#normalize-results');
+                    
+                    $btn.prop('disabled', true).text('⏳ Normalizzazione in corso...');
+                    $status.html('<span style="color: #f0b849;">⏳ Elaborazione...</span>');
+                    $progress.show();
+                    $results.hide().html('');
+                    
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'normalize_all_servizi',
+                            nonce: '<?php echo wp_create_nonce('wecoop_normalize_servizi'); ?>'
+                        },
+                        success: function(response) {
+                            $btn.prop('disabled', false).text('🔄 Normalizza Tutte le Richieste');
+                            
+                            if (response.success) {
+                                $progressBar.css('width', '100%');
+                                $progressText.text('100%');
+                                
+                                setTimeout(function() {
+                                    $status.html('<span style="color: #00a32a;">✅ Completato!</span>');
+                                    
+                                    var html = '<div class="notice notice-success" style="padding: 10px; margin: 0;">';
+                                    html += '<h4 style="margin: 5px 0;">✅ Normalizzazione completata con successo!</h4>';
+                                    html += '<ul style="margin: 10px 0; padding-left: 20px;">';
+                                    html += '<li><strong>Richieste analizzate:</strong> ' + response.data.total + '</li>';
+                                    html += '<li><strong>Richieste aggiornate:</strong> ' + response.data.updated + '</li>';
+                                    html += '<li><strong>Già normalizzate:</strong> ' + response.data.skipped + '</li>';
+                                    html += '</ul>';
+                                    
+                                    if (response.data.details && response.data.details.length > 0) {
+                                        html += '<details style="margin-top: 10px;">';
+                                        html += '<summary style="cursor: pointer; font-weight: bold;">📋 Dettagli modifiche</summary>';
+                                        html += '<table class="widefat" style="margin-top: 10px; font-size: 12px;">';
+                                        html += '<thead><tr><th>ID</th><th>Prima</th><th>Dopo</th></tr></thead><tbody>';
+                                        response.data.details.forEach(function(detail) {
+                                            html += '<tr>';
+                                            html += '<td>' + detail.id + '</td>';
+                                            html += '<td><code>' + detail.before + '</code></td>';
+                                            html += '<td><code>' + detail.after + '</code></td>';
+                                            html += '</tr>';
+                                        });
+                                        html += '</tbody></table>';
+                                        html += '</details>';
+                                    }
+                                    
+                                    html += '</div>';
+                                    
+                                    $results.html(html).slideDown();
+                                }, 300);
+                            } else {
+                                $status.html('<span style="color: #d63638;">❌ Errore</span>');
+                                $results.html('<div class="notice notice-error"><p>' + (response.data || 'Errore sconosciuto') + '</p></div>').slideDown();
+                            }
+                        },
+                        error: function() {
+                            $btn.prop('disabled', false).text('🔄 Normalizza Tutte le Richieste');
+                            $status.html('<span style="color: #d63638;">❌ Errore di rete</span>');
+                            $results.html('<div class="notice notice-error"><p>Errore di connessione. Riprova.</p></div>').slideDown();
+                        }
+                    });
+                });
+            });
+            </script>
+            
             <!-- Aggiungi nuova mappatura -->
             <div class="postbox" style="margin: 20px 0;">
                 <div class="postbox-header">
@@ -2646,5 +2752,73 @@ class WECOOP_Servizi_Management {
             <?php endif; ?>
         </div>
         <?php
+    }
+    
+    /**
+     * AJAX: Normalizza tutti i servizi esistenti
+     */
+    public static function ajax_normalize_all_servizi() {
+        check_ajax_referer('wecoop_normalize_servizi', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        global $wpdb;
+        
+        // Ottieni tutte le richieste
+        $richieste = $wpdb->get_results("
+            SELECT post_id, meta_key, meta_value 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key IN ('servizio', 'categoria') 
+            AND post_id IN (
+                SELECT ID FROM {$wpdb->posts} 
+                WHERE post_type = 'richiesta_servizio'
+            )
+            ORDER BY post_id
+        ");
+        
+        $stats = [
+            'total' => 0,
+            'updated' => 0,
+            'skipped' => 0,
+            'details' => []
+        ];
+        
+        $processed_posts = [];
+        
+        foreach ($richieste as $row) {
+            if (!in_array($row->post_id, $processed_posts)) {
+                $processed_posts[] = $row->post_id;
+                $stats['total']++;
+            }
+            
+            $original = $row->meta_value;
+            $tipo = $row->meta_key === 'servizio' ? 'servizio' : 'categoria';
+            $normalized = WECOOP_Servizi_Normalizer::normalize($original, $tipo);
+            
+            // Aggiorna solo se diverso
+            if ($normalized !== $original) {
+                update_post_meta($row->post_id, $row->meta_key, $normalized);
+                $stats['updated']++;
+                
+                // Salva dettagli (max 50 per non sovraccaricare)
+                if (count($stats['details']) < 50) {
+                    $stats['details'][] = [
+                        'id' => $row->post_id,
+                        'field' => $row->meta_key,
+                        'before' => $original,
+                        'after' => $normalized
+                    ];
+                }
+            } else {
+                $stats['skipped']++;
+            }
+        }
+        
+        // Log risultati
+        error_log('WeCoop: Normalizzazione servizi completata - ' . json_encode($stats));
+        
+        wp_send_json_success($stats);
     }
 }
