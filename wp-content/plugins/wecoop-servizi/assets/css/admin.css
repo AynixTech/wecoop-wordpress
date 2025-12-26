@@ -83,12 +83,18 @@
 }
 
 .wecoop-modal-backdrop {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.7);
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 20px;
 }
 
 .wecoop-modal-content {
@@ -96,11 +102,12 @@
     background: white;
     width: 90%;
     max-width: 800px;
-    margin: 50px auto;
+    margin: auto;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    max-height: 80vh;
+    max-height: 90vh;
     overflow: auto;
+    z-index: 100001;
 }
 
 .wecoop-modal-header {
@@ -178,6 +185,73 @@
     display: inline-block;
 }
 
+/* Azioni tabella richieste */
+.wp-list-table td {
+    white-space: nowrap;
+}
+
+.wp-list-table td .button {
+    margin: 2px 3px;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.wp-list-table td .button.button-small {
+    padding: 3px 8px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.wp-list-table .edit-richiesta {
+    background: #2271b1;
+    color: white;
+    border-color: #2271b1;
+}
+
+.wp-list-table .edit-richiesta:hover {
+    background: #135e96;
+    border-color: #135e96;
+}
+
+.wp-list-table .open-payment-modal {
+    background: #00a32a;
+    color: white;
+    border-color: #00a32a;
+}
+
+.wp-list-table .open-payment-modal:hover {
+    background: #008a20;
+    border-color: #008a20;
+}
+
+.wp-list-table .send-payment-link {
+    background: #9b51e0;
+    color: white;
+    border-color: #9b51e0;
+}
+
+.wp-list-table .send-payment-link:hover {
+    background: #7c3db8;
+    border-color: #7c3db8;
+}
+
+.wp-list-table .delete-richiesta {
+    background: #d63638;
+    color: white;
+    border-color: #d63638;
+}
+
+.wp-list-table .delete-richiesta:hover {
+    background: #b32d2e;
+    border-color: #b32d2e;
+}
+
+/* Wrapping per azioni multiple */
+.wp-list-table tbody td:last-child {
+    white-space: normal;
+    min-width: 200px;
+}
+
 @media (max-width: 768px) {
     .wecoop-stats-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -185,5 +259,11 @@
     
     .form-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .wp-list-table td .button {
+        display: block;
+        width: 100%;
+        margin: 3px 0;
     }
 }

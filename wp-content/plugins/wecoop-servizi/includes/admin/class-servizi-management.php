@@ -1428,16 +1428,16 @@ class WECOOP_Servizi_Management {
      */
     private static function render_payment_modal() {
         ?>
-        <div id="payment-request-modal" style="display:none;">
-            <div class="wecoop-modal-backdrop"></div>
-            <div class="wecoop-modal-content" style="max-width: 500px;">
-                <div class="wecoop-modal-header">
-                    <h2>💳 Richiesta di Pagamento</h2>
-                    <button class="wecoop-modal-close">&times;</button>
-                </div>
-                <div class="wecoop-modal-body">
-                    <form id="payment-request-form">
-                        <input type="hidden" id="payment_richiesta_id" name="richiesta_id">
+        <div id="payment-request-modal" class="wecoop-modal" style="display:none;">
+            <div class="wecoop-modal-backdrop">
+                <div class="wecoop-modal-content" style="max-width: 500px;">
+                    <div class="wecoop-modal-header">
+                        <h2>💳 Richiesta di Pagamento</h2>
+                        <button class="wecoop-modal-close">&times;</button>
+                    </div>
+                    <div class="wecoop-modal-body">
+                        <form id="payment-request-form">
+                            <input type="hidden" id="payment_richiesta_id" name="richiesta_id">
                         
                         <div class="form-field">
                             <label for="payment_importo">
@@ -1479,6 +1479,7 @@ class WECOOP_Servizi_Management {
                     </form>
                 </div>
             </div>
+        </div>
         </div>
         
         <script>
@@ -1532,14 +1533,25 @@ class WECOOP_Servizi_Management {
                 $('#payment_richiesta_id').val(richiestaId);
                 $('#payment_importo').val(importo || '');
                 
-                // Mostra modal
+                // Mostra modal centrata
                 $('#payment-request-modal').fadeIn(200);
+                $('body').css('overflow', 'hidden'); // Previeni scroll della pagina
             });
             
-            // Chiudi modal pagamento
-            $(document).on('click', '#payment-request-modal .wecoop-modal-close, #payment-request-modal .wecoop-modal-backdrop', function(e) {
+            // Chiudi modal pagamento - click su X
+            $(document).on('click', '#payment-request-modal .wecoop-modal-close', function(e) {
                 e.preventDefault();
                 $('#payment-request-modal').fadeOut(200);
+                $('body').css('overflow', ''); // Ripristina scroll
+            });
+            
+            // Chiudi modal pagamento - click su backdrop
+            $(document).on('click', '#payment-request-modal .wecoop-modal-backdrop', function(e) {
+                // Chiudi solo se clicchi direttamente sul backdrop, non sul contenuto
+                if (e.target === this) {
+                    $('#payment-request-modal').fadeOut(200);
+                    $('body').css('overflow', ''); // Ripristina scroll
+                }
             });
             
             // Submit form pagamento
@@ -1584,6 +1596,7 @@ class WECOOP_Servizi_Management {
                         if (response.success) {
                             alert('✅ ' + response.data);
                             $('#payment-request-modal').fadeOut(200);
+                            $('body').css('overflow', ''); // Ripristina scroll
                             location.reload();
                         } else {
                             console.error('❌ Errore server:', response.data);
@@ -2034,11 +2047,12 @@ class WECOOP_Servizi_Management {
      * AJAX: Invia richiesta di pagamento
      */
     public static function ajax_send_payment_request() {
-        error_log('🔄 WeCoop: Inizio ajax_send_payment_request');
-        error_log('🔄 WeCoop: POST data: ' . print_r($_POST, true));
-        
-        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
-        error_log('✅ WeCoop: Nonce verificato');
+        try {
+            error_log('🔄 WeCoop: Inizio ajax_send_payment_request');
+            error_log('🔄 WeCoop: POST data: ' . print_r($_POST, true));
+            
+            check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+            error_log('✅ WeCoop: Nonce verificato');
         
         if (!current_user_can('manage_options')) {
             error_log('❌ WeCoop: Permessi insufficienti');
@@ -2056,15 +2070,31 @@ class WECOOP_Servizi_Management {
         // Carica l'integrazione se non è già caricata
         if (!class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
             error_log('⚠️ WeCoop: Caricamento integrazione WooCommerce...');
-            $integration_file = WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
+            
+            // Prova con la costante
+            if (defined('WECOOP_SERVIZI_INCLUDES_DIR')) {
+                $integration_file = WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
+            } else {
+                // Fallback: calcola il percorso relativo
+                $integration_file = dirname(__FILE__) . '/../class-woocommerce-integration.php';
+            }
+            
             error_log('🔍 WeCoop: Percorso file: ' . $integration_file);
             error_log('🔍 WeCoop: File esiste: ' . (file_exists($integration_file) ? 'SI' : 'NO'));
+            
             if (file_exists($integration_file)) {
                 require_once $integration_file;
-                WECOOP_Servizi_WooCommerce_Integration::init();
-                error_log('✅ WeCoop: Integrazione WooCommerce caricata');
+                
+                // Verifica che la classe sia stata caricata
+                if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
+                    WECOOP_Servizi_WooCommerce_Integration::init();
+                    error_log('✅ WeCoop: Integrazione WooCommerce caricata e inizializzata');
+                } else {
+                    error_log('❌ WeCoop: File caricato ma classe non trovata');
+                    wp_send_json_error('Errore: classe integrazione WooCommerce non trovata nel file.');
+                }
             } else {
-                error_log('❌ WeCoop: File integrazione non trovato');
+                error_log('❌ WeCoop: File integrazione non trovato in: ' . $integration_file);
                 wp_send_json_error('File di integrazione WooCommerce non trovato.');
             }
         } else {
@@ -2152,6 +2182,13 @@ class WECOOP_Servizi_Management {
                 error_log('❌ WeCoop: Classe integrazione non disponibile (dopo caricamento)');
                 wp_send_json_error('Integrazione WooCommerce non disponibile.');
             }
+        }
+        } catch (Throwable $e) {
+            error_log('❌ WeCoop: ERRORE FATALE in ajax_send_payment_request');
+            error_log('❌ WeCoop: Messaggio: ' . $e->getMessage());
+            error_log('❌ WeCoop: File: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('❌ WeCoop: Stack trace: ' . $e->getTraceAsString());
+            wp_send_json_error('Errore interno del server: ' . $e->getMessage());
         }
     }
     
