@@ -43,6 +43,16 @@ class WECOOP_Servizi_Management {
             'dashicons-clipboard',
             30
         );
+        
+        // Pagina nascosta per dettaglio utente
+        add_submenu_page(
+            null, // Nessun menu parent = pagina nascosta
+            'Dettaglio Utente',
+            'Dettaglio Utente',
+            'manage_options',
+            'wecoop-user-detail',
+            [__CLASS__, 'render_user_detail']
+        );
     }
     
     /**
@@ -252,9 +262,10 @@ class WECOOP_Servizi_Management {
             <td><?php echo esc_html($servizio); ?></td>
             <td><?php echo esc_html($categoria); ?></td>
             <td>
-                <?php if ($user_link) : ?>
-                    <a href="<?php echo esc_url($user_link); ?>" target="_blank">
-                        <?php echo esc_html($nome_richiedente); ?>
+                <?php if ($user_id) : ?>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=wecoop-user-detail&user_id=' . $user_id)); ?>" 
+                       style="font-weight: bold; color: #2271b1;">
+                        👤 <?php echo esc_html($nome_richiedente); ?>
                     </a>
                 <?php else : ?>
                     <?php echo esc_html($nome_richiedente); ?>
@@ -355,10 +366,11 @@ class WECOOP_Servizi_Management {
                             <div class="form-field">
                                 <label>Stato</label>
                                 <select id="stato" name="stato">
-                                    <option value="pending">In Attesa</option>
-                                    <option value="processing">In Lavorazione</option>
-                                    <option value="completed">Completata</option>
-                                    <option value="cancelled">Annullata</option>
+                                    <option value="pending">⏳ In Attesa</option>
+                                    <option value="awaiting_payment">💳 Da Pagare</option>
+                                    <option value="processing">🔄 In Lavorazione</option>
+                                    <option value="completed">✅ Completata</option>
+                                    <option value="cancelled">❌ Annullata</option>
                                 </select>
                             </div>
                         </div>
@@ -828,5 +840,330 @@ class WECOOP_Servizi_Management {
         }
         
         return $actions;
+    }
+    
+    /**
+     * Render pagina dettaglio utente
+     */
+    public static function render_user_detail() {
+        if (!isset($_GET['user_id'])) {
+            wp_die('User ID non specificato');
+        }
+        
+        $user_id = absint($_GET['user_id']);
+        $user = get_userdata($user_id);
+        
+        if (!$user) {
+            wp_die('Utente non trovato');
+        }
+        
+        // Ottieni dati utente
+        $nome = get_user_meta($user_id, 'nome', true);
+        $cognome = get_user_meta($user_id, 'cognome', true);
+        $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
+        $telefono = get_user_meta($user_id, 'telefono', true);
+        $indirizzo = get_user_meta($user_id, 'indirizzo', true);
+        $citta = get_user_meta($user_id, 'citta', true);
+        $cap = get_user_meta($user_id, 'cap', true);
+        $provincia = get_user_meta($user_id, 'provincia', true);
+        $data_nascita = get_user_meta($user_id, 'data_nascita', true);
+        $luogo_nascita = get_user_meta($user_id, 'luogo_nascita', true);
+        $numero_tessera = get_user_meta($user_id, 'numero_tessera', true);
+        
+        // Statistiche richieste
+        $args = [
+            'post_type' => 'richiesta_servizio',
+            'posts_per_page' => -1,
+            'meta_query' => [[
+                'key' => 'user_id',
+                'value' => $user_id
+            ]]
+        ];
+        
+        $all_richieste = new WP_Query($args);
+        $total_richieste = $all_richieste->found_posts;
+        
+        $stats = [
+            'pending' => 0,
+            'awaiting_payment' => 0,
+            'processing' => 0,
+            'completed' => 0,
+            'cancelled' => 0,
+            'totale_speso' => 0
+        ];
+        
+        if ($all_richieste->have_posts()) {
+            while ($all_richieste->have_posts()) {
+                $all_richieste->the_post();
+                $stato = get_post_meta(get_the_ID(), 'stato', true);
+                $importo = floatval(get_post_meta(get_the_ID(), 'importo', true));
+                $payment_status = get_post_meta(get_the_ID(), 'payment_status', true);
+                
+                if (isset($stats[$stato])) {
+                    $stats[$stato]++;
+                }
+                
+                if ($payment_status === 'paid' || $stato === 'completed') {
+                    $stats['totale_speso'] += $importo;
+                }
+            }
+            wp_reset_postdata();
+        }
+        
+        ?>
+        <div class="wrap">
+            <h1>
+                <span class="dashicons dashicons-admin-users" style="font-size: 32px;"></span>
+                Dettaglio Utente: <?php echo esc_html($nome . ' ' . $cognome); ?>
+            </h1>
+            
+            <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi'); ?>" class="button">
+                ← Torna alle Richieste
+            </a>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                <!-- Dati Anagrafici -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>📋 Dati Anagrafici</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="form-table">
+                            <tr>
+                                <th>Nome Completo:</th>
+                                <td><strong><?php echo esc_html($nome . ' ' . $cognome); ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>Codice Fiscale:</th>
+                                <td><?php echo esc_html($codice_fiscale ?: '—'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Data di Nascita:</th>
+                                <td><?php echo esc_html($data_nascita ?: '—'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Luogo di Nascita:</th>
+                                <td><?php echo esc_html($luogo_nascita ?: '—'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Email:</th>
+                                <td>
+                                    <a href="mailto:<?php echo esc_attr($user->user_email); ?>">
+                                        <?php echo esc_html($user->user_email); ?>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Telefono:</th>
+                                <td>
+                                    <?php if ($telefono): ?>
+                                        <a href="tel:<?php echo esc_attr($telefono); ?>">
+                                            <?php echo esc_html($telefono); ?>
+                                        </a>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Indirizzo:</th>
+                                <td><?php echo esc_html($indirizzo ?: '—'); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Città:</th>
+                                <td><?php echo esc_html($citta ?: '—'); ?> <?php echo esc_html($cap ? '(' . $cap . ')' : ''); ?></td>
+                            </tr>
+                            <tr>
+                                <th>Provincia:</th>
+                                <td><?php echo esc_html($provincia ?: '—'); ?></td>
+                            </tr>
+                            <?php if ($numero_tessera): ?>
+                            <tr>
+                                <th>Numero Tessera:</th>
+                                <td><strong><?php echo esc_html($numero_tessera); ?></strong></td>
+                            </tr>
+                            <?php endif; ?>
+                            <tr>
+                                <th>WordPress ID:</th>
+                                <td>
+                                    <a href="<?php echo get_edit_user_link($user_id); ?>" target="_blank">
+                                        #<?php echo $user_id; ?> (Modifica)
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Registrato il:</th>
+                                <td><?php echo date('d/m/Y H:i', strtotime($user->user_registered)); ?></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Statistiche -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>📊 Statistiche Richieste</h2>
+                    </div>
+                    <div class="inside">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                            <div style="background: #f0f0f0; padding: 15px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 32px; font-weight: bold; color: #2271b1;"><?php echo $total_richieste; ?></div>
+                                <div style="color: #666;">Totale Richieste</div>
+                            </div>
+                            <div style="background: #e8f5e9; padding: 15px; border-radius: 5px; text-align: center;">
+                                <div style="font-size: 32px; font-weight: bold; color: #4caf50;">€ <?php echo number_format($stats['totale_speso'], 2, ',', '.'); ?></div>
+                                <div style="color: #666;">Totale Speso</div>
+                            </div>
+                        </div>
+                        
+                        <table class="form-table">
+                            <tr>
+                                <th>⏳ In Attesa:</th>
+                                <td><strong><?php echo $stats['pending']; ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>💳 Da Pagare:</th>
+                                <td><strong style="color: #9c27b0;"><?php echo $stats['awaiting_payment']; ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>🔄 In Lavorazione:</th>
+                                <td><strong style="color: #2196f3;"><?php echo $stats['processing']; ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>✅ Completate:</th>
+                                <td><strong style="color: #4caf50;"><?php echo $stats['completed']; ?></strong></td>
+                            </tr>
+                            <tr>
+                                <th>❌ Annullate:</th>
+                                <td><strong style="color: #f44336;"><?php echo $stats['cancelled']; ?></strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Storico Richieste -->
+            <div class="postbox" style="margin-top: 20px;">
+                <div class="postbox-header">
+                    <h2>📝 Storico Richieste Servizi</h2>
+                </div>
+                <div class="inside">
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th>N. Pratica</th>
+                                <th>Servizio</th>
+                                <th>Data</th>
+                                <th>Importo</th>
+                                <th>Stato</th>
+                                <th>Pagamento</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $richieste_query = new WP_Query([
+                                'post_type' => 'richiesta_servizio',
+                                'posts_per_page' => -1,
+                                'orderby' => 'date',
+                                'order' => 'DESC',
+                                'meta_query' => [[
+                                    'key' => 'user_id',
+                                    'value' => $user_id
+                                ]]
+                            ]);
+                            
+                            if ($richieste_query->have_posts()) :
+                                while ($richieste_query->have_posts()) : $richieste_query->the_post();
+                                    $post_id = get_the_ID();
+                                    $numero_pratica = get_post_meta($post_id, 'numero_pratica', true);
+                                    $servizio = get_post_meta($post_id, 'servizio', true);
+                                    $stato = get_post_meta($post_id, 'stato', true);
+                                    $importo = get_post_meta($post_id, 'importo', true);
+                                    $payment_status = get_post_meta($post_id, 'payment_status', true);
+                                    $order_id = get_post_meta($post_id, 'wc_order_id', true);
+                                    
+                                    $stato_labels = [
+                                        'pending' => '⏳ In Attesa',
+                                        'awaiting_payment' => '💳 Da Pagare',
+                                        'processing' => '🔄 In Lavorazione',
+                                        'completed' => '✅ Completata',
+                                        'cancelled' => '❌ Annullata'
+                                    ];
+                                    
+                                    $stato_colors = [
+                                        'pending' => '#ff9800',
+                                        'awaiting_payment' => '#9c27b0',
+                                        'processing' => '#2196f3',
+                                        'completed' => '#4caf50',
+                                        'cancelled' => '#f44336'
+                                    ];
+                                    ?>
+                                    <tr>
+                                        <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
+                                        <td><?php echo esc_html($servizio); ?></td>
+                                        <td><?php echo get_the_date('d/m/Y H:i'); ?></td>
+                                        <td>
+                                            <?php if ($importo): ?>
+                                                <strong>€ <?php echo number_format($importo, 2, ',', '.'); ?></strong>
+                                            <?php else: ?>
+                                                <span style="color: #999;">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <span style="background: <?php echo $stato_colors[$stato] ?? '#999'; ?>; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; display: inline-block;">
+                                                <?php echo $stato_labels[$stato] ?? $stato; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <?php if ($payment_status === 'paid'): ?>
+                                                <span style="color: green; font-weight: bold;">✓ Pagato</span>
+                                            <?php elseif ($order_id): ?>
+                                                <span style="color: orange;">⏳ In attesa</span>
+                                            <?php else: ?>
+                                                <span style="color: #999;">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <a href="<?php echo get_edit_post_link($post_id); ?>" class="button button-small">
+                                                Dettagli
+                                            </a>
+                                            <?php if ($order_id): ?>
+                                                <a href="<?php echo admin_url('post.php?post=' . $order_id . '&action=edit'); ?>" 
+                                                   class="button button-small" target="_blank">
+                                                    Ordine
+                                                </a>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
+                                        Nessuna richiesta trovata per questo utente.
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                    <?php wp_reset_postdata(); ?>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+            .postbox .inside {
+                padding: 20px;
+            }
+            .form-table th {
+                width: 200px;
+                padding: 10px;
+                font-weight: 600;
+            }
+            .form-table td {
+                padding: 10px;
+            }
+        </style>
+        <?php
     }
 }
