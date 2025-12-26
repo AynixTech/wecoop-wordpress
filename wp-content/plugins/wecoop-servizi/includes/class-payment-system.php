@@ -447,4 +447,5 @@ class WECOOP_Servizi_Payment_System {
     }
 }
 
-WECOOP_Servizi_Payment_System::init();
+// Alias per compatibilità
+class_alias('WECOOP_Servizi_Payment_System', 'WeCoop_Payment_System');
