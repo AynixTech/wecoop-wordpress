@@ -144,6 +144,16 @@ class WECOOP_Servizi_Endpoint {
                 'stato' => ['type' => 'string']
             ]
         ]);
+        
+        // DELETE /richiesta-servizio/{id} - Elimina richiesta (solo se pending)
+        register_rest_route('wecoop/v1', '/richiesta-servizio/(?P<id>\d+)', [
+            'methods' => 'DELETE',
+            'callback' => [__CLASS__, 'delete_richiesta'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'id' => ['required' => true, 'type' => 'integer']
+            ]
+        ]);
     }
     
     /**
@@ -445,6 +455,70 @@ class WECOOP_Servizi_Endpoint {
                 'current_page' => $page,
                 'per_page' => $per_page
             ]
+        ], 200);
+    }
+    
+    /**
+     * DELETE /richiesta-servizio/{id} - Elimina richiesta (solo se pending)
+     */
+    public static function delete_richiesta($request) {
+        $richiesta_id = intval($request->get_param('id'));
+        $current_user_id = self::get_user_id_from_jwt($request);
+        
+        if (!$current_user_id) {
+            return new WP_Error('unauthorized', 'Utente non autenticato', ['status' => 401]);
+        }
+        
+        // Verifica che la richiesta esista
+        $richiesta = get_post($richiesta_id);
+        if (!$richiesta || $richiesta->post_type !== 'richiesta_servizio') {
+            return new WP_Error('not_found', 'Richiesta non trovata', ['status' => 404]);
+        }
+        
+        // Verifica che l'utente sia il proprietario della richiesta
+        $owner_id = get_post_meta($richiesta_id, 'user_id', true);
+        if (intval($owner_id) !== $current_user_id) {
+            return new WP_Error('forbidden', 'Non hai il permesso di eliminare questa richiesta', ['status' => 403]);
+        }
+        
+        // Verifica che la richiesta sia in stato "pending"
+        $stato = get_post_meta($richiesta_id, 'stato', true);
+        if ($stato !== 'pending') {
+            return new WP_Error(
+                'invalid_status', 
+                'Puoi eliminare solo richieste in attesa. Questa richiesta è in stato: ' . $stato,
+                ['status' => 400]
+            );
+        }
+        
+        // Verifica che non ci sia un pagamento associato
+        $payment_status = get_post_meta($richiesta_id, 'payment_status', true);
+        if ($payment_status === 'paid' || $payment_status === 'pending') {
+            return new WP_Error(
+                'has_payment',
+                'Non puoi eliminare una richiesta con un pagamento associato',
+                ['status' => 400]
+            );
+        }
+        
+        $numero_pratica = get_post_meta($richiesta_id, 'numero_pratica', true);
+        $servizio = get_post_meta($richiesta_id, 'servizio', true);
+        
+        // Elimina la richiesta (soft delete - va nel cestino)
+        $result = wp_trash_post($richiesta_id);
+        
+        if (!$result) {
+            return new WP_Error('delete_failed', 'Impossibile eliminare la richiesta', ['status' => 500]);
+        }
+        
+        error_log("[WECOOP API] Richiesta #{$richiesta_id} (pratica: {$numero_pratica}) eliminata da utente #{$current_user_id}");
+        
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Richiesta eliminata con successo',
+            'id' => $richiesta_id,
+            'numero_pratica' => $numero_pratica,
+            'servizio' => $servizio
         ], 200);
     }
 }
