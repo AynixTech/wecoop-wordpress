@@ -97,8 +97,8 @@ class WeCoop_Servizi {
         if (class_exists('WECOOP_Servizi_Payment_System')) {
             WECOOP_Servizi_Payment_System::init();
         }
-        if (class_exists('WeCoop_Stripe_Payment_Intent')) {
-            WeCoop_Stripe_Payment_Intent::init();
+        if (class_exists('WECOOP_Servizi_Stripe_Payment_Intent')) {
+            WECOOP_Servizi_Stripe_Payment_Intent::init();
         }
         if (class_exists('WECOOP_Servizi_WooCommerce_Integration')) {
             WECOOP_Servizi_WooCommerce_Integration::init();
