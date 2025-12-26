@@ -147,6 +147,7 @@ class WECOOP_Servizi_Management {
             'utenti_unici' => [],
             'servizi_popolari' => [],
             'richieste_per_mese' => [],
+            'richieste_per_giorno' => [],
             'entrate_per_mese' => []
         ];
         
@@ -210,6 +211,12 @@ class WECOOP_Servizi_Management {
                     $stats['richieste_per_mese'][$mese] = 0;
                 }
                 $stats['richieste_per_mese'][$mese]++;
+                
+                // Richieste per giorno (per grafico temporale)
+                if (!isset($stats['richieste_per_giorno'][$data_richiesta])) {
+                    $stats['richieste_per_giorno'][$data_richiesta] = 0;
+                }
+                $stats['richieste_per_giorno'][$data_richiesta]++;
                 
                 // Entrate per mese
                 if ($payment_status === 'paid' || $stato === 'completed') {
@@ -430,26 +437,33 @@ class WECOOP_Servizi_Management {
             </div>
             
             <script>
-            // Prepara dati per Chart.js
-            <?php
-            // Ultimi 30 giorni per grafico temporale
-            $giorni_labels = [];
-            $giorni_counts = [];
-            for ($i = 29; $i >= 0; $i--) {
-                $data = date('Y-m-d', strtotime("-$i days"));
-                $giorni_labels[] = date('d/m', strtotime($data));
-                $giorni_counts[] = isset($stats['richieste_per_giorno'][$data]) ? $stats['richieste_per_giorno'][$data] : 0;
-            }
-            
-            // Ultimi 12 mesi per grafico entrate
-            $mesi_labels = [];
-            $mesi_entrate = [];
-            for ($i = 11; $i >= 0; $i--) {
-                $mese = date('Y-m', strtotime("-$i months"));
-                $mesi_labels[] = date('M Y', strtotime($mese . '-01'));
-                $mesi_entrate[] = isset($stats['entrate_per_mese'][$mese]) ? $stats['entrate_per_mese'][$mese] : 0;
-            }
-            ?>
+            // Aspetta che Chart.js sia caricato
+            window.addEventListener('load', function() {
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js non caricato!');
+                    return;
+                }
+                
+                // Prepara dati per Chart.js
+                <?php
+                // Ultimi 30 giorni per grafico temporale
+                $giorni_labels = [];
+                $giorni_counts = [];
+                for ($i = 29; $i >= 0; $i--) {
+                    $data = date('Y-m-d', strtotime("-$i days"));
+                    $giorni_labels[] = date('d/m', strtotime($data));
+                    $giorni_counts[] = isset($stats['richieste_per_giorno'][$data]) ? $stats['richieste_per_giorno'][$data] : 0;
+                }
+                
+                // Ultimi 12 mesi per grafico entrate
+                $mesi_labels = [];
+                $mesi_entrate = [];
+                for ($i = 11; $i >= 0; $i--) {
+                    $mese = date('Y-m', strtotime("-$i months"));
+                    $mesi_labels[] = date('M Y', strtotime($mese . '-01'));
+                    $mesi_entrate[] = isset($stats['entrate_per_mese'][$mese]) ? $stats['entrate_per_mese'][$mese] : 0;
+                }
+                ?>
             
             var giorniLabels = <?php echo json_encode($giorni_labels); ?>;
             var giorniData = <?php echo json_encode($giorni_counts); ?>;
@@ -577,6 +591,8 @@ class WECOOP_Servizi_Management {
                     }
                 }
             });
+            
+            }); // Fine window.addEventListener('load')
             </script>
             
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 20px 0;">
