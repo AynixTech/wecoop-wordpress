@@ -135,6 +135,7 @@ class WECOOP_Servizi_Management {
             'totale' => 0,
             'pending' => 0,
             'awaiting_payment' => 0,
+            'paid' => 0,
             'processing' => 0,
             'completed' => 0,
             'cancelled' => 0,
@@ -173,6 +174,11 @@ class WECOOP_Servizi_Management {
                 
                 if (isset($stats[$stato])) {
                     $stats[$stato]++;
+                }
+                
+                // Conta anche payment_status='paid'
+                if ($payment_status === 'paid') {
+                    $stats['paid']++;
                 }
                 
                 if ($importo > 0) {
@@ -448,15 +454,16 @@ class WECOOP_Servizi_Management {
             var giorniLabels = <?php echo json_encode($giorni_labels); ?>;
             var giorniData = <?php echo json_encode($giorni_counts); ?>;
             
-            var statiLabels = ['⏳ In Attesa', '💳 Da Pagare', '🔄 In Lavorazione', '✅ Completate', '❌ Annullate'];
+            var statiLabels = ['⏳ In Attesa', '💳 Da Pagare', '✅ Pagate', '🔄 In Lavorazione', '✅ Completate', '❌ Annullate'];
             var statiData = [
                 <?php echo $stats['pending']; ?>,
                 <?php echo $stats['awaiting_payment']; ?>,
+                <?php echo $stats['paid']; ?>,
                 <?php echo $stats['processing']; ?>,
                 <?php echo $stats['completed']; ?>,
                 <?php echo $stats['cancelled']; ?>
             ];
-            var statiColors = ['#ff9800', '#9c27b0', '#2196f3', '#4caf50', '#f44336'];
+            var statiColors = ['#ff9800', '#9c27b0', '#4caf50', '#2196f3', '#27ae60', '#f44336'];
             
             var mesiLabels = <?php echo json_encode($mesi_labels); ?>;
             var mesiData = <?php echo json_encode($mesi_entrate); ?>;
@@ -593,8 +600,9 @@ class WECOOP_Servizi_Management {
                                 $stati = [
                                     'pending' => ['⏳ In Attesa', '#ff9800'],
                                     'awaiting_payment' => ['💳 Da Pagare', '#9c27b0'],
+                                    'paid' => ['✅ Pagate', '#4caf50'],
                                     'processing' => ['🔄 In Lavorazione', '#2196f3'],
-                                    'completed' => ['✅ Completate', '#4caf50'],
+                                    'completed' => ['✅ Completate', '#27ae60'],
                                     'cancelled' => ['❌ Annullate', '#f44336']
                                 ];
                                 
@@ -958,6 +966,10 @@ class WECOOP_Servizi_Management {
             
             // Regressione lineare semplice
             $n = count($mesi_values);
+            $slope = 0;
+            $sum_y = 0;
+            $forecast = [];
+            
             if ($n >= 3) {
                 $sum_x = 0;
                 $sum_y = 0;
@@ -974,14 +986,11 @@ class WECOOP_Servizi_Management {
                 $slope = ($n * $sum_xy - $sum_x * $sum_y) / ($n * $sum_xx - $sum_x * $sum_x);
                 $intercept = ($sum_y - $slope * $sum_x) / $n;
                 
-                $forecast = [];
                 for ($i = 1; $i <= 3; $i++) {
                     $next_month = date('M Y', strtotime("+$i months"));
                     $predicted = max(0, $intercept + $slope * ($n + $i - 1));
                     $forecast[$next_month] = round($predicted, 2);
                 }
-            } else {
-                $forecast = [];
             }
             
             // Analisi stagionalità (media per mese dell'anno)
