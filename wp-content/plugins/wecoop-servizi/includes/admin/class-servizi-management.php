@@ -1090,6 +1090,9 @@ class WECOOP_Servizi_Management {
                         <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=awaiting_payment'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #9c27b0; color: white; border-color: #7b1fa2;">
                             💳 Da Pagare (<?php echo $stats['awaiting_payment']; ?>)
                         </a>
+                        <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=paid'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #4caf50; color: white; border-color: #388e3c;">
+                            ✅ Pagato (<?php echo $stats['completed']; ?>)
+                        </a>
                         <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=pending'); ?>" class="button button-large" style="height: auto; padding: 15px; text-align: center; background: #ff9800; color: white; border-color: #f57c00;">
                             ⏳ In Attesa (<?php echo $stats['pending']; ?>)
                         </a>
@@ -1133,12 +1136,22 @@ class WECOOP_Servizi_Management {
         ];
         
         if ($stato_filter) {
-            $args['meta_query'] = [
-                [
-                    'key' => 'stato',
-                    'value' => $stato_filter
-                ]
-            ];
+            // Se filtro "paid", cerca per payment_status invece di stato
+            if ($stato_filter === 'paid') {
+                $args['meta_query'] = [
+                    [
+                        'key' => 'payment_status',
+                        'value' => 'paid'
+                    ]
+                ];
+            } else {
+                $args['meta_query'] = [
+                    [
+                        'key' => 'stato',
+                        'value' => $stato_filter
+                    ]
+                ];
+            }
         }
         
         if ($search) {
@@ -1159,6 +1172,7 @@ class WECOOP_Servizi_Management {
                     <option value="">Tutti gli stati</option>
                     <option value="pending" <?php selected($stato_filter, 'pending'); ?>>In Attesa</option>
                     <option value="awaiting_payment" <?php selected($stato_filter, 'awaiting_payment'); ?>>Da Pagare</option>
+                    <option value="paid" <?php selected($stato_filter, 'paid'); ?>>✅ Pagato</option>
                     <option value="processing" <?php selected($stato_filter, 'processing'); ?>>In Lavorazione</option>
                     <option value="completed" <?php selected($stato_filter, 'completed'); ?>>Completata</option>
                     <option value="cancelled" <?php selected($stato_filter, 'cancelled'); ?>>Annullata</option>
