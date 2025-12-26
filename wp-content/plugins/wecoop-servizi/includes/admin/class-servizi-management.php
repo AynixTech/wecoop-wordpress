@@ -25,6 +25,8 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_delete_richiesta_servizio', [__CLASS__, 'ajax_delete_richiesta']);
         add_action('wp_ajax_update_stato_richiesta', [__CLASS__, 'ajax_update_stato']);
         add_action('wp_ajax_send_payment_request', [__CLASS__, 'ajax_send_payment_request']);
+        add_action('wp_ajax_export_richieste_csv', [__CLASS__, 'ajax_export_csv']);
+        add_action('wp_ajax_get_dashboard_data', [__CLASS__, 'ajax_get_dashboard_data']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -82,6 +84,9 @@ class WECOOP_Servizi_Management {
         if (strpos($hook, 'wecoop-richieste') === false) {
             return;
         }
+        
+        // Chart.js per i grafici
+        wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', [], '4.4.0', true);
         
         wp_enqueue_style('wecoop-servizi-admin', plugin_dir_url(WECOOP_SERVIZI_FILE) . 'assets/css/admin.css', [], WECOOP_SERVIZI_VERSION);
     }
@@ -230,6 +235,99 @@ class WECOOP_Servizi_Management {
         <div class="wrap">
             <h1>📊 Dashboard Analytics - Richieste Servizi</h1>
             
+            <!-- Filtri Temporali & Export -->
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="button periodo-filter active" data-periodo="30days">📅 30 Giorni</button>
+                        <button class="button periodo-filter" data-periodo="7days">📅 7 Giorni</button>
+                        <button class="button periodo-filter" data-periodo="3months">📅 3 Mesi</button>
+                        <button class="button periodo-filter" data-periodo="1year">📅 Anno</button>
+                        <button class="button periodo-filter" data-periodo="all">📅 Tutto</button>
+                        <span style="border-left: 2px solid #ddd; margin: 0 5px;"></span>
+                        <input type="date" id="filter-date-from" class="regular-text" placeholder="Da" style="width: 150px;">
+                        <input type="date" id="filter-date-to" class="regular-text" placeholder="A" style="width: 150px;">
+                        <button class="button periodo-filter" data-periodo="custom" id="apply-custom-filter">🔍 Applica</button>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <a href="<?php echo admin_url('admin-ajax.php?action=export_richieste_csv&nonce=' . wp_create_nonce('wecoop_servizi_nonce') . '&periodo=30days'); ?>" 
+                           class="button button-primary" id="export-csv">
+                            📥 Esporta CSV
+                        </a>
+                        <button class="button" onclick="window.print()">🖨️ Stampa</button>
+                    </div>
+                </div>
+            </div>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                var currentPeriodo = '30days';
+                var currentDateFrom = '';
+                var currentDateTo = '';
+                
+                // Gestione filtri periodo
+                $('.periodo-filter').on('click', function(e) {
+                    e.preventDefault();
+                    var periodo = $(this).data('periodo');
+                    
+                    if (periodo === 'custom') {
+                        currentDateFrom = $('#filter-date-from').val();
+                        currentDateTo = $('#filter-date-to').val();
+                        if (!currentDateFrom || !currentDateTo) {
+                            alert('Seleziona entrambe le date');
+                            return;
+                        }
+                        currentPeriodo = 'custom';
+                    } else {
+                        currentPeriodo = periodo;
+                        currentDateFrom = '';
+                        currentDateTo = '';
+                    }
+                    
+                    $('.periodo-filter').removeClass('active');
+                    $(this).addClass('active');
+                    
+                    // Aggiorna export CSV link
+                    var exportUrl = '<?php echo admin_url('admin-ajax.php?action=export_richieste_csv&nonce=' . wp_create_nonce('wecoop_servizi_nonce')); ?>';
+                    exportUrl += '&periodo=' + currentPeriodo;
+                    if (currentPeriodo === 'custom') {
+                        exportUrl += '&date_from=' + currentDateFrom + '&date_to=' + currentDateTo;
+                    }
+                    $('#export-csv').attr('href', exportUrl);
+                    
+                    // Reload dashboard data via AJAX
+                    loadDashboardData();
+                });
+                
+                function loadDashboardData() {
+                    $.ajax({
+                        url: ajaxurl,
+                        type: 'POST',
+                        data: {
+                            action: 'get_dashboard_data',
+                            nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>',
+                            periodo: currentPeriodo,
+                            date_from: currentDateFrom,
+                            date_to: currentDateTo
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                updateDashboard(response.data);
+                            }
+                        }
+                    });
+                }
+                
+                function updateDashboard(data) {
+                    // Aggiorna KPI cards, grafici, tabelle con i nuovi dati
+                    console.log('Dashboard aggiornata:', data);
+                    
+                    // TODO: Aggiornare i valori dei KPI
+                    // TODO: Aggiornare i grafici Chart.js
+                }
+            });
+            </script>
+            
             <!-- KPI Principali -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
                 <!-- Totale Richieste -->
@@ -266,6 +364,188 @@ class WECOOP_Servizi_Management {
                     <div style="font-size: 12px; opacity: 0.8;"><?php echo $stats['completed']; ?> completate / <?php echo $stats['totale']; ?> totali</div>
                 </div>
             </div>
+            
+            <!-- Grafici Interattivi Chart.js -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 20px 0;">
+                <!-- Andamento Temporale -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>📈 Andamento Richieste nel Tempo</h2>
+                    </div>
+                    <div class="inside">
+                        <canvas id="chartRichiesteTemporali" height="100"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Distribuzione Stati (Donut) -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>🍩 Distribuzione per Stato</h2>
+                    </div>
+                    <div class="inside">
+                        <canvas id="chartStatiDonut" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grafico Entrate Mensili -->
+            <div class="postbox" style="margin: 20px 0;">
+                <div class="postbox-header">
+                    <h2>💰 Entrate Mensili</h2>
+                </div>
+                <div class="inside">
+                    <canvas id="chartEntrateMensili" height="80"></canvas>
+                </div>
+            </div>
+            
+            <script>
+            // Prepara dati per Chart.js
+            <?php
+            // Ultimi 30 giorni per grafico temporale
+            $giorni_labels = [];
+            $giorni_counts = [];
+            for ($i = 29; $i >= 0; $i--) {
+                $data = date('Y-m-d', strtotime("-$i days"));
+                $giorni_labels[] = date('d/m', strtotime($data));
+                $giorni_counts[] = isset($stats['richieste_per_giorno'][$data]) ? $stats['richieste_per_giorno'][$data] : 0;
+            }
+            
+            // Ultimi 12 mesi per grafico entrate
+            $mesi_labels = [];
+            $mesi_entrate = [];
+            for ($i = 11; $i >= 0; $i--) {
+                $mese = date('Y-m', strtotime("-$i months"));
+                $mesi_labels[] = date('M Y', strtotime($mese . '-01'));
+                $mesi_entrate[] = isset($stats['entrate_per_mese'][$mese]) ? $stats['entrate_per_mese'][$mese] : 0;
+            }
+            ?>
+            
+            var giorniLabels = <?php echo json_encode($giorni_labels); ?>;
+            var giorniData = <?php echo json_encode($giorni_counts); ?>;
+            
+            var statiLabels = ['⏳ In Attesa', '💳 Da Pagare', '🔄 In Lavorazione', '✅ Completate', '❌ Annullate'];
+            var statiData = [
+                <?php echo $stats['pending']; ?>,
+                <?php echo $stats['awaiting_payment']; ?>,
+                <?php echo $stats['processing']; ?>,
+                <?php echo $stats['completed']; ?>,
+                <?php echo $stats['cancelled']; ?>
+            ];
+            var statiColors = ['#ff9800', '#9c27b0', '#2196f3', '#4caf50', '#f44336'];
+            
+            var mesiLabels = <?php echo json_encode($mesi_labels); ?>;
+            var mesiData = <?php echo json_encode($mesi_entrate); ?>;
+            
+            // Grafico Andamento Temporale (Linea)
+            var ctxTempo = document.getElementById('chartRichiesteTemporali').getContext('2d');
+            var chartTempo = new Chart(ctxTempo, {
+                type: 'line',
+                data: {
+                    labels: giorniLabels,
+                    datasets: [{
+                        label: 'Richieste',
+                        data: giorniData,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 13 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+            
+            // Grafico Stati (Donut)
+            var ctxStati = document.getElementById('chartStatiDonut').getContext('2d');
+            var chartStati = new Chart(ctxStati, {
+                type: 'doughnut',
+                data: {
+                    labels: statiLabels,
+                    datasets: [{
+                        data: statiData,
+                        backgroundColor: statiColors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    var total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    var perc = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + context.parsed + ' (' + perc + '%)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Grafico Entrate Mensili (Bar)
+            var ctxEntrate = document.getElementById('chartEntrateMensili').getContext('2d');
+            var chartEntrate = new Chart(ctxEntrate, {
+                type: 'bar',
+                data: {
+                    labels: mesiLabels,
+                    datasets: [{
+                        label: 'Entrate (€)',
+                        data: mesiData,
+                        backgroundColor: 'rgba(244, 67, 54, 0.6)',
+                        borderColor: '#f44336',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return '€ ' + context.parsed.y.toFixed(2).replace('.', ',');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '€ ' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            </script>
             
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin: 20px 0;">
                 <!-- Statistiche per Stato -->
@@ -437,6 +717,337 @@ class WECOOP_Servizi_Management {
                                 <?php endif; ?>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Alert & Notifiche -->
+            <?php
+            // Calcola alerts
+            $oggi = time();
+            $richieste_scadute = new WP_Query([
+                'post_type' => 'richiesta_servizio',
+                'posts_per_page' => -1,
+                'meta_query' => [
+                    [
+                        'key' => 'stato',
+                        'value' => 'pending'
+                    ]
+                ],
+                'date_query' => [[
+                    'before' => date('Y-m-d', strtotime('-7 days'))
+                ]]
+            ]);
+            
+            $pagamenti_ritardo = new WP_Query([
+                'post_type' => 'richiesta_servizio',
+                'posts_per_page' => -1,
+                'meta_query' => [
+                    [
+                        'key' => 'stato',
+                        'value' => 'awaiting_payment'
+                    ]
+                ],
+                'date_query' => [[
+                    'before' => date('Y-m-d', strtotime('-3 days'))
+                ]]
+            ]);
+            
+            // Obiettivo mensile (es. €5000)
+            $obiettivo_mensile = 5000;
+            $perc_obiettivo = $obiettivo_mensile > 0 ? round(($stats_mese_corrente['importo'] / $obiettivo_mensile) * 100, 1) : 0;
+            $alerts_count = $richieste_scadute->found_posts + $pagamenti_ritardo->found_posts;
+            if ($perc_obiettivo < 50) $alerts_count++;
+            ?>
+            
+            <div class="postbox" style="margin: 20px 0; <?php echo $alerts_count > 0 ? 'border-left: 4px solid #ff9800;' : ''; ?>">
+                <div class="postbox-header">
+                    <h2>🔔 Alert & Notifiche <?php if ($alerts_count > 0) echo '<span class="count" style="background:#ff9800;color:white;border-radius:10px;padding:2px 8px;font-size:12px;margin-left:5px;">' . $alerts_count . '</span>'; ?></h2>
+                </div>
+                <div class="inside">
+                    <?php if ($alerts_count == 0): ?>
+                        <div style="text-align: center; padding: 20px; color: #4caf50;">
+                            <span style="font-size: 48px;">✅</span>
+                            <p style="margin: 10px 0; font-weight: bold;">Tutto OK! Nessun alert</p>
+                        </div>
+                    <?php else: ?>
+                        <div style="display: grid; gap: 10px;">
+                            <?php if ($richieste_scadute->found_posts > 0): ?>
+                                <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 12px; border-radius: 4px;">
+                                    <strong>⚠️ <?php echo $richieste_scadute->found_posts; ?> richieste in attesa da oltre 7 giorni</strong>
+                                    <br><small>Controlla le richieste pending più vecchie</small>
+                                    <br><a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=pending'); ?>" class="button button-small" style="margin-top: 5px;">Vedi Richieste</a>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($pagamenti_ritardo->found_posts > 0): ?>
+                                <div style="background: #f8d7da; border-left: 4px solid #f44336; padding: 12px; border-radius: 4px;">
+                                    <strong>🚨 <?php echo $pagamenti_ritardo->found_posts; ?> pagamenti in ritardo (>3 giorni)</strong>
+                                    <br><small>Invia solleciti ai clienti</small>
+                                    <br><a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi&stato=awaiting_payment'); ?>" class="button button-small" style="margin-top: 5px;">Vedi Pagamenti</a>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div style="background: <?php echo $perc_obiettivo >= 80 ? '#d4edda' : ($perc_obiettivo >= 50 ? '#fff3cd' : '#f8d7da'); ?>; border-left: 4px solid <?php echo $perc_obiettivo >= 80 ? '#4caf50' : ($perc_obiettivo >= 50 ? '#ff9800' : '#f44336'); ?>; padding: 12px; border-radius: 4px;">
+                                <strong><?php echo $perc_obiettivo >= 80 ? '🎯' : ($perc_obiettivo >= 50 ? '📊' : '📉'); ?> Obiettivo mensile: <?php echo $perc_obiettivo; ?>%</strong>
+                                <br><small>€ <?php echo number_format($stats_mese_corrente['importo'], 2, ',', '.'); ?> / € <?php echo number_format($obiettivo_mensile, 2, ',', '.'); ?></small>
+                                <div style="background: #e0e0e0; height: 8px; border-radius: 4px; margin-top: 8px; overflow: hidden;">
+                                    <div style="background: <?php echo $perc_obiettivo >= 80 ? '#4caf50' : ($perc_obiettivo >= 50 ? '#ff9800' : '#f44336'); ?>; width: <?php echo min($perc_obiettivo, 100); ?>%; height: 100%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Analytics Utenti -->
+            <?php
+            // Top utenti per numero richieste
+            global $wpdb;
+            $top_users_count = $wpdb->get_results("
+                SELECT meta_value as user_id, COUNT(*) as count
+                FROM {$wpdb->postmeta}
+                WHERE meta_key = 'user_id' AND meta_value != ''
+                AND post_id IN (SELECT ID FROM {$wpdb->posts} WHERE post_type = 'richiesta_servizio')
+                GROUP BY meta_value
+                ORDER BY count DESC
+                LIMIT 10
+            ");
+            
+            // Top utenti per lifetime value
+            $top_users_value = $wpdb->get_results("
+                SELECT pm1.meta_value as user_id, 
+                       SUM(CAST(pm2.meta_value AS DECIMAL(10,2))) as total_value,
+                       COUNT(*) as count
+                FROM {$wpdb->postmeta} pm1
+                LEFT JOIN {$wpdb->postmeta} pm2 ON pm1.post_id = pm2.post_id AND pm2.meta_key = 'importo'
+                LEFT JOIN {$wpdb->postmeta} pm3 ON pm1.post_id = pm3.post_id AND pm3.meta_key = 'payment_status'
+                WHERE pm1.meta_key = 'user_id' 
+                  AND pm1.meta_value != ''
+                  AND pm1.post_id IN (SELECT ID FROM {$wpdb->posts} WHERE post_type = 'richiesta_servizio')
+                  AND (pm3.meta_value = 'paid' OR pm3.meta_value IS NULL)
+                GROUP BY pm1.meta_value
+                HAVING total_value > 0
+                ORDER BY total_value DESC
+                LIMIT 10
+            ");
+            ?>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                <!-- Clienti Più Attivi -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>👥 Top 10 Clienti Più Attivi</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="wp-list-table widefat" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Richieste</th>
+                                    <th>Categoria</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($top_users_count)): ?>
+                                    <?php foreach ($top_users_count as $user_stat): 
+                                        $user = get_userdata($user_stat->user_id);
+                                        if (!$user) continue;
+                                        
+                                        $categoria = $user_stat->count >= 5 ? 'VIP' : ($user_stat->count >= 2 ? 'Attivo' : 'Nuovo');
+                                        $badge_color = $user_stat->count >= 5 ? '#ffd700' : ($user_stat->count >= 2 ? '#4caf50' : '#2196f3');
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a href="<?php echo admin_url('admin.php?page=wecoop-user-detail&user_id=' . $user->ID); ?>">
+                                                <strong><?php echo esc_html($user->display_name); ?></strong>
+                                            </a>
+                                        </td>
+                                        <td><?php echo $user_stat->count; ?></td>
+                                        <td>
+                                            <span style="background: <?php echo $badge_color; ?>; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">
+                                                <?php echo $categoria; ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: #999;">Nessun dato</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Lifetime Value -->
+                <div class="postbox">
+                    <div class="postbox-header">
+                        <h2>💎 Top 10 Lifetime Value</h2>
+                    </div>
+                    <div class="inside">
+                        <table class="wp-list-table widefat" style="margin: 0;">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Speso Totale</th>
+                                    <th>Media</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($top_users_value)): ?>
+                                    <?php foreach ($top_users_value as $user_stat): 
+                                        $user = get_userdata($user_stat->user_id);
+                                        if (!$user) continue;
+                                        
+                                        $media = $user_stat->count > 0 ? $user_stat->total_value / $user_stat->count : 0;
+                                    ?>
+                                    <tr>
+                                        <td>
+                                            <a href="<?php echo admin_url('admin.php?page=wecoop-user-detail&user_id=' . $user->ID); ?>">
+                                                <strong><?php echo esc_html($user->display_name); ?></strong>
+                                            </a>
+                                        </td>
+                                        <td><strong>€ <?php echo number_format($user_stat->total_value, 2, ',', '.'); ?></strong></td>
+                                        <td>€ <?php echo number_format($media, 2, ',', '.'); ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="3" style="text-align: center; color: #999;">Nessun dato</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Previsioni & Trend -->
+            <?php
+            // Calcola previsione entrate prossimi 3 mesi usando regressione lineare
+            $ultimi_mesi = array_slice($stats['entrate_per_mese'], -6, 6, true);
+            $mesi_keys = array_keys($ultimi_mesi);
+            $mesi_values = array_values($ultimi_mesi);
+            
+            // Regressione lineare semplice
+            $n = count($mesi_values);
+            if ($n >= 3) {
+                $sum_x = 0;
+                $sum_y = 0;
+                $sum_xy = 0;
+                $sum_xx = 0;
+                
+                for ($i = 0; $i < $n; $i++) {
+                    $sum_x += $i;
+                    $sum_y += $mesi_values[$i];
+                    $sum_xy += $i * $mesi_values[$i];
+                    $sum_xx += $i * $i;
+                }
+                
+                $slope = ($n * $sum_xy - $sum_x * $sum_y) / ($n * $sum_xx - $sum_x * $sum_x);
+                $intercept = ($sum_y - $slope * $sum_x) / $n;
+                
+                $forecast = [];
+                for ($i = 1; $i <= 3; $i++) {
+                    $next_month = date('M Y', strtotime("+$i months"));
+                    $predicted = max(0, $intercept + $slope * ($n + $i - 1));
+                    $forecast[$next_month] = round($predicted, 2);
+                }
+            } else {
+                $forecast = [];
+            }
+            
+            // Analisi stagionalità (media per mese dell'anno)
+            $stagionalita = [];
+            foreach ($stats['entrate_per_mese'] as $mese => $importo) {
+                $mese_num = date('n', strtotime($mese . '-01'));
+                if (!isset($stagionalita[$mese_num])) {
+                    $stagionalita[$mese_num] = ['sum' => 0, 'count' => 0];
+                }
+                $stagionalita[$mese_num]['sum'] += $importo;
+                $stagionalita[$mese_num]['count']++;
+            }
+            
+            $mese_migliore = null;
+            $max_media = 0;
+            foreach ($stagionalita as $mese_num => $data) {
+                $media = $data['count'] > 0 ? $data['sum'] / $data['count'] : 0;
+                if ($media > $max_media) {
+                    $max_media = $media;
+                    $mese_migliore = $mese_num;
+                }
+            }
+            ?>
+            
+            <div class="postbox" style="margin: 20px 0;">
+                <div class="postbox-header">
+                    <h2>💹 Previsioni & Trend</h2>
+                </div>
+                <div class="inside">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                        <!-- Proiezione Entrate -->
+                        <div>
+                            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #666;">📊 Proiezione Prossimi 3 Mesi</h3>
+                            <?php if (!empty($forecast)): ?>
+                                <table class="widefat" style="margin: 0;">
+                                    <tbody>
+                                        <?php foreach ($forecast as $mese => $importo): ?>
+                                        <tr>
+                                            <td><strong><?php echo $mese; ?></strong></td>
+                                            <td style="text-align: right;">€ <?php echo number_format($importo, 2, ',', '.'); ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                        <tr style="border-top: 2px solid #ddd;">
+                                            <td><strong>Totale Previsto</strong></td>
+                                            <td style="text-align: right;"><strong>€ <?php echo number_format(array_sum($forecast), 2, ',', '.'); ?></strong></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            <?php else: ?>
+                                <p style="color: #999; font-style: italic;">Dati insufficienti per previsione</p>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Trend Previsionale -->
+                        <div>
+                            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #666;">📈 Trend Generale</h3>
+                            <?php
+                            $trend_generale = $slope > 0 ? 'crescita' : 'decrescita';
+                            $trend_perc = $sum_y > 0 ? abs(($slope / ($sum_y / $n)) * 100) : 0;
+                            $trend_icon = $slope > 0 ? '📈' : '📉';
+                            $trend_color = $slope > 0 ? '#4caf50' : '#f44336';
+                            ?>
+                            <div style="text-align: center; padding: 20px; background: <?php echo $trend_color; ?>; color: white; border-radius: 8px;">
+                                <div style="font-size: 48px; margin-bottom: 10px;"><?php echo $trend_icon; ?></div>
+                                <div style="font-size: 24px; font-weight: bold; text-transform: uppercase;"><?php echo $trend_generale; ?></div>
+                                <div style="font-size: 16px; margin-top: 5px;"><?php echo round($trend_perc, 1); ?>% mensile</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stagionalità -->
+                        <div>
+                            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #666;">📅 Stagionalità</h3>
+                            <?php if ($mese_migliore): ?>
+                                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;">
+                                    <div style="font-size: 16px; margin-bottom: 10px;">Mese Migliore</div>
+                                    <div style="font-size: 32px; font-weight: bold;">
+                                        <?php
+                                        $mese_nome = [
+                                            1 => 'Gennaio', 2 => 'Febbraio', 3 => 'Marzo', 4 => 'Aprile',
+                                            5 => 'Maggio', 6 => 'Giugno', 7 => 'Luglio', 8 => 'Agosto',
+                                            9 => 'Settembre', 10 => 'Ottobre', 11 => 'Novembre', 12 => 'Dicembre'
+                                        ];
+                                        echo $mese_nome[$mese_migliore];
+                                        ?>
+                                    </div>
+                                    <div style="font-size: 14px; margin-top: 5px;">Media: € <?php echo number_format($max_media, 2, ',', '.'); ?></div>
+                                </div>
+                            <?php else: ?>
+                                <p style="color: #999; font-style: italic;">Dati insufficienti</p>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1530,5 +2141,283 @@ class WECOOP_Servizi_Management {
             }
         </style>
         <?php
+    }
+    
+    /**
+     * AJAX: Export CSV
+     */
+    public static function ajax_export_csv() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die('Permessi insufficienti');
+        }
+        
+        $periodo = isset($_GET['periodo']) ? sanitize_text_field($_GET['periodo']) : 'all';
+        $date_from = isset($_GET['date_from']) ? sanitize_text_field($_GET['date_from']) : '';
+        $date_to = isset($_GET['date_to']) ? sanitize_text_field($_GET['date_to']) : '';
+        
+        $args = [
+            'post_type' => 'richiesta_servizio',
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ];
+        
+        // Filtra per periodo
+        if ($periodo !== 'all' && $periodo !== 'custom') {
+            $days_map = [
+                '7days' => 7,
+                '30days' => 30,
+                '3months' => 90,
+                '1year' => 365
+            ];
+            
+            if (isset($days_map[$periodo])) {
+                $args['date_query'] = [[
+                    'after' => date('Y-m-d', strtotime('-' . $days_map[$periodo] . ' days'))
+                ]];
+            }
+        } elseif ($periodo === 'custom' && $date_from && $date_to) {
+            $args['date_query'] = [[
+                'after' => $date_from,
+                'before' => $date_to,
+                'inclusive' => true
+            ]];
+        }
+        
+        $query = new WP_Query($args);
+        
+        // Headers CSV
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=richieste-servizi-' . date('Y-m-d') . '.csv');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        
+        $output = fopen('php://output', 'w');
+        
+        // BOM per UTF-8
+        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+        
+        // Header colonne
+        fputcsv($output, [
+            'N. Pratica',
+            'Servizio',
+            'Categoria',
+            'Nome Richiedente',
+            'Email',
+            'Telefono',
+            'Data Richiesta',
+            'Stato',
+            'Importo (€)',
+            'Pagamento',
+            'Data Pagamento',
+            'User ID'
+        ], ';');
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                
+                $numero_pratica = get_post_meta($post_id, 'numero_pratica', true);
+                $servizio = get_post_meta($post_id, 'servizio', true);
+                $categoria = get_post_meta($post_id, 'categoria', true);
+                $stato = get_post_meta($post_id, 'stato', true);
+                $importo = get_post_meta($post_id, 'importo', true);
+                $payment_status = get_post_meta($post_id, 'payment_status', true);
+                $payment_paid_at = get_post_meta($post_id, 'payment_paid_at', true);
+                $user_id = get_post_meta($post_id, 'user_id', true);
+                
+                $dati = json_decode(get_post_meta($post_id, 'dati', true), true) ?: [];
+                
+                $nome = $dati['nome_completo'] ?? '';
+                $email = $dati['email'] ?? '';
+                $telefono = $dati['telefono'] ?? '';
+                
+                if (!$nome && $user_id) {
+                    $user = get_userdata($user_id);
+                    if ($user) {
+                        $nome = $user->display_name;
+                        $email = $user->user_email;
+                    }
+                }
+                
+                $stato_labels = [
+                    'pending' => 'In Attesa',
+                    'awaiting_payment' => 'Da Pagare',
+                    'processing' => 'In Lavorazione',
+                    'completed' => 'Completata',
+                    'cancelled' => 'Annullata'
+                ];
+                
+                $payment_labels = [
+                    'paid' => 'Pagato',
+                    'pending' => 'In attesa',
+                    'failed' => 'Fallito',
+                    'refunded' => 'Rimborsato'
+                ];
+                
+                fputcsv($output, [
+                    $numero_pratica,
+                    $servizio,
+                    $categoria,
+                    $nome,
+                    $email,
+                    $telefono,
+                    get_the_date('d/m/Y H:i'),
+                    $stato_labels[$stato] ?? $stato,
+                    $importo ? number_format($importo, 2, ',', '') : '',
+                    $payment_labels[$payment_status] ?? '-',
+                    $payment_paid_at ? date('d/m/Y H:i', strtotime($payment_paid_at)) : '',
+                    $user_id
+                ], ';');
+            }
+        }
+        
+        fclose($output);
+        wp_reset_postdata();
+        exit;
+    }
+    
+    /**
+     * AJAX: Get dashboard data per periodo
+     */
+    public static function ajax_get_dashboard_data() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $periodo = isset($_POST['periodo']) ? sanitize_text_field($_POST['periodo']) : '30days';
+        $date_from = isset($_POST['date_from']) ? sanitize_text_field($_POST['date_from']) : '';
+        $date_to = isset($_POST['date_to']) ? sanitize_text_field($_POST['date_to']) : '';
+        
+        $data = self::get_dashboard_stats($periodo, $date_from, $date_to);
+        
+        wp_send_json_success($data);
+    }
+    
+    /**
+     * Ottieni statistiche dashboard per periodo
+     */
+    private static function get_dashboard_stats($periodo = '30days', $date_from = '', $date_to = '') {
+        $args = [
+            'post_type' => 'richiesta_servizio',
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC'
+        ];
+        
+        // Filtra per periodo
+        if ($periodo !== 'all' && $periodo !== 'custom') {
+            $days_map = [
+                '7days' => 7,
+                '30days' => 30,
+                '3months' => 90,
+                '1year' => 365
+            ];
+            
+            if (isset($days_map[$periodo])) {
+                $args['date_query'] = [[
+                    'after' => date('Y-m-d', strtotime('-' . $days_map[$periodo] . ' days'))
+                ]];
+            }
+        } elseif ($periodo === 'custom' && $date_from && $date_to) {
+            $args['date_query'] = [[
+                'after' => $date_from,
+                'before' => $date_to,
+                'inclusive' => true
+            ]];
+        }
+        
+        $query = new WP_Query($args);
+        
+        $stats = [
+            'totale' => 0,
+            'stati' => [],
+            'importo_totale' => 0,
+            'importo_pagato' => 0,
+            'importo_attesa' => 0,
+            'richieste_per_giorno' => [],
+            'entrate_per_giorno' => [],
+            'top_clienti' => [],
+            'lifetime_values' => []
+        ];
+        
+        $user_stats = [];
+        
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $post_id = get_the_ID();
+                
+                $stato = get_post_meta($post_id, 'stato', true);
+                $importo = floatval(get_post_meta($post_id, 'importo', true));
+                $payment_status = get_post_meta($post_id, 'payment_status', true);
+                $user_id = get_post_meta($post_id, 'user_id', true);
+                $data = get_the_date('Y-m-d');
+                
+                $stats['totale']++;
+                
+                if (!isset($stats['stati'][$stato])) {
+                    $stats['stati'][$stato] = 0;
+                }
+                $stats['stati'][$stato]++;
+                
+                if ($importo > 0) {
+                    $stats['importo_totale'] += $importo;
+                    
+                    if ($payment_status === 'paid' || $stato === 'completed') {
+                        $stats['importo_pagato'] += $importo;
+                        
+                        if (!isset($stats['entrate_per_giorno'][$data])) {
+                            $stats['entrate_per_giorno'][$data] = 0;
+                        }
+                        $stats['entrate_per_giorno'][$data] += $importo;
+                    } elseif ($stato === 'awaiting_payment') {
+                        $stats['importo_attesa'] += $importo;
+                    }
+                }
+                
+                if (!isset($stats['richieste_per_giorno'][$data])) {
+                    $stats['richieste_per_giorno'][$data] = 0;
+                }
+                $stats['richieste_per_giorno'][$data]++;
+                
+                // Stats per utente
+                if ($user_id) {
+                    if (!isset($user_stats[$user_id])) {
+                        $user = get_userdata($user_id);
+                        $user_stats[$user_id] = [
+                            'nome' => $user ? $user->display_name : 'User #' . $user_id,
+                            'richieste' => 0,
+                            'importo_totale' => 0
+                        ];
+                    }
+                    
+                    $user_stats[$user_id]['richieste']++;
+                    if ($payment_status === 'paid' || $stato === 'completed') {
+                        $user_stats[$user_id]['importo_totale'] += $importo;
+                    }
+                }
+            }
+            wp_reset_postdata();
+        }
+        
+        // Top 10 clienti
+        uasort($user_stats, function($a, $b) {
+            return $b['richieste'] - $a['richieste'];
+        });
+        $stats['top_clienti'] = array_slice($user_stats, 0, 10, true);
+        
+        // Lifetime values
+        uasort($user_stats, function($a, $b) {
+            return $b['importo_totale'] - $a['importo_totale'];
+        });
+        $stats['lifetime_values'] = array_slice($user_stats, 0, 10, true);
+        
+        return $stats;
     }
 }
