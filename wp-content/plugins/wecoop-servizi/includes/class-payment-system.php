@@ -128,73 +128,46 @@ class WECOOP_Servizi_Payment_System {
         
         // Deep link per aprire pagamento nell'app
         $deep_link_pagamento = "wecoop://app/pagamento/{$richiesta_id}";
-        $deep_link_richiesta = "wecoop://app/richieste/{$richiesta_id}";
         $web_payment_url = home_url('/pagamento/?id=' . $payment_id);
         
-        $subject = '💳 Richiesta di Pagamento - WeCoop';
+        // URL redirect che gestisce l'apertura deep link
+        $redirect_pagamento = home_url('/app-redirect.php?link=' . urlencode($deep_link_pagamento) . '&fallback=' . urlencode($web_payment_url));
         
-        // Email HTML
-        $message = '<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #2271b1; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-        .button { display: inline-block; padding: 12px 30px; background: #2271b1; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; font-weight: bold; }
-        .button-secondary { background: #4caf50; }
-        .info-box { background: white; padding: 15px; border-left: 4px solid #2271b1; margin: 20px 0; }
-        .footer { text-align: center; color: #999; font-size: 12px; margin-top: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>💳 Richiesta di Pagamento</h1>
-        </div>
-        <div class="content">
-            <p>Ciao <strong>' . esc_html($user->display_name) . '</strong>,</p>
+        // Usa il sistema email multilingua se disponibile
+        if (class_exists('WeCoop_Multilingual_Email')) {
+            $nome = get_user_meta($user_id, 'nome', true) ?: $user->display_name;
             
-            <p>È richiesto un pagamento per il tuo servizio:</p>
+            WeCoop_Multilingual_Email::send(
+                $user->user_email,
+                'service_payment_required',
+                [
+                    'nome' => $nome,
+                    'servizio' => $servizio,
+                    'numero_pratica' => $numero_pratica,
+                    'importo' => '€' . number_format($importo, 2, ',', '.'),
+                    'button_url' => $redirect_pagamento,
+                    'web_url' => $web_payment_url,
+                    'deep_link' => $deep_link_pagamento
+                ],
+                $user_id
+            );
             
-            <div class="info-box">
-                <p><strong>Servizio:</strong> ' . esc_html($servizio) . '</p>
-                <p><strong>Pratica:</strong> ' . esc_html($numero_pratica) . '</p>
-                <p><strong>Importo:</strong> <span style="font-size: 24px; color: #2271b1;">€' . number_format($importo, 2, ',', '.') . '</span></p>
-            </div>
+            error_log("[WECOOP PAYMENT] Email multilingua inviata a {$user->user_email} - Deep link: {$deep_link_pagamento}");
+        } else {
+            // Fallback: email semplice se il sistema multilingua non è disponibile
+            $subject = '💳 Richiesta di Pagamento - WeCoop';
+            $message = "Ciao {$user->display_name},\n\n";
+            $message .= "È richiesto un pagamento per il servizio: {$servizio}\n";
+            $message .= "Pratica: {$numero_pratica}\n";
+            $message .= "Importo: €" . number_format($importo, 2) . "\n\n";
+            $message .= "Apri nell'app:\n{$redirect_pagamento}\n\n";
+            $message .= "O paga sul web:\n{$web_payment_url}\n\n";
+            $message .= "Grazie,\nIl team WeCoop";
             
-            <p><strong>Apri nell\'app WeCoop per pagare:</strong></p>
-            <p style="text-align: center;">
-                <a href="' . esc_url($deep_link_pagamento) . '" class="button button-secondary">📱 Apri nell\'App e Paga</a>
-            </p>
+            wp_mail($user->user_email, $subject, $message);
             
-            <p style="text-align: center; margin: 20px 0;">oppure</p>
-            
-            <p style="text-align: center;">
-                <a href="' . esc_url($deep_link_richiesta) . '" class="button">👁️ Vedi Dettagli Richiesta</a>
-            </p>
-            
-            <p style="font-size: 12px; color: #666; margin-top: 30px;">
-                Se hai problemi ad aprire l\'app, usa questo link: <a href="' . esc_url($web_payment_url) . '">' . esc_html($web_payment_url) . '</a>
-            </p>
-            
-            <div class="footer">
-                <p>Grazie per aver scelto WeCoop! 🤝</p>
-                <p>Il team WeCoop</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>';
-        
-        // Header per email HTML
-        $headers = ['Content-Type: text/html; charset=UTF-8'];
-        
-        wp_mail($user->user_email, $subject, $message, $headers);
-        
-        error_log("[WECOOP PAYMENT] Email inviata a {$user->user_email} - Deep link: {$deep_link_pagamento}");
+            error_log("[WECOOP PAYMENT] Email semplice inviata a {$user->user_email}");
+        }
     }
     
     /**
