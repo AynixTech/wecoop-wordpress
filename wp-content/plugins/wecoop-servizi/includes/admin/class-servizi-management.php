@@ -1864,7 +1864,7 @@ class WECOOP_Servizi_Management {
                     data: {
                         action: 'generate_receipt',
                         payment_id: paymentId,
-                        nonce: '<?php echo wp_create_nonce('wecoop_admin_nonce'); ?>'
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
                     },
                     success: function(response) {
                         if (response.success) {
@@ -1875,8 +1875,9 @@ class WECOOP_Servizi_Management {
                             $btn.prop('disabled', false).text(originalText);
                         }
                     },
-                    error: function() {
-                        alert('❌ Errore di comunicazione con il server');
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', xhr.responseText);
+                        alert('❌ Errore di comunicazione con il server. Controlla la console (F12).');
                         $btn.prop('disabled', false).text(originalText);
                     }
                 });
@@ -3698,7 +3699,7 @@ class WECOOP_Servizi_Management {
      * AJAX: Genera ricevuta per pagamento completato
      */
     public static function ajax_generate_receipt() {
-        check_ajax_referer('wecoop_admin_nonce', 'nonce');
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Permessi insufficienti']);
