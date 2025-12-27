@@ -3724,11 +3724,13 @@ class WECOOP_Servizi_Management {
         }
         
         if (!in_array($payment->stato, ['paid', 'completed'])) {
-            wp_send_json_error(['message' => 'Il pagamento non è ancora completato']);
+            wp_send_json_error(['message' => 'Il pagamento non è ancora completato (stato: ' . $payment->stato . ')']);
         }
         
         // Genera la ricevuta
+        error_log("[WECOOP] Inizio generazione ricevuta per payment_id: $payment_id");
         $result = WeCoop_Ricevuta_PDF::generate_ricevuta($payment_id);
+        error_log("[WECOOP] Risultato generazione: " . json_encode($result));
         
         if ($result['success']) {
             wp_send_json_success([

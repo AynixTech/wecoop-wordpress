@@ -16,6 +16,8 @@ class WeCoop_Ricevuta_PDF {
     public static function generate_ricevuta($payment_id) {
         global $wpdb;
         
+        error_log("[WECOOP RICEVUTA] Inizio generazione per payment_id: $payment_id");
+        
         // Recupera dati pagamento
         $table = $wpdb->prefix . 'wecoop_pagamenti';
         $payment = $wpdb->get_row($wpdb->prepare(
@@ -23,10 +25,21 @@ class WeCoop_Ricevuta_PDF {
             $payment_id
         ));
         
-        if (!$payment || !in_array($payment->stato, ['paid', 'completed'])) {
+        if (!$payment) {
+            error_log("[WECOOP RICEVUTA] Pagamento non trovato");
             return [
                 'success' => false,
-                'message' => 'Pagamento non trovato o non completato'
+                'message' => 'Pagamento non trovato'
+            ];
+        }
+        
+        error_log("[WECOOP RICEVUTA] Pagamento trovato - stato: {$payment->stato}");
+        
+        if (!in_array($payment->stato, ['paid', 'completed'])) {
+            error_log("[WECOOP RICEVUTA] Stato non valido: {$payment->stato}");
+            return [
+                'success' => false,
+                'message' => 'Pagamento non completato (stato: ' . $payment->stato . ')'
             ];
         }
         
@@ -94,8 +107,12 @@ class WeCoop_Ricevuta_PDF {
             'servizio' => $servizio
         ]);
         
+        error_log("[WECOOP RICEVUTA] Generazione HTML completata");
+        
         // Genera PDF
         $result = self::html_to_pdf($html, "Ricevuta_{$numero_ricevuta}");
+        
+        error_log("[WECOOP RICEVUTA] Risultato html_to_pdf: " . json_encode($result));
         
         if (is_wp_error($result)) {
             return [
@@ -107,9 +124,11 @@ class WeCoop_Ricevuta_PDF {
         if (!$result['success']) {
             return [
                 'success' => false,
-                'message' => 'Errore durante la generazione del PDF'
+                'message' => isset($result['message']) ? $result['message'] : 'Errore durante la generazione del PDF'
             ];
         }
+        
+        error_log("[WECOOP RICEVUTA] PDF generato: {$result['url']}");
         
         // Salva URL ricevuta nel database
         $wpdb->update(
@@ -119,6 +138,8 @@ class WeCoop_Ricevuta_PDF {
             ['%s'],
             ['%d']
         );
+        
+        error_log("[WECOOP RICEVUTA] URL salvato nel database");
         
         return [
             'success' => true,
@@ -291,20 +312,31 @@ class WeCoop_Ricevuta_PDF {
      * Converte HTML in PDF usando mPDF
      */
     private static function html_to_pdf($html, $filename) {
+        error_log("[WECOOP RICEVUTA] html_to_pdf chiamato per: $filename");
+        
         // Carica mPDF dal vendor del plugin
         $autoload = dirname(WECOOP_SERVIZI_FILE) . '/vendor/autoload.php';
+        error_log("[WECOOP RICEVUTA] Percorso autoload: $autoload");
+        error_log("[WECOOP RICEVUTA] Autoload esiste: " . (file_exists($autoload) ? 'SI' : 'NO'));
+        
         if (file_exists($autoload)) {
             require_once $autoload;
+            error_log("[WECOOP RICEVUTA] Autoload caricato");
         }
         
-        if (!class_exists('Mpdf\Mpdf')) {
+        $mpdf_exists = class_exists('Mpdf\Mpdf');
+        error_log("[WECOOP RICEVUTA] Classe Mpdf\\Mpdf esiste: " . ($mpdf_exists ? 'SI' : 'NO'));
+        
+        if (!$mpdf_exists) {
             return [
                 'success' => false,
-                'message' => 'Libreria mPDF non disponibile. Esegui "composer install" nella directory del plugin.'
+                'message' => 'Libreria mPDF non disponibile. Esegui "composer install" nella directory del plugin. Autoload: ' . $autoload
             ];
         }
         
         try {
+            error_log("[WECOOP RICEVUTA] Creazione oggetto mPDF...");
+            
             $mpdf = new Mpdf\Mpdf([
                 'mode' => 'utf-8',
                 'format' => 'A4',
@@ -316,30 +348,45 @@ class WeCoop_Ricevuta_PDF {
                 'margin_footer' => 5
             ]);
             
+            error_log("[WECOOP RICEVUTA] Oggetto mPDF creato");
+            
             $mpdf->SetTitle('Ricevuta Erogazione Liberale - ' . $filename);
             $mpdf->SetAuthor('WeCoop APS');
             $mpdf->SetDisplayMode('fullpage');
             
+            error_log("[WECOOP RICEVUTA] Scrittura HTML...");
             $mpdf->WriteHTML($html);
             
             // Salva in wp-content/uploads/ricevute/
             $upload_dir = wp_upload_dir();
             $ricevute_dir = $upload_dir['basedir'] . '/ricevute';
             
+            error_log("[WECOOP RICEVUTA] Directory ricevute: $ricevute_dir");
+            
             if (!file_exists($ricevute_dir)) {
+                error_log("[WECOOP RICEVUTA] Creazione directory ricevute...");
                 wp_mkdir_p($ricevute_dir);
             }
             
             $filepath = $ricevute_dir . '/' . sanitize_file_name($filename) . '.pdf';
+            error_log("[WECOOP RICEVUTA] Salvataggio PDF in: $filepath");
+            
             $mpdf->Output($filepath, 'F');
+            
+            error_log("[WECOOP RICEVUTA] PDF salvato con successo");
+            
+            $url = $upload_dir['baseurl'] . '/ricevute/' . sanitize_file_name($filename) . '.pdf';
             
             return [
                 'success' => true,
                 'filepath' => $filepath,
-                'url' => $upload_dir['baseurl'] . '/ricevute/' . sanitize_file_name($filename) . '.pdf'
+                'url' => $url
             ];
             
         } catch (Exception $e) {
+            error_log("[WECOOP RICEVUTA] ERRORE EXCEPTION: " . $e->getMessage());
+            error_log("[WECOOP RICEVUTA] Stack trace: " . $e->getTraceAsString());
+            
             return [
                 'success' => false,
                 'message' => 'Errore generazione PDF: ' . $e->getMessage()
