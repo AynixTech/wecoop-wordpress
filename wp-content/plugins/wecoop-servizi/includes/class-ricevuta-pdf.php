@@ -13,7 +13,7 @@ class WeCoop_Ricevuta_PDF {
     /**
      * Genera ricevuta PDF per erogazione liberale
      */
-    public static function genera_ricevuta($payment_id) {
+    public static function generate_ricevuta($payment_id) {
         global $wpdb;
         
         // Recupera dati pagamento
@@ -23,8 +23,11 @@ class WeCoop_Ricevuta_PDF {
             $payment_id
         ));
         
-        if (!$payment || $payment->status !== 'completed') {
-            return new WP_Error('invalid_payment', 'Pagamento non trovato o non completato');
+        if (!$payment || !in_array($payment->stato, ['paid', 'completed'])) {
+            return [
+                'success' => false,
+                'message' => 'Pagamento non trovato o non completato'
+            ];
         }
         
         // Recupera dati richiesta
@@ -92,7 +95,37 @@ class WeCoop_Ricevuta_PDF {
         ]);
         
         // Genera PDF
-        return self::html_to_pdf($html, "Ricevuta_{$numero_ricevuta}");
+        $result = self::html_to_pdf($html, "Ricevuta_{$numero_ricevuta}");
+        
+        if (is_wp_error($result)) {
+            return [
+                'success' => false,
+                'message' => $result->get_error_message()
+            ];
+        }
+        
+        if (!$result['success']) {
+            return [
+                'success' => false,
+                'message' => 'Errore durante la generazione del PDF'
+            ];
+        }
+        
+        // Salva URL ricevuta nel database
+        $wpdb->update(
+            $table,
+            ['receipt_url' => $result['url']],
+            ['id' => $payment_id],
+            ['%s'],
+            ['%d']
+        );
+        
+        return [
+            'success' => true,
+            'message' => 'Ricevuta generata con successo',
+            'receipt_url' => $result['url'],
+            'filepath' => $result['filepath']
+        ];
     }
     
     /**
@@ -275,7 +308,10 @@ class WeCoop_Ricevuta_PDF {
         }
         
         if (!class_exists('Mpdf\Mpdf')) {
-            return new WP_Error('mpdf_not_found', 'Libreria mPDF non disponibile');
+            return [
+                'success' => false,
+                'message' => 'Libreria mPDF non disponibile. Installa il plugin Complianz GDPR.'
+            ];
         }
         
         try {
@@ -314,7 +350,10 @@ class WeCoop_Ricevuta_PDF {
             ];
             
         } catch (Exception $e) {
-            return new WP_Error('pdf_generation_failed', $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Errore generazione PDF: ' . $e->getMessage()
+            ];
         }
     }
     

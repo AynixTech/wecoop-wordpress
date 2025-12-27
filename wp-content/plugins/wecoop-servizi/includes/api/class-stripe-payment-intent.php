@@ -226,22 +226,11 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
         
         // Genera ricevuta PDF automaticamente
         if (class_exists('WeCoop_Ricevuta_PDF')) {
-            $result = WeCoop_Ricevuta_PDF::genera_ricevuta($payment_id);
-            if (is_wp_error($result)) {
-                error_log("[WECOOP STRIPE] Errore generazione ricevuta: " . $result->get_error_message());
+            $result = WeCoop_Ricevuta_PDF::generate_ricevuta($payment_id);
+            if (!$result['success']) {
+                error_log("[WECOOP STRIPE] Errore generazione ricevuta: " . $result['message']);
             } else {
-                error_log("[WECOOP STRIPE] Ricevuta generata: " . $result['url']);
-                
-                // Salva URL ricevuta nei metadati pagamento
-                global $wpdb;
-                $table = $wpdb->prefix . 'wecoop_pagamenti';
-                $wpdb->update(
-                    $table,
-                    ['receipt_url' => $result['url']],
-                    ['id' => $payment_id],
-                    ['%s'],
-                    ['%d']
-                );
+                error_log("[WECOOP STRIPE] Ricevuta generata: " . $result['receipt_url']);
             }
         }
     }
