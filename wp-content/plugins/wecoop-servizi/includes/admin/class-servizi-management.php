@@ -1844,12 +1844,8 @@ class WECOOP_Servizi_Management {
                 $(this).data('old-value', $(this).val());
             });
             
-            // Apri modal modifica
-            $('.edit-richiesta').on('click', function() {
-                const richiestaId = $(this).data('id');
-                
-                // Genera ricevuta
-            $('.generate-receipt').on('click', function(e) {
+            // Genera ricevuta
+            $(document).on('click', '.generate-receipt', function(e) {
                 e.preventDefault();
                 
                 const paymentId = $(this).data('payment-id');
@@ -1886,6 +1882,10 @@ class WECOOP_Servizi_Management {
                 });
             });
             
+            // Apri modal modifica
+            $('.edit-richiesta').on('click', function() {
+                const richiestaId = $(this).data('id');
+                
                 $.ajax({
                     url: ajaxurl,
                     method: 'POST',
