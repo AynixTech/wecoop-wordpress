@@ -613,4 +613,3 @@ class WECOOP_Servizi_Endpoint {
         return $response;
     }
 }
-}
