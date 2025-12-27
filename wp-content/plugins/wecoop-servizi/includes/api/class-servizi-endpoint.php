@@ -154,6 +154,22 @@ class WECOOP_Servizi_Endpoint {
                 'id' => ['required' => true, 'type' => 'integer']
             ]
         ]);
+        
+        // GET /pagamento/{id}/ricevuta - Download ricevuta PDF
+        register_rest_route('wecoop/v1', '/pagamento/(?P<id>\d+)/ricevuta', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'get_ricevuta_pdf'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'id' => [
+                    'required' => true,
+                    'type' => 'integer',
+                    'validate_callback' => function($param) {
+                        return is_numeric($param) && $param > 0;
+                    }
+                ]
+            ]
+        ]);
     }
     
     /**
@@ -507,6 +523,93 @@ class WECOOP_Servizi_Endpoint {
         // Elimina la richiesta (soft delete - va nel cestino)
         $result = wp_trash_post($richiesta_id);
         
+        if (!$result) {
+            return new WP_Error('delete_failed', 'Impossibile eliminare la richiesta', ['status' => 500]);
+        }
+        
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Richiesta eliminata con successo',
+            'numero_pratica' => $numero_pratica,
+            'servizio' => $servizio
+        ], 200);
+    }
+    
+    /**
+     * GET /pagamento/{id}/ricevuta - Download ricevuta PDF
+     */
+    public static function get_ricevuta_pdf($request) {
+        $payment_id = intval($request['id']);
+        $current_user_id = get_current_user_id();
+        
+        if (!$current_user_id) {
+            return new WP_Error('unauthorized', 'Autenticazione richiesta', ['status' => 401]);
+        }
+        
+        // Recupera dati pagamento
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+        $payment = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $payment_id
+        ));
+        
+        if (!$payment) {
+            return new WP_Error('payment_not_found', 'Pagamento non trovato', ['status' => 404]);
+        }
+        
+        // Verifica ownership: l'utente deve essere il proprietario della richiesta o admin
+        $richiesta_user_id = get_post_meta($payment->richiesta_id, 'user_id', true);
+        
+        if ($richiesta_user_id != $current_user_id && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non hai i permessi per scaricare questa ricevuta', ['status' => 403]);
+        }
+        
+        // Verifica che il pagamento sia completato
+        if (!in_array($payment->stato, ['paid', 'completed'])) {
+            return new WP_Error(
+                'payment_not_completed',
+                'La ricevuta sarà disponibile dopo il completamento del pagamento',
+                ['status' => 400]
+            );
+        }
+        
+        // Se la ricevuta non esiste, generala
+        if (empty($payment->receipt_url)) {
+            $result = WeCoop_Ricevuta_PDF::generate_ricevuta($payment_id);
+            
+            if (!$result['success']) {
+                return new WP_Error('generation_failed', $result['message'], ['status' => 500]);
+            }
+            
+            $receipt_url = $result['receipt_url'];
+        } else {
+            $receipt_url = $payment->receipt_url;
+        }
+        
+        // Converti URL in path filesystem
+        $upload_dir = wp_upload_dir();
+        $file_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $receipt_url);
+        
+        if (!file_exists($file_path)) {
+            return new WP_Error('file_not_found', 'File ricevuta non trovato sul server', ['status' => 404]);
+        }
+        
+        // Leggi il file
+        $file_content = file_get_contents($file_path);
+        $filename = basename($file_path);
+        
+        // Ritorna il PDF come response binaria
+        $response = new WP_REST_Response($file_content);
+        $response->set_status(200);
+        $response->header('Content-Type', 'application/pdf');
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        $response->header('Content-Length', filesize($file_path));
+        $response->header('Cache-Control', 'private, max-age=3600');
+        
+        return $response;
+    }
+}
         if (!$result) {
             return new WP_Error('delete_failed', 'Impossibile eliminare la richiesta', ['status' => 500]);
         }
