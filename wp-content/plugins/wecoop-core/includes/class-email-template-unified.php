@@ -172,7 +172,7 @@ class WeCoop_Email_Template_Unified {
             <div class="disclaimer">
                 <p>
                     <strong><?php echo esc_html($site_name); ?></strong><br>
-                    Cooperativa di Solidarietà Sociale<br>
+                   Associazione di Promozione Sociale<br>
                     Via Pupulonia 8, Milano (MI)<br>
                     Email: <a href="mailto:info@wecoop.org" style="color: #3498db;">info@wecoop.org</a>
                 </p>
