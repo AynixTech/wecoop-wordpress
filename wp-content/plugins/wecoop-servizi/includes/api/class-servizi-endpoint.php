@@ -613,18 +613,5 @@ class WECOOP_Servizi_Endpoint {
         return $response;
     }
 }
-        if (!$result) {
-            return new WP_Error('delete_failed', 'Impossibile eliminare la richiesta', ['status' => 500]);
-        }
-        
-        error_log("[WECOOP API] Richiesta #{$richiesta_id} (pratica: {$numero_pratica}) eliminata da utente #{$current_user_id}");
-        
-        return new WP_REST_Response([
-            'success' => true,
-            'message' => 'Richiesta eliminata con successo',
-            'id' => $richiesta_id,
-            'numero_pratica' => $numero_pratica,
-            'servizio' => $servizio
-        ], 200);
     }
 }
