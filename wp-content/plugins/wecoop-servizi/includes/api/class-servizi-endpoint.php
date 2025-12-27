@@ -448,6 +448,9 @@ class WECOOP_Servizi_Endpoint {
                     'data_richiesta' => get_the_date('Y-m-d H:i:s'),
                     'prezzo' => get_post_meta($post_id, 'prezzo', true),
                     'prezzo_formattato' => get_post_meta($post_id, 'prezzo', true) ? '€ ' . number_format((float)get_post_meta($post_id, 'prezzo', true), 2, ',', '.') : null,
+                    'payment_id' => $payment ? $payment->id : null,
+                    'payment_status' => $payment ? $payment->stato : null,
+                    'receipt_url' => $payment ? $payment->receipt_url : null,
                     'pagamento' => [
                         'ricevuto' => $pagamento_ricevuto,
                         'metodo' => $pagamento_metodo,
