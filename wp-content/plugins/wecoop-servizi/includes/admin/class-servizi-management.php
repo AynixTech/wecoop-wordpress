@@ -31,6 +31,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_save_listino_prezzi', [__CLASS__, 'ajax_save_listino_prezzi']);
         add_action('wp_ajax_bulk_delete_richieste', [__CLASS__, 'ajax_bulk_delete_richieste']);
         add_action('wp_ajax_get_prezzo_listino', [__CLASS__, 'ajax_get_prezzo_listino']);
+        add_action('wp_ajax_generate_receipt', [__CLASS__, 'ajax_generate_receipt']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -1421,6 +1422,13 @@ class WECOOP_Servizi_Management {
                            style="margin-top: 5px;">
                             📄 Scarica Ricevuta
                         </a>
+                    <?php else: ?>
+                        <br>
+                        <button class="button button-small generate-receipt" 
+                                data-payment-id="<?php echo $payment->id; ?>"
+                                style="margin-top: 5px;">
+                            📄 Genera Ricevuta
+                        </button>
                     <?php endif; ?>
                 <?php endif; ?>
                 <button class="button button-small button-link-delete delete-richiesta" 
@@ -1840,6 +1848,44 @@ class WECOOP_Servizi_Management {
             $('.edit-richiesta').on('click', function() {
                 const richiestaId = $(this).data('id');
                 
+                // Genera ricevuta
+            $('.generate-receipt').on('click', function(e) {
+                e.preventDefault();
+                
+                const paymentId = $(this).data('payment-id');
+                const $btn = $(this);
+                const originalText = $btn.text();
+                
+                if (!confirm('Vuoi generare la ricevuta PDF per questo pagamento?')) {
+                    return;
+                }
+                
+                $btn.prop('disabled', true).text('⏳ Generazione...');
+                
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'generate_receipt',
+                        payment_id: paymentId,
+                        nonce: '<?php echo wp_create_nonce('wecoop_admin_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ Ricevuta generata con successo!');
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data.message);
+                            $btn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function() {
+                        alert('❌ Errore di comunicazione con il server');
+                        $btn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+            
                 $.ajax({
                     url: ajaxurl,
                     method: 'POST',
@@ -3646,5 +3692,50 @@ class WECOOP_Servizi_Management {
             </div>
         </div>
         <?php
+    }
+    
+    /**
+     * AJAX: Genera ricevuta per pagamento completato
+     */
+    public static function ajax_generate_receipt() {
+        check_ajax_referer('wecoop_admin_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permessi insufficienti']);
+        }
+        
+        $payment_id = intval($_POST['payment_id']);
+        
+        if (!$payment_id) {
+            wp_send_json_error(['message' => 'ID pagamento non valido']);
+        }
+        
+        // Verifica che il pagamento esista ed sia completato
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'wecoop_pagamenti';
+        $payment = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE id = %d",
+            $payment_id
+        ));
+        
+        if (!$payment) {
+            wp_send_json_error(['message' => 'Pagamento non trovato']);
+        }
+        
+        if (!in_array($payment->stato, ['paid', 'completed'])) {
+            wp_send_json_error(['message' => 'Il pagamento non è ancora completato']);
+        }
+        
+        // Genera la ricevuta
+        $result = WeCoop_Ricevuta_PDF::generate_ricevuta($payment_id);
+        
+        if ($result['success']) {
+            wp_send_json_success([
+                'message' => 'Ricevuta generata con successo',
+                'receipt_url' => $result['receipt_url']
+            ]);
+        } else {
+            wp_send_json_error(['message' => $result['message']]);
+        }
     }
 }
