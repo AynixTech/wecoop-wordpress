@@ -4,7 +4,8 @@
     "type": "wordpress-plugin",
     "require": {
         "php": ">=7.4",
-        "stripe/stripe-php": "^19.1"
+        "stripe/stripe-php": "^19.1",
+        "mpdf/mpdf": "^8.2"
     },
     "autoload": {
         "classmap": [

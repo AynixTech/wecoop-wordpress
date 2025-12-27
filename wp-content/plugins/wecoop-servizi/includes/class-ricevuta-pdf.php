@@ -291,26 +291,16 @@ class WeCoop_Ricevuta_PDF {
      * Converte HTML in PDF usando mPDF
      */
     private static function html_to_pdf($html, $filename) {
-        // Verifica se mPDF è disponibile (plugin Complianz)
-        if (!class_exists('Mpdf\Mpdf')) {
-            // Prova a caricare autoload di Complianz
-            $autoload_paths = [
-                WP_PLUGIN_DIR . '/complianz-gdpr/vendor/autoload.php',
-                WP_PLUGIN_DIR . '/complianz-terms-conditions/vendor/autoload.php'
-            ];
-            
-            foreach ($autoload_paths as $path) {
-                if (file_exists($path)) {
-                    require_once $path;
-                    break;
-                }
-            }
+        // Carica mPDF dal vendor del plugin
+        $autoload = dirname(WECOOP_SERVIZI_FILE) . '/vendor/autoload.php';
+        if (file_exists($autoload)) {
+            require_once $autoload;
         }
         
         if (!class_exists('Mpdf\Mpdf')) {
             return [
                 'success' => false,
-                'message' => 'Libreria mPDF non disponibile. Installa il plugin Complianz GDPR.'
+                'message' => 'Libreria mPDF non disponibile. Esegui "composer install" nella directory del plugin.'
             ];
         }
         
