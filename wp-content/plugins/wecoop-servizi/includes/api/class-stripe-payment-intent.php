@@ -223,6 +223,27 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
             'metodo_pagamento' => 'stripe',
             'note' => 'Pagato via Stripe Webhook',
         ]);
+        
+        // Genera ricevuta PDF automaticamente
+        if (class_exists('WeCoop_Ricevuta_PDF')) {
+            $result = WeCoop_Ricevuta_PDF::genera_ricevuta($payment_id);
+            if (is_wp_error($result)) {
+                error_log("[WECOOP STRIPE] Errore generazione ricevuta: " . $result->get_error_message());
+            } else {
+                error_log("[WECOOP STRIPE] Ricevuta generata: " . $result['url']);
+                
+                // Salva URL ricevuta nei metadati pagamento
+                global $wpdb;
+                $table = $wpdb->prefix . 'wecoop_pagamenti';
+                $wpdb->update(
+                    $table,
+                    ['receipt_url' => $result['url']],
+                    ['id' => $payment_id],
+                    ['%s'],
+                    ['%d']
+                );
+            }
+        }
     }
     
     /**

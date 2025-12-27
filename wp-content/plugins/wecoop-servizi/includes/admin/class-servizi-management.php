@@ -90,6 +90,16 @@ class WECOOP_Servizi_Management {
             [__CLASS__, 'render_listino']
         );
         
+        // Impostazioni Ricevute
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Impostazioni Ricevute',
+            '⚙️ Impostazioni',
+            'manage_options',
+            'wecoop-servizi-settings',
+            [__CLASS__, 'render_settings']
+        );
+        
         // Pagina nascosta per dettaglio utente
         add_submenu_page(
             null, // Nessun menu parent = pagina nascosta
@@ -1403,6 +1413,15 @@ class WECOOP_Servizi_Management {
                     </button>
                 <?php elseif ($payment && in_array($payment->stato, ['paid', 'completed'])): ?>
                     <span style="color: #4caf50; font-weight: bold;">✅ Pagato</span>
+                    <?php if (!empty($payment->receipt_url)): ?>
+                        <br>
+                        <a href="<?php echo esc_url($payment->receipt_url); ?>" 
+                           target="_blank" 
+                           class="button button-small"
+                           style="margin-top: 5px;">
+                            📄 Scarica Ricevuta
+                        </a>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <button class="button button-small button-link-delete delete-richiesta" 
                         data-id="<?php echo $post_id; ?>"
@@ -3519,5 +3538,113 @@ class WECOOP_Servizi_Management {
         } else {
             wp_send_json_error('Prezzo non trovato nel listino');
         }
+    }
+    
+    /**
+     * Pagina impostazioni ricevute
+     */
+    public static function render_settings() {
+        // Salva impostazioni
+        if (isset($_POST['wecoop_save_settings'])) {
+            check_admin_referer('wecoop_settings_nonce');
+            
+            update_option('wecoop_nome_associazione', sanitize_text_field($_POST['nome_associazione']));
+            update_option('wecoop_rappresentante_legale', sanitize_text_field($_POST['rappresentante_legale']));
+            update_option('wecoop_data_runts', sanitize_text_field($_POST['data_runts']));
+            
+            echo '<div class="notice notice-success"><p>✅ Impostazioni salvate con successo!</p></div>';
+        }
+        
+        $nome_associazione = get_option('wecoop_nome_associazione', 'WeCoop APS');
+        $rappresentante_legale = get_option('wecoop_rappresentante_legale', '');
+        $data_runts = get_option('wecoop_data_runts', '');
+        ?>
+        <div class="wrap">
+            <h1>⚙️ Impostazioni Ricevute PDF</h1>
+            <p>Configura i dati dell'associazione che verranno utilizzati nelle ricevute per erogazioni liberali.</p>
+            
+            <form method="post" action="">
+                <?php wp_nonce_field('wecoop_settings_nonce'); ?>
+                
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">
+                            <label for="nome_associazione">Nome Associazione</label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   name="nome_associazione" 
+                                   id="nome_associazione" 
+                                   value="<?php echo esc_attr($nome_associazione); ?>" 
+                                   class="regular-text"
+                                   required>
+                            <p class="description">Es: WeCoop APS, Cooperativa WeWork ETS, ecc.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="rappresentante_legale">Rappresentante Legale</label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   name="rappresentante_legale" 
+                                   id="rappresentante_legale" 
+                                   value="<?php echo esc_attr($rappresentante_legale); ?>" 
+                                   class="regular-text"
+                                   required>
+                            <p class="description">Nome e cognome del legale rappresentante che firma le ricevute</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
+                            <label for="data_runts">Data Iscrizione RUNTS</label>
+                        </th>
+                        <td>
+                            <input type="text" 
+                                   name="data_runts" 
+                                   id="data_runts" 
+                                   value="<?php echo esc_attr($data_runts); ?>" 
+                                   class="regular-text"
+                                   placeholder="gg/mm/aaaa"
+                                   required>
+                            <p class="description">Data di iscrizione nel Registro Unico Nazionale del Terzo Settore (formato: gg/mm/aaaa)</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <p class="submit">
+                    <button type="submit" name="wecoop_save_settings" class="button button-primary">
+                        💾 Salva Impostazioni
+                    </button>
+                </p>
+            </form>
+            
+            <hr>
+            
+            <h2>📄 Anteprima Ricevuta</h2>
+            <p>Le ricevute vengono generate automaticamente dopo il pagamento e salvate in <code>/wp-content/uploads/ricevute/</code></p>
+            
+            <div class="postbox" style="margin-top: 20px;">
+                <div class="inside" style="padding: 20px;">
+                    <h3>Informazioni Ricevuta</h3>
+                    <ul>
+                        <li><strong>Formato:</strong> PDF (A4)</li>
+                        <li><strong>Generazione:</strong> Automatica dopo pagamento completato</li>
+                        <li><strong>Libreria:</strong> mPDF (fornita da Complianz GDPR)</li>
+                        <li><strong>Nomenclatura:</strong> Ricevuta_{payment_id}_{anno}.pdf</li>
+                        <li><strong>Conforme a:</strong> D.Lgs. 117/2017 (Codice del Terzo Settore)</li>
+                    </ul>
+                    
+                    <h3 style="margin-top: 20px;">Detraibilità/Deducibilità</h3>
+                    <ul>
+                        <li><strong>Persone fisiche:</strong> Detraibile 30% fino a €30.000 o Deducibile 10% del reddito</li>
+                        <li><strong>Enti/Aziende:</strong> Deducibile 10% del reddito</li>
+                        <li><strong>Requisito:</strong> Pagamento tracciabile (carta, bonifico, ecc.)</li>
+                        <li><strong>Esenzione:</strong> Esente da imposta di bollo (art. 82 co. 5 D.Lgs. 117/2017)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <?php
     }
 }

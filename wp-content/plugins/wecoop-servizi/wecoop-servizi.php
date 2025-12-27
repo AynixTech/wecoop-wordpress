@@ -75,6 +75,9 @@ class WeCoop_Servizi {
         // Sistema Pagamenti Custom
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-payment-system.php';
         
+        // Ricevute PDF
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-ricevuta-pdf.php';
+        
         // WooCommerce Integration (deprecato)
         if (class_exists('WooCommerce')) {
             require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-woocommerce-integration.php';
