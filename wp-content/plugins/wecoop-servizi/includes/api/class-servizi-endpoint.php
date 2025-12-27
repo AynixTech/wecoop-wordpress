@@ -452,6 +452,7 @@ class WECOOP_Servizi_Endpoint {
                     'payment_status' => $payment ? $payment->stato : null,
                     'receipt_url' => $payment ? $payment->receipt_url : null,
                     'pagamento' => [
+                        'id' => $payment ? $payment->id : null,
                         'ricevuto' => $pagamento_ricevuto,
                         'metodo' => $pagamento_metodo,
                         'data' => $pagamento_data,
