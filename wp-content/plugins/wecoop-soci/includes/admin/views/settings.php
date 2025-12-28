@@ -16,7 +16,6 @@ if (isset($_POST['wecoop_crm_save_settings'])) {
         'enable_comunicazioni' => isset($_POST['enable_comunicazioni']),
         'enable_statistiche' => isset($_POST['enable_statistiche']),
         'enable_servizi' => isset($_POST['enable_servizi']),
-        'auto_approve' => isset($_POST['auto_approve']),
         'email_notifications' => isset($_POST['email_notifications']),
     ];
     
@@ -30,7 +29,6 @@ $options = get_option('wecoop_crm_options', [
     'enable_comunicazioni' => true,
     'enable_statistiche' => true,
     'enable_servizi' => true,
-    'auto_approve' => false,
     'email_notifications' => true,
 ]);
 ?>
@@ -91,16 +89,8 @@ $options = get_option('wecoop_crm_options', [
         </table>
         
         <h2>Opzioni Richieste</h2>
+        <h2>Opzioni Richieste</h2>
         <table class="form-table">
-            <tr>
-                <th>Approvazione Automatica</th>
-                <td>
-                    <label>
-                        <input type="checkbox" name="auto_approve" <?php checked($options['auto_approve'] ?? false); ?>>
-                        Approva automaticamente le richieste (sconsigliato)
-                    </label>
-                </td>
-            </tr>
             <tr>
                 <th>Notifiche Email</th>
                 <td>
@@ -111,7 +101,6 @@ $options = get_option('wecoop_crm_options', [
                 </td>
             </tr>
         </table>
-        
         <p class="submit">
             <button type="submit" name="wecoop_crm_save_settings" class="button button-primary">Salva Impostazioni</button>
         </p>

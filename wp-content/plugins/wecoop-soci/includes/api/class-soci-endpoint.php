@@ -382,7 +382,7 @@ class WECOOP_Soci_Endpoint {
         $post_id = wp_insert_post([
             'post_type' => 'richiesta_socio',
             'post_title' => $params['nome'] . ' ' . $params['cognome'],
-            'post_status' => 'publish', // Approvato automaticamente
+            'post_status' => 'pending', // Richiede approvazione manuale
             'post_author' => 1
         ]);
         
@@ -418,169 +418,23 @@ class WECOOP_Soci_Endpoint {
         $numero_pratica = 'RS-' . date('Y') . '-' . str_pad($post_id, 5, '0', STR_PAD_LEFT);
         update_post_meta($post_id, 'numero_pratica', $numero_pratica);
         
-        // --- APPROVAZIONE AUTOMATICA: Crea utente socio ---
-        error_log('[SOCI] Inizio approvazione automatica...');
+        error_log('[SOCI] Richiesta salvata con successo in stato pending');
+        error_log('[SOCI] Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
+        error_log('========== FINE REGISTRAZIONE SOCIO (PENDING) ==========');
         
-        $nome = $params['nome'];
-        $cognome = $params['cognome'];
-        $telefono = $params['telefono'];
-        $prefix = $params['prefix'];
-        
-        // Username = telefono completo (solo números)
-        $username = preg_replace('/[^0-9]/', '', $telefono_completo);
-        error_log('[SOCI] Username base: ' . $username);
-        
-        // Se username esiste, aggiungi suffisso numerico
-        $original_username = $username;
-        $counter = 1;
-        while (username_exists($username)) {
-            $username = $original_username . '_' . $counter;
-            error_log('[SOCI] Username già esistente, provo: ' . $username);
-            $counter++;
-        }
-        error_log('[SOCI] Username finale: ' . $username);
-        
-        // Genera password temporanea facile da ricordare
-        $password = self::generate_memorable_password();
-        error_log('[SOCI] Password generata (lunghezza: ' . strlen($password) . ')');
-        
-        // Email ya validada
-        $email = $params['email'];
-        
-        // Crea utente WordPress
-        error_log('[SOCI] Creazione utente WordPress...');
-        $user_id = wp_create_user($username, $password, $email);
-        
-        if (is_wp_error($user_id)) {
-            error_log('[SOCI] ERROR: wp_create_user fallito: ' . $user_id->get_error_message());
-            wp_delete_post($post_id, true);
-            return new WP_Error('user_creation_failed', $user_id->get_error_message(), ['status' => 500]);
-        }
-        
-        error_log('[SOCI] Utente WordPress creato con ID: ' . $user_id);
-        
-        // Aggiungi ruolo socio
-        error_log('[SOCI] Assegnazione ruoli...');
-        $user = new WP_User($user_id);
-        $user->set_role('subscriber');
-        $user->add_role('socio');
-        
-        // Aggiorna first_name e last_name
-        error_log('[SOCI] Aggiornamento dati utente...');
-        wp_update_user([
-            'ID' => $user_id,
-            'first_name' => $nome,
-            'last_name' => $cognome,
-            'display_name' => $nome . ' ' . $cognome
-        ]);
-        
-        // Genera numero tessera UUID
-        $numero_tessera = wp_generate_uuid4();
-        
-        // Salva dati socio come user meta
-        update_user_meta($user_id, 'numero_tessera', $numero_tessera);
-        update_user_meta($user_id, 'data_adesione', current_time('Y-m-d'));
-        update_user_meta($user_id, 'status_socio', 'attivo');
-        update_user_meta($user_id, 'quota_pagata', false);
-        update_user_meta($user_id, 'profilo_completo', false);
-        
-        // Salva lingua preferita dall'app
-        if (!empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            $accept_lang = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
-            if (class_exists('WeCoop_Multilingual_Email')) {
-                $lang = WeCoop_Multilingual_Email::parse_accept_language($accept_lang);
-                update_user_meta($user_id, 'preferred_language', $lang);
-                error_log("WECOOP Soci: Salvata lingua preferita '{$lang}' per utente {$user_id}");
-            }
-        }
-        
-        // Copia campi dalla richiesta all'utente
-        foreach ($fields as $field) {
-            if (!empty($params[$field])) {
-                update_user_meta($user_id, $field, $params[$field]);
-            }
-        }
-        
-        // Salva telefono_completo nel user meta
-        update_user_meta($user_id, 'telefono_completo', $telefono_completo);
-        
-        // Aggiorna richiesta con user_id
-        update_post_meta($post_id, 'user_id_socio', $user_id);
-        update_post_meta($post_id, 'data_approvazione', current_time('mysql'));
-        
-        // Genera tessera URL
-        $tessera_url = home_url('/tessera-socio/?id=' . $numero_tessera);
-        
-        // Log inizio invio email
-        error_log("WECOOP Soci: Tentativo invio email benvenuto a {$email}");
-        error_log("WECOOP Soci: Username: {$username}, Password: {$password}, Tessera: {$numero_tessera}");
-        
-        // Invia email di benvenuto con credenziali
-        $email_sent = false;
-        if (class_exists('WeCoop_Email_Template_Unified')) {
-            try {
-                $email_sent = WeCoop_Email_Template_Unified::send_welcome(
-                    $nome,
-                    $email,
-                    $password,
-                    $numero_tessera,
-                    $tessera_url,
-                    null, // lang (auto-detect)
-                    $username // username (telefono)
-                );
-                
-                // Log dettagliato per debug
-                error_log('WECOOP Soci: Email send_welcome result: ' . ($email_sent ? 'SUCCESS' : 'FAILED'));
-                error_log('WECOOP Soci: Destinatario: ' . $email);
-                error_log('WECOOP Soci: Nome: ' . $nome);
-                error_log('WECOOP Soci: Username: ' . $username);
-            } catch (Exception $e) {
-                error_log('WECOOP Soci: ERRORE invio email: ' . $e->getMessage());
-                $email_sent = false;
-            }
-        } else {
-            error_log('WECOOP Soci: ERRORE - Classe WeCoop_Email_Template_Unified NON trovata!');
-            
-            // Fallback: email semplice
-            $message = "Benvenuto {$nome}!\n\n";
-            $message .= "La tua richiesta è stata approvata.\n\n";
-            $message .= "Username: {$username}\n";
-            $message .= "Password: {$password}\n";
-            $message .= "Numero tessera: {$numero_tessera}\n\n";
-            $message .= "Accedi: " . wp_login_url() . "\n";
-            $message .= "Tessera: {$tessera_url}\n";
-            
-            $email_sent = wp_mail($email, 'Benvenuto in WECOOP', $message);
-            error_log('WECOOP Soci: Email fallback wp_mail result: ' . ($email_sent ? 'SUCCESS' : 'FAILED'));
-        }
-        
-        if (!$email_sent) {
-            error_log('WECOOP Soci: ✗✗✗ EMAIL NON INVIATA a ' . $email . ' ✗✗✗');
-        } else {
-            error_log('WECOOP Soci: ✓✓✓ EMAIL INVIATA CON SUCCESSO a ' . $email . ' ✓✓✓');
-        }
-        
-        // Risposta diretta per notifica in-app
-        error_log('[SOCI] Registrazione completata con successo!');
-        error_log('[SOCI] User ID: ' . $user_id . ', Post ID: ' . $post_id . ', Tessera: ' . $numero_tessera);
-        error_log('========== FINE REGISTRAZIONE SOCIO (SUCCESS) ==========');
-        
+        // Risposta per notifica in-app
         return rest_ensure_response([
             'success' => true,
-            'message' => 'Registrazione completata con successo! Benvenuto in WECOOP.',
+            'message' => 'Richiesta di adesione inviata con successo! Riceverai una conferma via email quando sarà approvata.',
             'data' => [
                 'id' => $post_id,
-                'user_id' => $user_id,
                 'numero_pratica' => $numero_pratica,
-                'numero_tessera' => $numero_tessera,
-                'username' => $username,
-                'password' => $password,
-                'tessera_url' => $tessera_url,
+                'status' => 'pending',
                 'profilo_completo' => false,
-                'nome' => $nome,
-                'cognome' => $cognome,
-                'prefix' => $prefix,
-                'telefono' => $telefono,
+                'nome' => $params['nome'],
+                'cognome' => $params['cognome'],
+                'prefix' => $params['prefix'],
+                'telefono' => $params['telefono'],
                 'telefono_completo' => $telefono_completo,
                 'nazionalita' => $params['nazionalita']
             ]
