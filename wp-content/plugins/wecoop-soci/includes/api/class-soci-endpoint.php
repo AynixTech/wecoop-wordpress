@@ -347,23 +347,48 @@ class WECOOP_Soci_Endpoint {
         $telefono_completo = $params['prefix'] . $params['telefono'];
         error_log('[SOCI] Telefono completo: ' . $telefono_completo);
         
-        // Verifica se esiste già una richiesta con questo numero di telefono
+        // Verifica se esiste già una richiesta ATTIVA con questo numero di telefono
+        // IMPORTANTE: Escludiamo 'trash' per permettere re-registrazione dopo eliminazione
         error_log('[SOCI] Verifica telefono esistente...');
         $existing_by_phone = get_posts([
             'post_type' => 'richiesta_socio',
             'meta_key' => 'telefono_completo',
             'meta_value' => $telefono_completo,
-            'post_status' => ['publish', 'pending'],
+            'post_status' => ['publish', 'pending'], // NO 'trash' - permetti re-registrazione
             'posts_per_page' => 1
         ]);
         
         if (!empty($existing_by_phone)) {
-            error_log('[SOCI] ERROR: Telefono già registrato: ' . $telefono_completo);
-            return new WP_Error(
-                'duplicate_phone', 
-                'Telefono già registrato', 
-                ['status' => 400]
-            );
+            $existing_post = $existing_by_phone[0];
+            error_log('[SOCI] Trovato post esistente: ID=' . $existing_post->ID . ', Status=' . $existing_post->post_status);
+            
+            // Verifica se ha un user_id collegato e se l'utente esiste ancora
+            $existing_user_id = get_post_meta($existing_post->ID, 'user_id_socio', true);
+            error_log('[SOCI] User ID collegato: ' . ($existing_user_id ?: 'nessuno'));
+            
+            if ($existing_user_id) {
+                $user_exists = get_user_by('id', $existing_user_id);
+                if ($user_exists) {
+                    error_log('[SOCI] ERROR: Utente WordPress ancora esistente (ID: ' . $existing_user_id . ')');
+                    return new WP_Error(
+                        'duplicate_phone', 
+                        'Telefono già registrato', 
+                        ['status' => 400]
+                    );
+                } else {
+                    error_log('[SOCI] Utente WordPress non esiste più, permetto re-registrazione');
+                }
+            } else {
+                // Post esiste ma senza utente collegato (caso anomalo)
+                error_log('[SOCI] ERROR: Post esiste ma senza utente collegato');
+                return new WP_Error(
+                    'duplicate_phone', 
+                    'Telefono già registrato', 
+                    ['status' => 400]
+                );
+            }
+        } else {
+            error_log('[SOCI] Nessun post esistente trovato con questo telefono');
         }
         
         // Crea post richiesta
