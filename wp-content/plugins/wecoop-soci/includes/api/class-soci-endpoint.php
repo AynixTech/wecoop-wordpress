@@ -41,7 +41,21 @@ class WECOOP_Soci_Endpoint {
      */
     public static function register_routes() {
         
-        // 1. CREATE: Nuova richiesta adesione socio (SEMPLIFICATA)
+        // 1. CREATE: Primo Accesso - Registrazione Semplificata (solo 4 campi)
+        // Endpoint principale per app Flutter
+        register_rest_route('wecoop/v1', '/utenti/primo-accesso', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'crea_richiesta_adesione'],
+            'permission_callback' => '__return_true', // Pubblico
+            'args' => [
+                'nome' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                'cognome' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                'prefix' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                'telefono' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+            ]
+        ]);
+        
+        // 1b. CREATE: Alias per retrocompatibilità
         register_rest_route('wecoop/v1', '/soci/richiesta', [
             'methods' => 'POST',
             'callback' => [__CLASS__, 'crea_richiesta_adesione'],
@@ -51,18 +65,6 @@ class WECOOP_Soci_Endpoint {
                 'cognome' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
                 'prefix' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
                 'telefono' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'nazionalita' => ['required' => true, 'type' => 'string', 'validate_callback' => [__CLASS__, 'validate_country_code']],
-                'email' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_email'],
-                'privacy_accepted' => ['required' => true, 'type' => 'boolean'],
-                // Campi opzionali che possono essere completati dopo
-                'data_nascita' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'luogo_nascita' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'codice_fiscale' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'indirizzo' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'citta' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'cap' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'provincia' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
-                'professione' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field']
             ]
         ]);
         
@@ -299,10 +301,24 @@ class WECOOP_Soci_Endpoint {
     }
     
     /**
-     * 1. Crea nuova richiesta adesione SEMPLIFICATA (solo nome, cognome, telefono)
+     * 1. PRIMO ACCESSO - Registrazione Semplificata
+     * 
+     * Endpoint: POST /wp-json/wecoop/v1/utenti/primo-accesso
+     * 
+     * Crea una richiesta di adesione con solo 4 campi obbligatori:
+     * - nome
+     * - cognome
+     * - prefix (es: +39)
+     * - telefono (solo numeri)
+     * 
+     * La richiesta viene salvata con status "pending" e dovrà essere
+     * completata e approvata dall'operatore CRM.
+     * 
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
      */
     public static function crea_richiesta_adesione($request) {
-        error_log('========== INIZIO REGISTRAZIONE SOCIO SEMPLIFICATA ==========');
+        error_log('========== INIZIO PRIMO ACCESSO SEMPLIFICATO ==========');
         
         try {
             $params = $request->get_params();
@@ -315,7 +331,11 @@ class WECOOP_Soci_Endpoint {
                 error_log('[SOCI]   - cognome: ' . (empty($params['cognome']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - prefix: ' . (empty($params['prefix']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - telefono: ' . (empty($params['telefono']) ? 'MANCANTE' : 'OK'));
-                return new WP_Error('missing_required', 'Nome, cognome, prefix e telefono sono obbligatori', ['status' => 400]);
+                return new WP_Error(
+                    'invalid_data', 
+                    'Nome, cognome, prefix e telefono sono obbligatori', 
+                    ['status' => 400]
+                );
             }
         
         error_log('[SOCI] Dati utente:');
@@ -339,7 +359,11 @@ class WECOOP_Soci_Endpoint {
         
         if (!empty($existing_by_phone)) {
             error_log('[SOCI] ERROR: Telefono già registrato: ' . $telefono_completo);
-            return new WP_Error('phone_exists', 'Esiste già una registrazione con questo numero di telefono', ['status' => 409]);
+            return new WP_Error(
+                'duplicate_phone', 
+                'Telefono già registrato', 
+                ['status' => 400]
+            );
         }
         
         // Crea post richiesta
@@ -374,7 +398,7 @@ class WECOOP_Soci_Endpoint {
         
         error_log('[SOCI] Richiesta salvata con successo in stato pending');
         error_log('[SOCI] Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
-        error_log('========== FINE REGISTRAZIONE SOCIO SEMPLIFICATA (PENDING) ==========');
+        error_log('========== FINE PRIMO ACCESSO (PENDING) ==========');
         
         // Risposta per notifica in-app
         return rest_ensure_response([
@@ -395,8 +419,12 @@ class WECOOP_Soci_Endpoint {
         } catch (Exception $e) {
             error_log('[SOCI] EXCEPTION CRITICA: ' . $e->getMessage());
             error_log('[SOCI] Stack trace: ' . $e->getTraceAsString());
-            error_log('========== FINE REGISTRAZIONE SOCIO (EXCEPTION) ==========');
-            return new WP_Error('critical_error', 'Errore critico: ' . $e->getMessage(), ['status' => 500]);
+            error_log('========== FINE PRIMO ACCESSO (EXCEPTION) ==========');
+            return new WP_Error(
+                'server_error', 
+                'Errore critico: ' . $e->getMessage(), 
+                ['status' => 500]
+            );
         }
     }
     
