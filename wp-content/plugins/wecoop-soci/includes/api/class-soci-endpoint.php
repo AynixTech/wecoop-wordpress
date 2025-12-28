@@ -308,21 +308,23 @@ class WECOOP_Soci_Endpoint {
             $params = $request->get_params();
             error_log('[SOCI] Parametri ricevuti: ' . json_encode($params, JSON_UNESCAPED_UNICODE));
             
-            // Validazione campi obbligatori: SOLO Nome, Cognome, Telefono
-            if (empty($params['nome']) || empty($params['cognome']) || empty($params['telefono'])) {
+            // Validazione campi obbligatori: SOLO Nome, Cognome, Prefix, Telefono
+            if (empty($params['nome']) || empty($params['cognome']) || empty($params['prefix']) || empty($params['telefono'])) {
                 error_log('[SOCI] ERROR: Campi obbligatori mancanti');
                 error_log('[SOCI]   - nome: ' . (empty($params['nome']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - cognome: ' . (empty($params['cognome']) ? 'MANCANTE' : 'OK'));
+                error_log('[SOCI]   - prefix: ' . (empty($params['prefix']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - telefono: ' . (empty($params['telefono']) ? 'MANCANTE' : 'OK'));
-                return new WP_Error('missing_required', 'Nome, cognome e telefono sono obbligatori', ['status' => 400]);
+                return new WP_Error('missing_required', 'Nome, cognome, prefix e telefono sono obbligatori', ['status' => 400]);
             }
         
         error_log('[SOCI] Dati utente:');
         error_log('[SOCI]   - Nome: ' . $params['nome'] . ' ' . $params['cognome']);
+        error_log('[SOCI]   - Prefix: ' . $params['prefix']);
         error_log('[SOCI]   - Telefono: ' . $params['telefono']);
         
-        // Il telefono è già completo con prefix incluso
-        $telefono_completo = trim($params['telefono']);
+        // Combina prefix + telefono
+        $telefono_completo = $params['prefix'] . $params['telefono'];
         error_log('[SOCI] Telefono completo: ' . $telefono_completo);
         
         // Verifica se esiste già una richiesta con questo numero di telefono
@@ -356,9 +358,11 @@ class WECOOP_Soci_Endpoint {
         
         error_log('[SOCI] Post richiesta creato con ID: ' . $post_id);
         
-        // Salva solo i 3 campi obbligatori
+        // Salva i 4 campi obbligatori
         update_post_meta($post_id, 'nome', sanitize_text_field($params['nome']));
         update_post_meta($post_id, 'cognome', sanitize_text_field($params['cognome']));
+        update_post_meta($post_id, 'prefix', sanitize_text_field($params['prefix']));
+        update_post_meta($post_id, 'telefono', sanitize_text_field($params['telefono']));
         update_post_meta($post_id, 'telefono_completo', sanitize_text_field($telefono_completo));
         
         // Flag per indicare che il profilo è incompleto (da completare in backoffice)
@@ -382,7 +386,9 @@ class WECOOP_Soci_Endpoint {
                 'status' => 'pending',
                 'nome' => $params['nome'],
                 'cognome' => $params['cognome'],
-                'telefono' => $telefono_completo
+                'prefix' => $params['prefix'],
+                'telefono' => $params['telefono'],
+                'telefono_completo' => $telefono_completo
             ]
         ]);
         
