@@ -301,24 +301,23 @@ class WECOOP_Soci_Endpoint {
     }
     
     /**
-     * 1. PRIMO ACCESSO - Registrazione Semplificata
+     * 1. PRIMO ACCESSO - Registrazione Completa con Creazione Utente
      * 
      * Endpoint: POST /wp-json/wecoop/v1/utenti/primo-accesso
      * 
-     * Crea una richiesta di adesione con solo 4 campi obbligatori:
-     * - nome
-     * - cognome
-     * - prefix (es: +39)
-     * - telefono (solo numeri)
+     * Crea immediatamente un utente WordPress con:
+     * - Username: telefono completo (es: +393331234567)
+     * - Password: generata automaticamente (memorabile)
+     * - Ruolo: subscriber (non socio)
      * 
-     * La richiesta viene salvata con status "pending" e dovrà essere
-     * completata e approvata dall'operatore CRM.
+     * L'utente può fare login subito con le credenziali ricevute.
+     * Potrà diventare socio successivamente tramite operatore CRM.
      * 
      * @param WP_REST_Request $request
      * @return WP_REST_Response|WP_Error
      */
     public static function crea_richiesta_adesione($request) {
-        error_log('========== INIZIO PRIMO ACCESSO SEMPLIFICATO ==========');
+        error_log('========== INIZIO PRIMO ACCESSO (CREAZIONE UTENTE) ==========');
         
         try {
             $params = $request->get_params();
@@ -391,53 +390,109 @@ class WECOOP_Soci_Endpoint {
             error_log('[SOCI] Nessun post esistente trovato con questo telefono');
         }
         
-        // Crea post richiesta
+        // ===== CREAZIONE UTENTE WORDPRESS =====
+        error_log('[SOCI] Creazione utente WordPress...');
+        
+        $nome = sanitize_text_field($params['nome']);
+        $cognome = sanitize_text_field($params['cognome']);
+        
+        // Username = telefono completo (unico e facile da ricordare)
+        $username = $telefono_completo;
+        error_log('[SOCI] Username: ' . $username);
+        
+        // Genera password memorabile
+        $password = self::generate_memorable_password();
+        error_log('[SOCI] Password generata (lunghezza: ' . strlen($password) . ')');
+        
+        // Crea utente WordPress (email opzionale, può essere aggiunta dopo)
+        $user_id = wp_create_user($username, $password, null);
+        
+        if (is_wp_error($user_id)) {
+            error_log('[SOCI] ERROR: wp_create_user fallito: ' . $user_id->get_error_message());
+            return new WP_Error(
+                'user_creation_failed', 
+                'Errore nella creazione dell\'account: ' . $user_id->get_error_message(), 
+                ['status' => 500]
+            );
+        }
+        
+        error_log('[SOCI] Utente WordPress creato con ID: ' . $user_id);
+        
+        // Assegna ruolo subscriber (utente base, non socio)
+        $user = new WP_User($user_id);
+        $user->set_role('subscriber');
+        
+        // Aggiorna nome e cognome
+        wp_update_user([
+            'ID' => $user_id,
+            'first_name' => $nome,
+            'last_name' => $cognome,
+            'display_name' => $nome . ' ' . $cognome
+        ]);
+        
+        // Salva dati aggiuntivi come user meta
+        update_user_meta($user_id, 'prefix', sanitize_text_field($params['prefix']));
+        update_user_meta($user_id, 'telefono', sanitize_text_field($params['telefono']));
+        update_user_meta($user_id, 'telefono_completo', $telefono_completo);
+        update_user_meta($user_id, 'profilo_completo', false);
+        update_user_meta($user_id, 'is_socio', false); // Può diventare socio dopo
+        
+        // Crea post richiesta collegato all'utente
         error_log('[SOCI] Creazione post richiesta_socio...');
         $post_id = wp_insert_post([
             'post_type' => 'richiesta_socio',
-            'post_title' => $params['nome'] . ' ' . $params['cognome'],
-            'post_status' => 'pending', // Richiede approvazione manuale
-            'post_author' => 1
+            'post_title' => $nome . ' ' . $cognome,
+            'post_status' => 'publish', // Pubblicato perché utente già creato
+            'post_author' => $user_id // Collegato all'utente creato
         ]);
         
         if (is_wp_error($post_id)) {
             error_log('[SOCI] ERROR: wp_insert_post fallito: ' . $post_id->get_error_message());
-            return new WP_Error('creation_failed', 'Errore nella creazione della registrazione: ' . $post_id->get_error_message(), ['status' => 500]);
+            // Rollback: elimina utente appena creato
+            wp_delete_user($user_id);
+            return new WP_Error(
+                'server_error', 
+                'Errore nella creazione del profilo: ' . $post_id->get_error_message(), 
+                ['status' => 500]
+            );
         }
         
         error_log('[SOCI] Post richiesta creato con ID: ' . $post_id);
         
-        // Salva i 4 campi obbligatori
-        update_post_meta($post_id, 'nome', sanitize_text_field($params['nome']));
-        update_post_meta($post_id, 'cognome', sanitize_text_field($params['cognome']));
+        // Salva i 4 campi obbligatori nel post
+        update_post_meta($post_id, 'nome', $nome);
+        update_post_meta($post_id, 'cognome', $cognome);
         update_post_meta($post_id, 'prefix', sanitize_text_field($params['prefix']));
         update_post_meta($post_id, 'telefono', sanitize_text_field($params['telefono']));
-        update_post_meta($post_id, 'telefono_completo', sanitize_text_field($telefono_completo));
-        
-        // Flag per indicare che il profilo è incompleto (da completare in backoffice)
+        update_post_meta($post_id, 'telefono_completo', $telefono_completo);
+        update_post_meta($post_id, 'user_id_socio', $user_id); // Collegamento utente
         update_post_meta($post_id, 'profilo_completo', false);
         
         // Genera numero pratica
         $numero_pratica = 'RS-' . date('Y') . '-' . str_pad($post_id, 5, '0', STR_PAD_LEFT);
         update_post_meta($post_id, 'numero_pratica', $numero_pratica);
         
-        error_log('[SOCI] Richiesta salvata con successo in stato pending');
-        error_log('[SOCI] Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
-        error_log('========== FINE PRIMO ACCESSO (PENDING) ==========');
+        error_log('[SOCI] Registrazione completata con successo');
+        error_log('[SOCI] User ID: ' . $user_id . ', Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
+        error_log('========== FINE PRIMO ACCESSO (UTENTE CREATO) ==========');
         
-        // Risposta per notifica in-app
+        // Risposta con credenziali di accesso
         return rest_ensure_response([
             'success' => true,
-            'message' => 'Richiesta di adesione inviata con successo! Ti contatteremo presto.',
+            'message' => 'Registrazione completata! Usa queste credenziali per accedere.',
             'data' => [
                 'id' => $post_id,
+                'user_id' => $user_id,
                 'numero_pratica' => $numero_pratica,
-                'status' => 'pending',
-                'nome' => $params['nome'],
-                'cognome' => $params['cognome'],
+                'username' => $username,
+                'password' => $password,
+                'nome' => $nome,
+                'cognome' => $cognome,
                 'prefix' => $params['prefix'],
                 'telefono' => $params['telefono'],
-                'telefono_completo' => $telefono_completo
+                'telefono_completo' => $telefono_completo,
+                'is_socio' => false,
+                'profilo_completo' => false
             ]
         ]);
         
