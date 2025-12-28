@@ -299,82 +299,45 @@ class WECOOP_Soci_Endpoint {
     }
     
     /**
-     * 1. Crea nuova richiesta adesione SEMPLIFICATA (solo nome, cognome, telefono, privacy)
+     * 1. Crea nuova richiesta adesione SEMPLIFICATA (solo nome, cognome, telefono)
      */
     public static function crea_richiesta_adesione($request) {
-        error_log('========== INIZIO REGISTRAZIONE SOCIO ==========');
+        error_log('========== INIZIO REGISTRAZIONE SOCIO SEMPLIFICATA ==========');
         
         try {
             $params = $request->get_params();
             error_log('[SOCI] Parametri ricevuti: ' . json_encode($params, JSON_UNESCAPED_UNICODE));
             
-            // Validazione campi obbligatori
-            if (empty($params['nome']) || empty($params['cognome']) || empty($params['prefix']) || empty($params['telefono']) || empty($params['nazionalita']) || empty($params['email'])) {
+            // Validazione campi obbligatori: SOLO Nome, Cognome, Telefono
+            if (empty($params['nome']) || empty($params['cognome']) || empty($params['telefono'])) {
                 error_log('[SOCI] ERROR: Campi obbligatori mancanti');
                 error_log('[SOCI]   - nome: ' . (empty($params['nome']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - cognome: ' . (empty($params['cognome']) ? 'MANCANTE' : 'OK'));
-                error_log('[SOCI]   - prefix: ' . (empty($params['prefix']) ? 'MANCANTE' : 'OK'));
                 error_log('[SOCI]   - telefono: ' . (empty($params['telefono']) ? 'MANCANTE' : 'OK'));
-                error_log('[SOCI]   - nazionalita: ' . (empty($params['nazionalita']) ? 'MANCANTE' : 'OK'));
-                error_log('[SOCI]   - email: ' . (empty($params['email']) ? 'MANCANTE' : 'OK'));
-                return new WP_Error('missing_required', 'Nome, cognome, prefix, telefono, nazionalità e email sono obbligatori', ['status' => 400]);
+                return new WP_Error('missing_required', 'Nome, cognome e telefono sono obbligatori', ['status' => 400]);
             }
         
         error_log('[SOCI] Dati utente:');
         error_log('[SOCI]   - Nome: ' . $params['nome'] . ' ' . $params['cognome']);
-        error_log('[SOCI]   - Email: ' . $params['email']);
-        error_log('[SOCI]   - Prefix: ' . $params['prefix']);
         error_log('[SOCI]   - Telefono: ' . $params['telefono']);
-        error_log('[SOCI]   - Nazionalità: ' . $params['nazionalita']);
         
-        // Normalizza codice paese (uppercase, trim)
-        $params['nazionalita'] = strtoupper(trim($params['nazionalita']));
+        // Il telefono è già completo con prefix incluso
+        $telefono_completo = trim($params['telefono']);
+        error_log('[SOCI] Telefono completo: ' . $telefono_completo);
         
-        // Verifica formato codice paese (2 lettere)
-        if (!preg_match('/^[A-Z]{2}$/', $params['nazionalita'])) {
-            error_log('[SOCI] ERROR: Codice nazionalità non valido: ' . $params['nazionalita']);
-            return new WP_Error('invalid_country_code', 'Codice nazionalità non valido. Usa formato ISO (es: IT, EC, ES)', ['status' => 400]);
-        }
-        
-        // Validazione email
-        if (!is_email($params['email'])) {
-            error_log('[SOCI] ERROR: Email non valida: ' . $params['email']);
-            return new WP_Error('invalid_email', 'Email non valida', ['status' => 400]);
-        }
-        
-        if (empty($params['privacy_accepted']) || $params['privacy_accepted'] !== true) {
-            error_log('[SOCI] ERROR: Privacy non accettata');
-            return new WP_Error('privacy_required', 'Devi accettare l\'informativa sulla privacy', ['status' => 400]);
-        }
-        
-        // Combina prefix + telefono para crear el número completo
-        $telefono_completo = $params['prefix'] . $params['telefono'];
-        error_log('[SOCI] Telefono completo generato: ' . $telefono_completo);
-        
-        // Verifica se esiste già un socio con questo numero di telefono
+        // Verifica se esiste già una richiesta con questo numero di telefono
         error_log('[SOCI] Verifica telefono esistente...');
         $existing_by_phone = get_posts([
             'post_type' => 'richiesta_socio',
             'meta_key' => 'telefono_completo',
             'meta_value' => $telefono_completo,
-            'post_status' => 'publish',
+            'post_status' => ['publish', 'pending'],
             'posts_per_page' => 1
         ]);
         
         if (!empty($existing_by_phone)) {
-            error_log('[SOCI] Trovata richiesta esistente: ID ' . $existing_by_phone[0]->ID);
-            $existing_user_id = get_post_meta($existing_by_phone[0]->ID, 'user_id_socio', true);
-            if ($existing_user_id && get_user_by('id', $existing_user_id)) {
-                error_log('[SOCI] ERROR: Telefono già registrato per utente ID: ' . $existing_user_id);
-                return new WP_Error('phone_exists', 'Esiste già una registrazione con questo numero di telefono', ['status' => 409]);
-            }
-        }
-        
-        // Verifica email
-        error_log('[SOCI] Verifica email esistente...');
-        if (email_exists($params['email'])) {
-            error_log('[SOCI] ERROR: Email già registrata: ' . $params['email']);
-            return new WP_Error('email_exists', 'Esiste già un utente con questa email', ['status' => 409]);
+            error_log('[SOCI] ERROR: Telefono già registrato: ' . $telefono_completo);
+            return new WP_Error('phone_exists', 'Esiste già una registrazione con questo numero di telefono', ['status' => 409]);
         }
         
         // Crea post richiesta
@@ -393,25 +356,12 @@ class WECOOP_Soci_Endpoint {
         
         error_log('[SOCI] Post richiesta creato con ID: ' . $post_id);
         
-        // Salva metadati richiesta (tutti i campi, anche se alcuni saranno vuoti)
-        $fields = ['nome', 'cognome', 'prefix', 'telefono', 'nazionalita', 'email', 'data_nascita', 
-                   'luogo_nascita', 'codice_fiscale', 'indirizzo', 'citta', 
-                   'cap', 'provincia', 'professione'];
+        // Salva solo i 3 campi obbligatori
+        update_post_meta($post_id, 'nome', sanitize_text_field($params['nome']));
+        update_post_meta($post_id, 'cognome', sanitize_text_field($params['cognome']));
+        update_post_meta($post_id, 'telefono_completo', sanitize_text_field($telefono_completo));
         
-        foreach ($fields as $field) {
-            if (!empty($params[$field])) {
-                update_post_meta($post_id, $field, $params[$field]);
-            }
-        }
-        
-        // Salva anche telefono_completo
-        update_post_meta($post_id, 'telefono_completo', $telefono_completo);
-        
-        // Salva accettazione privacy
-        update_post_meta($post_id, 'privacy_accepted', true);
-        update_post_meta($post_id, 'privacy_accepted_date', current_time('mysql'));
-        
-        // Flag per indicare che il profilo è incompleto
+        // Flag per indicare che il profilo è incompleto (da completare in backoffice)
         update_post_meta($post_id, 'profilo_completo', false);
         
         // Genera numero pratica
@@ -420,23 +370,19 @@ class WECOOP_Soci_Endpoint {
         
         error_log('[SOCI] Richiesta salvata con successo in stato pending');
         error_log('[SOCI] Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
-        error_log('========== FINE REGISTRAZIONE SOCIO (PENDING) ==========');
+        error_log('========== FINE REGISTRAZIONE SOCIO SEMPLIFICATA (PENDING) ==========');
         
         // Risposta per notifica in-app
         return rest_ensure_response([
             'success' => true,
-            'message' => 'Richiesta di adesione inviata con successo! Riceverai una conferma via email quando sarà approvata.',
+            'message' => 'Richiesta di adesione inviata con successo! Ti contatteremo presto.',
             'data' => [
                 'id' => $post_id,
                 'numero_pratica' => $numero_pratica,
                 'status' => 'pending',
-                'profilo_completo' => false,
                 'nome' => $params['nome'],
                 'cognome' => $params['cognome'],
-                'prefix' => $params['prefix'],
-                'telefono' => $params['telefono'],
-                'telefono_completo' => $telefono_completo,
-                'nazionalita' => $params['nazionalita']
+                'telefono' => $telefono_completo
             ]
         ]);
         
