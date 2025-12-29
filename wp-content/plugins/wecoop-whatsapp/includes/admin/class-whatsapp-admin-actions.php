@@ -28,7 +28,7 @@ class WECOOP_WhatsApp_Admin_Actions {
                 'page' => 'wecoop-whatsapp-settings',
                 'tab' => 'test',
                 'error' => 'missing_phone'
-            ], admin_url('options-general.php')));
+            ], admin_url('admin.php')));
             exit;
         }
         
@@ -40,13 +40,13 @@ class WECOOP_WhatsApp_Admin_Actions {
                 'page' => 'wecoop-whatsapp-settings',
                 'tab' => 'test',
                 'test' => 'success'
-            ], admin_url('options-general.php')));
+            ], admin_url('admin.php')));
         } else {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-whatsapp-settings',
                 'tab' => 'test',
                 'test' => 'error'
-            ], admin_url('options-general.php')));
+            ], admin_url('admin.php')));
         }
         exit;
     }
