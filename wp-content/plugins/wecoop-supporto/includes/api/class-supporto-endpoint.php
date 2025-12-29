@@ -58,22 +58,23 @@ class WeCoop_Supporto_Endpoint {
         
         error_log('[SUPPORTO] Dati ricevuti: ' . print_r($params, true));
         
-        // Validazione campi obbligatori
-        $required_fields = [
-            'user_id', 'service_name', 'service_category', 'current_screen',
-            'user_email', 'user_name', 'user_phone', 'tipo_richiesta',
-            'priorita', 'messaggio', 'timestamp'
-        ];
+        // Validazione campi OBBLIGATORI (solo user_id e user_phone)
+        if (empty($params['user_id'])) {
+            error_log('[SUPPORTO] Campo mancante: user_id');
+            return new WP_Error(
+                'missing_field',
+                'Campo obbligatorio mancante: user_id',
+                ['status' => 400]
+            );
+        }
         
-        foreach ($required_fields as $field) {
-            if (empty($params[$field])) {
-                error_log('[SUPPORTO] Campo mancante: ' . $field);
-                return new WP_Error(
-                    'missing_field',
-                    "Campo obbligatorio mancante: {$field}",
-                    ['status' => 400]
-                );
-            }
+        if (empty($params['user_phone'])) {
+            error_log('[SUPPORTO] Campo mancante: user_phone');
+            return new WP_Error(
+                'missing_field',
+                'Campo obbligatorio mancante: user_phone',
+                ['status' => 400]
+            );
         }
         
         // Verifica che l'utente esista
@@ -89,18 +90,39 @@ class WeCoop_Supporto_Endpoint {
         
         error_log('[SUPPORTO] Utente verificato: ' . $user->user_login);
         
+        // Recupera dati utente dal database
+        $user_name = !empty($params['user_name']) ? $params['user_name'] : $user->display_name;
+        $user_email = !empty($params['user_email']) ? $params['user_email'] : $user->user_email;
+        
+        // Usa username come telefono se user_phone non fornito (ma è obbligatorio ora)
+        $user_phone = $params['user_phone'];
+        
+        // Valori di default per campi opzionali
+        $service_name = !empty($params['service_name']) ? $params['service_name'] : 'Servizio Generico';
+        $service_category = !empty($params['service_category']) ? $params['service_category'] : 'generico';
+        $current_screen = !empty($params['current_screen']) ? $params['current_screen'] : 'N/A';
+        $tipo_richiesta = !empty($params['tipo_richiesta']) ? $params['tipo_richiesta'] : 'aiuto_automatico';
+        $priorita = !empty($params['priorita']) ? $params['priorita'] : 'media';
+        $messaggio = !empty($params['messaggio']) ? $params['messaggio'] : 'Richiesta di supporto';
+        $timestamp = !empty($params['timestamp']) ? $params['timestamp'] : current_time('c');
+        
+        error_log('[SUPPORTO] Dati compilati automaticamente:');
+        error_log('[SUPPORTO]   - user_name: ' . $user_name);
+        error_log('[SUPPORTO]   - user_email: ' . $user_email);
+        error_log('[SUPPORTO]   - user_phone: ' . $user_phone);
+        
         // Crea post
         $title = sprintf(
             '%s - %s (%s)',
-            $params['service_name'],
-            $params['user_name'],
-            date('d/m/Y H:i', strtotime($params['timestamp']))
+            $service_name,
+            $user_name,
+            date('d/m/Y H:i', strtotime($timestamp))
         );
         
         $post_data = [
             'post_type' => 'richiesta_supporto',
             'post_title' => $title,
-            'post_content' => sanitize_textarea_field($params['messaggio']),
+            'post_content' => sanitize_textarea_field($messaggio),
             'post_status' => 'publish',
             'post_author' => 1, // Admin
         ];
@@ -121,15 +143,15 @@ class WeCoop_Supporto_Endpoint {
         
         // Salva meta
         update_post_meta($post_id, 'user_id', intval($params['user_id']));
-        update_post_meta($post_id, 'service_name', sanitize_text_field($params['service_name']));
-        update_post_meta($post_id, 'service_category', sanitize_text_field($params['service_category']));
-        update_post_meta($post_id, 'current_screen', sanitize_text_field($params['current_screen']));
-        update_post_meta($post_id, 'user_email', sanitize_email($params['user_email']));
-        update_post_meta($post_id, 'user_name', sanitize_text_field($params['user_name']));
-        update_post_meta($post_id, 'user_phone', sanitize_text_field($params['user_phone']));
-        update_post_meta($post_id, 'tipo_richiesta', sanitize_text_field($params['tipo_richiesta']));
-        update_post_meta($post_id, 'priorita', sanitize_text_field($params['priorita']));
-        update_post_meta($post_id, 'timestamp', sanitize_text_field($params['timestamp']));
+        update_post_meta($post_id, 'service_name', sanitize_text_field($service_name));
+        update_post_meta($post_id, 'service_category', sanitize_text_field($service_category));
+        update_post_meta($post_id, 'current_screen', sanitize_text_field($current_screen));
+        update_post_meta($post_id, 'user_email', sanitize_email($user_email));
+        update_post_meta($post_id, 'user_name', sanitize_text_field($user_name));
+        update_post_meta($post_id, 'user_phone', sanitize_text_field($user_phone));
+        update_post_meta($post_id, 'tipo_richiesta', sanitize_text_field($tipo_richiesta));
+        update_post_meta($post_id, 'priorita', sanitize_text_field($priorita));
+        update_post_meta($post_id, 'timestamp', sanitize_text_field($timestamp));
         update_post_meta($post_id, 'status', 'aperta');
         
         error_log('[SUPPORTO] Meta salvati');
