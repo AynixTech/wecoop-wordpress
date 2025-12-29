@@ -17,10 +17,10 @@ if (!defined('ABSPATH')) exit;
     
     <div class="actions-buttons">
         <?php if (!$is_socio && $profilo_completo): ?>
-            <form method="post" action="" style="display: inline-block;" 
+            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display: inline-block;" 
                   onsubmit="return confirm('✅ Sei sicuro di voler APPROVARE questo utente come SOCIO?\n\nL\'utente verrà promosso al ruolo \'socio\'.');">
-                <?php wp_nonce_field('approva_socio_' . $user_id, 'approva_socio_nonce'); ?>
-                <input type="hidden" name="action" value="approva_socio">
+                <?php wp_nonce_field('wecoop_users_approva_socio'); ?>
+                <input type="hidden" name="action" value="wecoop_users_approva_socio">
                 <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
                 <button type="submit" class="button button-primary button-hero">
                     ✅ Approva come SOCIO
@@ -32,10 +32,10 @@ if (!defined('ABSPATH')) exit;
                 <strong>Utente già approvato come SOCIO</strong>
             </div>
             
-            <form method="post" action="" style="display: inline-block; margin-left: 20px;" 
+            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="display: inline-block; margin-left: 20px;" 
                   onsubmit="return confirm('⚠️ ATTENZIONE!\n\nSei sicuro di voler REVOCARE lo stato di SOCIO?\n\nL\'utente tornerà al ruolo di \'subscriber\'.');">
-                <?php wp_nonce_field('revoca_socio_' . $user_id, 'revoca_socio_nonce'); ?>
-                <input type="hidden" name="action" value="revoca_socio">
+                <?php wp_nonce_field('wecoop_users_revoca_socio'); ?>
+                <input type="hidden" name="action" value="wecoop_users_revoca_socio">
                 <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
                 <button type="submit" class="button button-secondary">
                     🚫 Revoca stato SOCIO

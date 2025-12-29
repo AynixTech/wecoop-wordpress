@@ -57,7 +57,7 @@ if (!empty($richiesta_socio)) {
     <p class="description">Puoi salvare anche solo alcuni campi. I campi obbligatori per l'approvazione come socio sono contrassegnati con *</p>
     
     <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-        <?php wp_nonce_field('wecoop_users_completa_profilo', 'wecoop_users_completa_profilo'); ?>
+        <?php wp_nonce_field('wecoop_users_completa_profilo'); ?>
         <input type="hidden" name="action" value="wecoop_users_completa_profilo">
         <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
         

@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) exit;
     <div class="upload-section">
         <h3>Carica Nuovo Documento</h3>
         <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data">
-            <?php wp_nonce_field('wecoop_users_upload_documento', 'wecoop_users_upload_documento'); ?>
+            <?php wp_nonce_field('wecoop_users_upload_documento'); ?>
             <input type="hidden" name="action" value="wecoop_users_upload_documento">
             <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
             
@@ -109,7 +109,7 @@ if (!defined('ABSPATH')) exit;
                                 <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" 
                                       style="display: inline-block;"
                                       onsubmit="return confirm('⚠️ Sei sicuro di voler eliminare questo documento?');">
-                                    <?php wp_nonce_field('wecoop_users_elimina_documento', 'wecoop_users_elimina_documento'); ?>
+                                    <?php wp_nonce_field('wecoop_users_elimina_documento'); ?>
                                     <input type="hidden" name="action" value="wecoop_users_elimina_documento">
                                     <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
                                     <input type="hidden" name="doc_index" value="<?php echo $index; ?>">
