@@ -396,9 +396,11 @@ class WECOOP_Soci_Endpoint {
         $nome = sanitize_text_field($params['nome']);
         $cognome = sanitize_text_field($params['cognome']);
         
-        // Username = telefono completo (unico e facile da ricordare)
-        $username = $telefono_completo;
-        error_log('[SOCI] Username: ' . $username);
+        // Username = telefono completo SENZA "+" (WordPress lo rimuove automaticamente)
+        // Rimuoviamo il "+" manualmente per coerenza con il login
+        $username = str_replace('+', '', $telefono_completo);
+        error_log('[SOCI] Telefono completo (con +): ' . $telefono_completo);
+        error_log('[SOCI] Username (senza +): ' . $username);
         
         // Genera password memorabile
         $password = self::generate_memorable_password();
