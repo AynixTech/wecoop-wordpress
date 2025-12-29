@@ -63,11 +63,12 @@ if (!empty($richiesta_socio)) {
         
         <table class="form-table">
             <tr>
-                <th><label for="email">Email</label></th>
+                <th><label for="first_name">Nome *</label></th>
                 <td>
-                    <input type="email" id="email" name="email" 
-                           value="<?php echo esc_attr($email); ?>" 
+                    <input type="text" id="first_name" name="first_name" 
+                           value="<?php echo esc_attr($nome); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -77,6 +78,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="last_name" name="last_name" 
                            value="<?php echo esc_attr($cognome); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -84,7 +86,7 @@ if (!empty($richiesta_socio)) {
                 <th><label for="email">Email</label></th>
                 <td>
                     <input type="email" id="email" name="email" 
-                           value="<?php echo esc_attr($user->user_email); ?>" 
+                           value="<?php echo esc_attr($email); ?>" 
                            class="regular-text">
                 </td>
             </tr>
@@ -95,9 +97,10 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="codice_fiscale" name="codice_fiscale" 
                            value="<?php echo esc_attr($cf); ?>" 
                            class="regular-text" maxlength="16" 
-                           pattern="[A-Z0-9]{16}" 
                            style="text-transform: uppercase;">
-                    <p class="description">16 caratteri alfanumerici (es: RSSMRA80A01H501U)</p>
+                    <p class="description">16 caratteri alfanumerici (es: RSSMRA80A01H501U). Obbligatorio per approvazione socio.</p>
+                </td>
+            </tr>
                 </td>
             </tr>
             
@@ -106,6 +109,7 @@ if (!empty($richiesta_socio)) {
                 <td>
                     <input type="date" id="data_nascita" name="data_nascita" 
                            value="<?php echo esc_attr($data_nascita); ?>">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -115,6 +119,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="luogo_nascita" name="luogo_nascita" 
                            value="<?php echo esc_attr($luogo_nascita); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -128,6 +133,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="indirizzo" name="indirizzo" 
                            value="<?php echo esc_attr($indirizzo_meta); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -137,6 +143,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="civico" name="civico" 
                            value="<?php echo esc_attr($civico_meta); ?>" 
                            class="small-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -147,6 +154,7 @@ if (!empty($richiesta_socio)) {
                            value="<?php echo esc_attr($cap_meta); ?>" 
                            class="small-text" maxlength="5" 
                            pattern="[0-9]{5}">
+                    <p class="description">5 cifre. Obbligatorio per approvazione socio.</p>
                 </td>
             </tr>
             
@@ -156,6 +164,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="citta" name="citta" 
                            value="<?php echo esc_attr($citta_meta); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
             
@@ -166,7 +175,7 @@ if (!empty($richiesta_socio)) {
                            value="<?php echo esc_attr($provincia_meta); ?>" 
                            class="small-text" maxlength="2" 
                            style="text-transform: uppercase;">
-                    <p class="description">Sigla provincia (es: RM, MI, NA)</p>
+                    <p class="description">Sigla provincia (es: RM, MI, NA). Obbligatorio per approvazione socio.</p>
                 </td>
             </tr>
             
@@ -176,6 +185,7 @@ if (!empty($richiesta_socio)) {
                     <input type="text" id="nazione" name="nazione" 
                            value="<?php echo esc_attr($nazione_meta ?: 'Italia'); ?>" 
                            class="regular-text">
+                    <p class="description">Obbligatorio per approvazione socio</p>
                 </td>
             </tr>
         </table>
@@ -184,8 +194,10 @@ if (!empty($richiesta_socio)) {
             <button type="submit" class="button button-primary button-large">
                 💾 Salva Profilo
             </button>
-            <span class="description" style="margin-left: 15px;">
-                Puoi salvare anche solo alcuni campi. L'approvazione come socio richiede tutti i campi obbligatori (*).
+            <span class="description" style="margin-left: 15px; color: #2271b1;">
+                ℹ️ <strong>Nessun campo è obbligatorio per il salvataggio.</strong> Compila solo quello che vuoi modificare.
+                <br>
+                I campi contrassegnati con * sono necessari solo per l'approvazione finale come socio.
             </span>
         </p>
     </form>
