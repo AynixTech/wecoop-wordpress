@@ -26,6 +26,8 @@ class WeCoop_User_Detail_Page {
             'wecoop-user-detail',
             [$this, 'render_page']
         );
+    }
+    
     public function handle_completa_profilo() {
         if (!current_user_can('manage_options')) {
             wp_die('Accesso negato');
@@ -124,8 +126,6 @@ class WeCoop_User_Detail_Page {
             ], admin_url('admin.php')));
         }
         exit;
-    }   }
-        exit;
     }
     
     public function handle_approva_socio() {
@@ -175,6 +175,38 @@ class WeCoop_User_Detail_Page {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-user-detail',
                 'user_id' => $user_id,
+                'message' => 'errore_richiesta'
+            ], admin_url('admin.php')));
+        }
+        exit;
+    }
+    
+    public function handle_revoca_socio() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Accesso negato');
+        }
+        
+        check_admin_referer('wecoop_users_revoca_socio');
+        
+        $user_id = intval($_POST['user_id']);
+        
+        update_user_meta($user_id, 'is_socio', false);
+        
+        $richiesta = get_posts([
+            'post_type' => 'richiesta_socio',
+            'meta_key' => 'user_id_socio',
+            'meta_value' => $user_id,
+            'posts_per_page' => 1
+        ]);
+        
+        if (!empty($richiesta)) {
+            update_post_meta($richiesta[0]->ID, 'is_socio', false);
+            update_post_meta($richiesta[0]->ID, 'data_revoca', current_time('mysql'));
+        }
+        
+        $user = new WP_User($user_id);
+        $user->set_role('subscriber');
+        
         wp_redirect(add_query_arg([
             'page' => 'wecoop-user-detail',
             'user_id' => $user_id,
@@ -207,20 +239,17 @@ class WeCoop_User_Detail_Page {
         $upload_dir = wp_upload_dir();
         $wecoop_dir = $upload_dir['basedir'] . '/wecoop-users/' . $user_id;
         if (!file_exists($wecoop_dir)) {
-        // Recupera dati utente
-        $is_socio = get_user_meta($user_id, 'is_socio', true);
-        $profilo_completo = get_user_meta($user_id, 'profilo_completo', true);
-        $telefono_completo = get_user_meta($user_id, 'telefono_completo', true) ?: $user->user_login;
-        $indirizzo = get_user_meta($user_id, 'indirizzo', true);
-        $civico = get_user_meta($user_id, 'civico', true);
-        $citta = get_user_meta($user_id, 'citta', true);
-        $cap = get_user_meta($user_id, 'cap', true);
-        $provincia = get_user_meta($user_id, 'provincia', true);
-        $nazione = get_user_meta($user_id, 'nazione', true);
-        $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
-        $data_nascita = get_user_meta($user_id, 'data_nascita', true);
-        $luogo_nascita = get_user_meta($user_id, 'luogo_nascita', true);
-        $documenti = get_user_meta($user_id, 'documenti', true) ?: [];
+            wp_mkdir_p($wecoop_dir);
+        }
+        
+        // Valida tipo file
+        $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        $file_type = $_FILES['documento_file']['type'];
+        
+        if (!in_array($file_type, $allowed_types)) {
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
                 'message' => 'errore',
                 'error_msg' => urlencode('Tipo file non consentito. Solo JPG, PNG o PDF.')
             ], admin_url('admin.php')));
@@ -310,38 +339,6 @@ class WeCoop_User_Detail_Page {
         exit;
     }
     
-    public function render_page() {);
-        }
-        
-        check_admin_referer('wecoop_users_revoca_socio');
-        
-        $user_id = intval($_POST['user_id']);
-        
-        update_user_meta($user_id, 'is_socio', false);
-        
-        $richiesta = get_posts([
-            'post_type' => 'richiesta_socio',
-            'meta_key' => 'user_id_socio',
-            'meta_value' => $user_id,
-            'posts_per_page' => 1
-        ]);
-        
-        if (!empty($richiesta)) {
-            update_post_meta($richiesta[0]->ID, 'is_socio', false);
-            update_post_meta($richiesta[0]->ID, 'data_revoca', current_time('mysql'));
-        }
-        
-        $user = new WP_User($user_id);
-        $user->set_role('subscriber');
-        
-        wp_redirect(add_query_arg([
-            'page' => 'wecoop-user-detail',
-            'user_id' => $user_id,
-            'message' => 'socio_revocato'
-        ], admin_url('admin.php')));
-        exit;
-    }
-    
     public function render_page() {
         if (!current_user_can('manage_options')) {
             wp_die('Accesso negato');
@@ -371,12 +368,15 @@ class WeCoop_User_Detail_Page {
         $profilo_completo = get_user_meta($user_id, 'profilo_completo', true);
         $telefono_completo = get_user_meta($user_id, 'telefono_completo', true) ?: $user->user_login;
         $indirizzo = get_user_meta($user_id, 'indirizzo', true);
+        $civico = get_user_meta($user_id, 'civico', true);
         $citta = get_user_meta($user_id, 'citta', true);
         $cap = get_user_meta($user_id, 'cap', true);
         $provincia = get_user_meta($user_id, 'provincia', true);
+        $nazione = get_user_meta($user_id, 'nazione', true);
         $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
         $data_nascita = get_user_meta($user_id, 'data_nascita', true);
         $luogo_nascita = get_user_meta($user_id, 'luogo_nascita', true);
+        $documenti = get_user_meta($user_id, 'documenti', true) ?: [];
         
         // Recupera richiesta_socio
         $richiesta = get_posts([
