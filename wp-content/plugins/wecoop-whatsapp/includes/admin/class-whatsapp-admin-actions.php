@@ -21,33 +21,37 @@ class WECOOP_WhatsApp_Admin_Actions {
         }
         
         $test_phone = sanitize_text_field($_POST['test_phone']);
+        $test_message = isset($_POST['test_message']) ? sanitize_textarea_field($_POST['test_message']) : '';
         
         if (empty($test_phone)) {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-whatsapp-settings',
+                'tab' => 'test',
                 'error' => 'missing_phone'
             ], admin_url('options-general.php')));
             exit;
         }
         
         // Invia messaggio di test
-        $result = self::send_test_whatsapp($test_phone);
+        $result = self::send_test_whatsapp($test_phone, $test_message);
         
         if ($result) {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-whatsapp-settings',
+                'tab' => 'test',
                 'test' => 'success'
             ], admin_url('options-general.php')));
         } else {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-whatsapp-settings',
+                'tab' => 'test',
                 'test' => 'error'
             ], admin_url('options-general.php')));
         }
         exit;
     }
     
-    private static function send_test_whatsapp($telefono) {
+    private static function send_test_whatsapp($telefono, $custom_message = '') {
         $api_key = get_option('wecoop_whatsapp_api_key');
         $phone_number_id = get_option('wecoop_whatsapp_phone_number_id');
         
@@ -56,10 +60,15 @@ class WECOOP_WhatsApp_Admin_Actions {
             return false;
         }
         
-        $message = "🧪 *Messaggio di test WeCoop*\n\n";
-        $message .= "Questo è un messaggio di test dall'integrazione WhatsApp di WeCoop.\n\n";
-        $message .= "✅ La configurazione è corretta!\n\n";
-        $message .= "_Inviato da: " . get_bloginfo('name') . "_";
+        // Usa messaggio custom o default
+        if (!empty($custom_message)) {
+            $message = $custom_message;
+        } else {
+            $message = "🧪 *Messaggio di test WeCoop*\n\n";
+            $message .= "Questo è un messaggio di test dall'integrazione WhatsApp di WeCoop.\n\n";
+            $message .= "✅ La configurazione è corretta!\n\n";
+            $message .= "_Inviato da: " . get_bloginfo('name') . "_";
+        }
         
         // Normalizza telefono
         $phone_clean = preg_replace('/[^\d+]/', '', $telefono);

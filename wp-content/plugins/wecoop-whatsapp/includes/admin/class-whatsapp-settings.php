@@ -117,6 +117,9 @@ class WECOOP_WhatsApp_Settings {
             return;
         }
         
+        // Tab attivo
+        $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'settings';
+        
         // Salva impostazioni
         if (isset($_GET['settings-updated'])) {
             add_settings_error(
@@ -160,6 +163,31 @@ class WECOOP_WhatsApp_Settings {
         <div class="wrap">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
             
+            <h2 class="nav-tab-wrapper">
+                <a href="?page=wecoop-whatsapp-settings&tab=settings" 
+                   class="nav-tab <?php echo $active_tab === 'settings' ? 'nav-tab-active' : ''; ?>">
+                    ⚙️ Configurazione
+                </a>
+                <a href="?page=wecoop-whatsapp-settings&tab=test" 
+                   class="nav-tab <?php echo $active_tab === 'test' ? 'nav-tab-active' : ''; ?>">
+                    🧪 Test Invio
+                </a>
+            </h2>
+            
+            <div class="tab-content" style="margin-top: 20px;">
+                <?php if ($active_tab === 'settings'): ?>
+                    <?php self::render_settings_tab(); ?>
+                <?php elseif ($active_tab === 'test'): ?>
+                    <?php self::render_test_tab(); ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+    }
+    
+    private static function render_settings_tab() {
+        ?>
+        <div class="settings-tab">
             <form action="options.php" method="post">
                 <?php
                 settings_fields('wecoop_whatsapp_settings');
@@ -168,32 +196,103 @@ class WECOOP_WhatsApp_Settings {
                 ?>
             </form>
             
-            <hr>
-            
-            <h2>Test Invio Messaggio</h2>
-            <p>Invia un messaggio di test per verificare la configurazione.</p>
-            
-            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
-                <input type="hidden" name="action" value="wecoop_whatsapp_test">
-                <?php wp_nonce_field('wecoop_whatsapp_test'); ?>
+            <div style="margin-top: 30px; padding: 15px; background: #f0f6fc; border-left: 4px solid #2271b1;">
+                <h3 style="margin-top: 0;">📱 Stato Configurazione</h3>
+                <?php
+                $api_key = get_option('wecoop_whatsapp_api_key');
+                $phone_number_id = get_option('wecoop_whatsapp_phone_number_id');
+                $enable_welcome = get_option('wecoop_whatsapp_enable_welcome', '1');
+                ?>
+                <p>
+                    <strong>API Key:</strong> 
+                    <?php if (!empty($api_key)): ?>
+                        <span style="color: #00a32a;">✅ Configurata</span>
+                        <code style="font-size: 11px;"><?php echo esc_html(substr($api_key, 0, 20) . '...'); ?></code>
+                    <?php else: ?>
+                        <span style="color: #d63638;">❌ Non configurata</span>
+                    <?php endif; ?>
+                </p>
+                <p>
+                    <strong>Phone Number ID:</strong> 
+                    <?php if (!empty($phone_number_id)): ?>
+                        <span style="color: #00a32a;">✅ Configurato</span>
+                        <code><?php echo esc_html($phone_number_id); ?></code>
+                    <?php else: ?>
+                        <span style="color: #d63638;">❌ Non configurato</span>
+                    <?php endif; ?>
+                </p>
+                <p>
+                    <strong>Messaggio di benvenuto:</strong> 
+                    <?php if ($enable_welcome === '1'): ?>
+                        <span style="color: #00a32a;">✅ Attivo</span>
+                    <?php else: ?>
+                        <span style="color: #d63638;">⏸️ Disattivato</span>
+                    <?php endif; ?>
+                </p>
+            </div>
+        </div>
+        <?php
+    }
+    
+    private static function render_test_tab() {
+        $api_key = get_option('wecoop_whatsapp_api_key');
+        $phone_number_id = get_option('wecoop_whatsapp_phone_number_id');
+        $is_configured = !empty($api_key) && !empty($phone_number_id);
+        ?>
+        <div class="test-tab">
+            <?php if (!$is_configured): ?>
+                <div style="padding: 20px; background: #fcf3cf; border-left: 4px solid #f39c12;">
+                    <h3 style="margin-top: 0;">⚠️ Configurazione incompleta</h3>
+                    <p>Prima di testare l'invio, configura API Key e Phone Number ID nella tab <strong>Configurazione</strong>.</p>
+                </div>
+            <?php else: ?>
+                <h2>Test Invio Messaggio</h2>
+                <p>Invia un messaggio di test per verificare che la configurazione funzioni correttamente.</p>
                 
-                <table class="form-table">
-                    <tr>
-                        <th><label for="test_phone">Numero di telefono</label></th>
-                        <td>
-                            <input type="text" 
-                                   id="test_phone" 
-                                   name="test_phone" 
-                                   class="regular-text" 
-                                   placeholder="+393331234567"
-                                   required>
-                            <p class="description">Numero con prefisso internazionale (es: +39 per Italia)</p>
-                        </td>
-                    </tr>
-                </table>
+                <form method="post" action="<?php echo admin_url('admin-post.php'); ?>" style="max-width: 600px;">
+                    <input type="hidden" name="action" value="wecoop_whatsapp_test">
+                    <?php wp_nonce_field('wecoop_whatsapp_test'); ?>
+                    
+                    <table class="form-table">
+                        <tr>
+                            <th><label for="test_phone">Numero di telefono</label></th>
+                            <td>
+                                <input type="text" 
+                                       id="test_phone" 
+                                       name="test_phone" 
+                                       class="regular-text" 
+                                       placeholder="+393331234567"
+                                       required>
+                                <p class="description">Numero con prefisso internazionale (es: +39 per Italia)</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="test_message">Messaggio (opzionale)</label></th>
+                            <td>
+                                <textarea id="test_message" 
+                                          name="test_message" 
+                                          rows="5" 
+                                          class="large-text"
+                                          placeholder="Lascia vuoto per usare il messaggio di default"></textarea>
+                                <p class="description">Personalizza il messaggio di test o lascia vuoto per usare quello predefinito</p>
+                            </td>
+                        </tr>
+                    </table>
+                    
+                    <?php submit_button('📤 Invia messaggio di test', 'primary large'); ?>
+                </form>
                 
-                <?php submit_button('Invia messaggio di test', 'secondary'); ?>
-            </form>
+                <div style="margin-top: 30px; padding: 15px; background: #f0f6fc; border-left: 4px solid #2271b1;">
+                    <h3 style="margin-top: 0;">💡 Messaggio di default</h3>
+                    <pre style="background: white; padding: 15px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">🧪 <strong>Messaggio di test WeCoop</strong>
+
+Questo è un messaggio di test dall'integrazione WhatsApp di WeCoop.
+
+✅ La configurazione è corretta!
+
+<em>Inviato da: <?php echo esc_html(get_bloginfo('name')); ?></em></pre>
+                </div>
+            <?php endif; ?>
         </div>
         <?php
     }
