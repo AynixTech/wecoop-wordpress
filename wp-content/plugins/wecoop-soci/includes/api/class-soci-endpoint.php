@@ -404,10 +404,33 @@ class WECOOP_Soci_Endpoint {
         $password = self::generate_memorable_password();
         error_log('[SOCI] Password generata (lunghezza: ' . strlen($password) . ')');
         
+        error_log('========== CREAZIONE UTENTE WORDPRESS ==========');
+        error_log('[WP-CREATE-USER] INIZIO chiamata wp_create_user()');
+        error_log('[WP-CREATE-USER] Parametri:');
+        error_log('[WP-CREATE-USER]   - username: ' . $username);
+        error_log('[WP-CREATE-USER]   - password: ' . $password);
+        error_log('[WP-CREATE-USER]   - email: null (verrà aggiunta dopo)');
+        error_log('[WP-CREATE-USER] Verifico se username esiste già...');
+        $existing = username_exists($username);
+        if ($existing) {
+            error_log('[WP-CREATE-USER] ⚠️  Username già esistente con ID: ' . $existing);
+        } else {
+            error_log('[WP-CREATE-USER] ✓ Username disponibile');
+        }
+        error_log('[WP-CREATE-USER] Eseguo wp_create_user()...');
+        
         // Crea utente WordPress (email opzionale, può essere aggiunta dopo)
         $user_id = wp_create_user($username, $password, null);
         
+        error_log('[WP-CREATE-USER] FINE chiamata wp_create_user()');
+        error_log('[WP-CREATE-USER] Risultato: ' . (is_wp_error($user_id) ? 'WP_Error' : 'User ID = ' . $user_id));
+        
         if (is_wp_error($user_id)) {
+            error_log('[WP-CREATE-USER] ❌ ERRORE CRITICO!');
+            error_log('[WP-CREATE-USER] Codice errore: ' . $user_id->get_error_code());
+            error_log('[WP-CREATE-USER] Messaggio: ' . $user_id->get_error_message());
+            error_log('[WP-CREATE-USER] Tutti i messaggi: ' . print_r($user_id->get_error_messages(), true));
+            error_log('========== FINE CREAZIONE UTENTE (FALLITA) ==========');
             error_log('[SOCI] ERROR: wp_create_user fallito: ' . $user_id->get_error_message());
             return new WP_Error(
                 'user_creation_failed', 
@@ -415,6 +438,18 @@ class WECOOP_Soci_Endpoint {
                 ['status' => 500]
             );
         }
+        
+        error_log('[WP-CREATE-USER] ✅ SUCCESSO!');
+        error_log('[WP-CREATE-USER] User ID creato: ' . $user_id);
+        error_log('[WP-CREATE-USER] Verifico che l\'utente esista in wp_users...');
+        $verify_user = get_userdata($user_id);
+        if ($verify_user) {
+            error_log('[WP-CREATE-USER] ✓ Utente verificato in database');
+            error_log('[WP-CREATE-USER] ✓ Username in DB: ' . $verify_user->user_login);
+        } else {
+            error_log('[WP-CREATE-USER] ❌ ERRORE: Utente NON trovato in wp_users!');
+        }
+        error_log('========== FINE CREAZIONE UTENTE (SUCCESSO) ==========');
         
         error_log('[SOCI] Utente WordPress creato con ID: ' . $user_id);
         
