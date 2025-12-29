@@ -77,6 +77,8 @@ class WeCoop_Soci {
         
         // Admin
         require_once WECOOP_SOCI_INCLUDES_DIR . 'admin/class-soci-management.php';
+        require_once WECOOP_SOCI_INCLUDES_DIR . 'admin/class-gestione-socio-page.php';
+        require_once WECOOP_SOCI_INCLUDES_DIR . 'admin/class-user-row-actions.php';
         
         // Tessera Handler
         require_once WECOOP_SOCI_INCLUDES_DIR . 'class-tessera-handler.php';
