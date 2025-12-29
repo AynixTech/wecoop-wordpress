@@ -15,12 +15,14 @@ class WECOOP_WhatsApp_Settings {
     }
     
     public static function add_admin_menu() {
-        add_options_page(
-            'Impostazioni WhatsApp',
-            'WhatsApp',
-            'manage_options',
-            'wecoop-whatsapp-settings',
-            [__CLASS__, 'render_settings_page']
+        add_menu_page(
+            'Push WhatsApp',                    // Page title
+            'Push WhatsApp',                    // Menu title
+            'manage_options',                   // Capability
+            'wecoop-whatsapp-settings',         // Menu slug
+            [__CLASS__, 'render_settings_page'], // Callback
+            'dashicons-whatsapp',               // Icon
+            30                                   // Position
         );
     }
     
