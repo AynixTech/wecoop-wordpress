@@ -125,8 +125,13 @@ class Jwt_Auth_Public {
 		$username   = $request->get_param( 'username' );
 		$password   = $request->get_param( 'password' );
 
+		error_log('========== TENTATIVO LOGIN JWT ==========');
+		error_log('[JWT-LOGIN] Username ricevuto: ' . $username);
+		error_log('[JWT-LOGIN] Password ricevuta: ' . (strlen($password) . ' caratteri'));
+
 		/** First thing, check the secret key if not exist return an error*/
 		if ( ! $secret_key ) {
+			error_log('[JWT-LOGIN] ✗ ERRORE: JWT_AUTH_SECRET_KEY non configurata');
 			return new WP_Error(
 				'jwt_auth_bad_config',
 				__( 'JWT is not configured properly, please contact the admin', 'wp-api-jwt-auth' ),
@@ -136,11 +141,16 @@ class Jwt_Auth_Public {
 			);
 		}
 		/** Try to authenticate the user with the passed credentials*/
+		error_log('[JWT-LOGIN] Tentativo wp_authenticate con username: ' . $username);
 		$user = wp_authenticate( $username, $password );
 
 		/** If the authentication fails return an error*/
 		if ( is_wp_error( $user ) ) {
 			$error_code = $user->get_error_code();
+			error_log('[JWT-LOGIN] ✗ AUTENTICAZIONE FALLITA');
+			error_log('[JWT-LOGIN] ✗ Codice errore: ' . $error_code);
+			error_log('[JWT-LOGIN] ✗ Messaggio: ' . $user->get_error_message($error_code));
+			error_log('========== FINE LOGIN JWT (FALLITO) ==========');
 
 			return new WP_Error(
 				'[jwt_auth] ' . $error_code,
@@ -152,6 +162,11 @@ class Jwt_Auth_Public {
 		}
 
 		/** Valid credentials, the user exists create the according Token */
+		error_log('[JWT-LOGIN] ✓ AUTENTICAZIONE RIUSCITA');
+		error_log('[JWT-LOGIN] ✓ User ID: ' . $user->data->ID);
+		error_log('[JWT-LOGIN] ✓ Username: ' . $user->data->user_login);
+		error_log('[JWT-LOGIN] ✓ Email: ' . $user->data->user_email);
+		error_log('[JWT-LOGIN] Generazione token JWT...');
 		$issuedAt  = time();
 		$notBefore = apply_filters( 'jwt_auth_not_before', $issuedAt, $issuedAt );
 		$expire    = apply_filters( 'jwt_auth_expire', $issuedAt + ( DAY_IN_SECONDS * 7 ), $issuedAt );
@@ -195,6 +210,11 @@ class Jwt_Auth_Public {
 			'user_nicename'     => $user->data->user_nicename,
 			'user_display_name' => $user->data->display_name,
 		];
+
+		error_log('[JWT-LOGIN] ✓ Token JWT generato con successo');
+		error_log('[JWT-LOGIN] ✓ Lunghezza token: ' . strlen($token) . ' caratteri');
+		error_log('[JWT-LOGIN] ✓ Dati utente da restituire: email=' . $user->data->user_email . ', display_name=' . $user->data->display_name);
+		error_log('========== FINE LOGIN JWT (SUCCESSO) ==========');
 
 		/** Let the user modify the data before send it back */
 		return apply_filters( 'jwt_auth_token_before_dispatch', $data, $user );

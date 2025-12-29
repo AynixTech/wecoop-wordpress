@@ -474,6 +474,20 @@ class WECOOP_Soci_Endpoint {
         
         error_log('[SOCI] Registrazione completata con successo');
         error_log('[SOCI] User ID: ' . $user_id . ', Post ID: ' . $post_id . ', Numero Pratica: ' . $numero_pratica);
+        error_log('========== CREDENZIALI PER LOGIN AUTOMATICO ==========');
+        error_log('[LOGIN-AUTO] Username: ' . $username);
+        error_log('[LOGIN-AUTO] Password generata: ' . $password);
+        error_log('[LOGIN-AUTO] User ID WordPress: ' . $user_id);
+        error_log('[LOGIN-AUTO] Verifico se utente esiste in wp_users...');
+        $wp_user = get_userdata($user_id);
+        if ($wp_user) {
+            error_log('[LOGIN-AUTO] ✓ Utente trovato in wp_users: ' . $wp_user->user_login);
+            error_log('[LOGIN-AUTO] ✓ Email: ' . ($wp_user->user_email ?: 'nessuna'));
+            error_log('[LOGIN-AUTO] ✓ Ruolo: ' . implode(', ', $wp_user->roles));
+        } else {
+            error_log('[LOGIN-AUTO] ✗ ERRORE: Utente NON trovato in wp_users!');
+        }
+        error_log('[LOGIN-AUTO] Invio credenziali all\'app per login automatico...');
         error_log('========== FINE PRIMO ACCESSO (UTENTE CREATO) ==========');
         
         // Risposta con credenziali di accesso
