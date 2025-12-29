@@ -13,6 +13,8 @@ class WeCoop_User_Detail_Page {
         add_action('admin_post_wecoop_users_completa_profilo', [$this, 'handle_completa_profilo']);
         add_action('admin_post_wecoop_users_approva_socio', [$this, 'handle_approva_socio']);
         add_action('admin_post_wecoop_users_revoca_socio', [$this, 'handle_revoca_socio']);
+        add_action('admin_post_wecoop_users_upload_documento', [$this, 'handle_upload_documento']);
+        add_action('admin_post_wecoop_users_elimina_documento', [$this, 'handle_elimina_documento']);
     }
     
     public function add_admin_menu() {
@@ -24,8 +26,6 @@ class WeCoop_User_Detail_Page {
             'wecoop-user-detail',
             [$this, 'render_page']
         );
-    }
-    
     public function handle_completa_profilo() {
         if (!current_user_can('manage_options')) {
             wp_die('Accesso negato');
@@ -35,27 +35,55 @@ class WeCoop_User_Detail_Page {
         
         $user_id = intval($_POST['user_id']);
         
-        // Aggiorna profilo utente
-        $update_data = [
-            'ID' => $user_id,
-            'user_email' => sanitize_email($_POST['email']),
-            'first_name' => sanitize_text_field($_POST['first_name']),
-            'last_name' => sanitize_text_field($_POST['last_name']),
-            'display_name' => sanitize_text_field($_POST['display_name'])
-        ];
+        // Aggiorna profilo utente (campi opzionali, salva solo se presenti)
+        $update_data = ['ID' => $user_id];
+        
+        if (!empty($_POST['email'])) {
+            $update_data['user_email'] = sanitize_email($_POST['email']);
+        }
+        if (!empty($_POST['first_name'])) {
+            $update_data['first_name'] = sanitize_text_field($_POST['first_name']);
+        }
+        if (!empty($_POST['last_name'])) {
+            $update_data['last_name'] = sanitize_text_field($_POST['last_name']);
+        }
+        if (!empty($_POST['display_name'])) {
+            $update_data['display_name'] = sanitize_text_field($_POST['display_name']);
+        }
         
         $result = wp_update_user($update_data);
         
         if (!is_wp_error($result)) {
-            // Aggiorna user meta
-            update_user_meta($user_id, 'indirizzo', sanitize_text_field($_POST['indirizzo']));
-            update_user_meta($user_id, 'citta', sanitize_text_field($_POST['citta']));
-            update_user_meta($user_id, 'cap', sanitize_text_field($_POST['cap']));
-            update_user_meta($user_id, 'provincia', strtoupper(sanitize_text_field($_POST['provincia'])));
-            update_user_meta($user_id, 'codice_fiscale', strtoupper(sanitize_text_field($_POST['codice_fiscale'])));
-            update_user_meta($user_id, 'data_nascita', sanitize_text_field($_POST['data_nascita']));
-            update_user_meta($user_id, 'luogo_nascita', sanitize_text_field($_POST['luogo_nascita']));
-            update_user_meta($user_id, 'profilo_completo', true);
+            // Aggiorna user meta (solo se valorizzati)
+            $meta_fields = [
+                'indirizzo', 'civico', 'citta', 'cap', 'provincia', 'nazione',
+                'codice_fiscale', 'data_nascita', 'luogo_nascita'
+            ];
+            
+            foreach ($meta_fields as $field) {
+                if (isset($_POST[$field]) && $_POST[$field] !== '') {
+                    $value = sanitize_text_field($_POST[$field]);
+                    if (in_array($field, ['provincia', 'codice_fiscale'])) {
+                        $value = strtoupper($value);
+                    }
+                    update_user_meta($user_id, $field, $value);
+                }
+            }
+            
+            // Verifica se profilo completo
+            $campi_obbligatori = ['first_name', 'last_name', 'codice_fiscale', 'data_nascita', 
+                                  'luogo_nascita', 'indirizzo', 'civico', 'cap', 'citta', 'provincia'];
+            $completo = true;
+            foreach ($campi_obbligatori as $campo) {
+                $valore = ($campo === 'first_name' || $campo === 'last_name') 
+                    ? get_userdata($user_id)->$campo 
+                    : get_user_meta($user_id, $campo, true);
+                if (empty($valore)) {
+                    $completo = false;
+                    break;
+                }
+            }
+            update_user_meta($user_id, 'profilo_completo', $completo);
             
             // Aggiorna anche i meta nel post richiesta_socio
             $richiesta = get_posts([
@@ -67,15 +95,19 @@ class WeCoop_User_Detail_Page {
             
             if (!empty($richiesta)) {
                 $post_id = $richiesta[0]->ID;
-                update_post_meta($post_id, 'email', sanitize_email($_POST['email']));
-                update_post_meta($post_id, 'indirizzo', sanitize_text_field($_POST['indirizzo']));
-                update_post_meta($post_id, 'citta', sanitize_text_field($_POST['citta']));
-                update_post_meta($post_id, 'cap', sanitize_text_field($_POST['cap']));
-                update_post_meta($post_id, 'provincia', strtoupper(sanitize_text_field($_POST['provincia'])));
-                update_post_meta($post_id, 'codice_fiscale', strtoupper(sanitize_text_field($_POST['codice_fiscale'])));
-                update_post_meta($post_id, 'data_nascita', sanitize_text_field($_POST['data_nascita']));
-                update_post_meta($post_id, 'luogo_nascita', sanitize_text_field($_POST['luogo_nascita']));
-                update_post_meta($post_id, 'profilo_completo', true);
+                foreach ($meta_fields as $field) {
+                    if (isset($_POST[$field]) && $_POST[$field] !== '') {
+                        $value = sanitize_text_field($_POST[$field]);
+                        if (in_array($field, ['provincia', 'codice_fiscale'])) {
+                            $value = strtoupper($value);
+                        }
+                        update_post_meta($post_id, $field, $value);
+                    }
+                }
+                if (!empty($_POST['email'])) {
+                    update_post_meta($post_id, 'email', sanitize_email($_POST['email']));
+                }
+                update_post_meta($post_id, 'profilo_completo', $completo);
             }
             
             wp_redirect(add_query_arg([
@@ -91,6 +123,8 @@ class WeCoop_User_Detail_Page {
                 'error_msg' => urlencode($result->get_error_message())
             ], admin_url('admin.php')));
         }
+        exit;
+    }   }
         exit;
     }
     
@@ -141,15 +175,142 @@ class WeCoop_User_Detail_Page {
             wp_redirect(add_query_arg([
                 'page' => 'wecoop-user-detail',
                 'user_id' => $user_id,
-                'message' => 'errore_richiesta'
+        wp_redirect(add_query_arg([
+            'page' => 'wecoop-user-detail',
+            'user_id' => $user_id,
+            'message' => 'socio_revocato'
+        ], admin_url('admin.php')));
+        exit;
+    }
+    
+    public function handle_upload_documento() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Accesso negato');
+        }
+        
+        check_admin_referer('wecoop_users_upload_documento');
+        
+        $user_id = intval($_POST['user_id']);
+        $tipo_documento = sanitize_text_field($_POST['tipo_documento']);
+        
+        if (empty($_FILES['documento_file']['name'])) {
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'errore',
+                'error_msg' => urlencode('Nessun file selezionato')
+            ], admin_url('admin.php')));
+            exit;
+        }
+        
+        // Crea directory upload se non esiste
+        $upload_dir = wp_upload_dir();
+        $wecoop_dir = $upload_dir['basedir'] . '/wecoop-users/' . $user_id;
+        if (!file_exists($wecoop_dir)) {
+        // Recupera dati utente
+        $is_socio = get_user_meta($user_id, 'is_socio', true);
+        $profilo_completo = get_user_meta($user_id, 'profilo_completo', true);
+        $telefono_completo = get_user_meta($user_id, 'telefono_completo', true) ?: $user->user_login;
+        $indirizzo = get_user_meta($user_id, 'indirizzo', true);
+        $civico = get_user_meta($user_id, 'civico', true);
+        $citta = get_user_meta($user_id, 'citta', true);
+        $cap = get_user_meta($user_id, 'cap', true);
+        $provincia = get_user_meta($user_id, 'provincia', true);
+        $nazione = get_user_meta($user_id, 'nazione', true);
+        $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
+        $data_nascita = get_user_meta($user_id, 'data_nascita', true);
+        $luogo_nascita = get_user_meta($user_id, 'luogo_nascita', true);
+        $documenti = get_user_meta($user_id, 'documenti', true) ?: [];
+                'message' => 'errore',
+                'error_msg' => urlencode('Tipo file non consentito. Solo JPG, PNG o PDF.')
+            ], admin_url('admin.php')));
+            exit;
+        }
+        
+        // Valida dimensione (max 5MB)
+        if ($_FILES['documento_file']['size'] > 5 * 1024 * 1024) {
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'errore',
+                'error_msg' => urlencode('File troppo grande. Massimo 5MB.')
+            ], admin_url('admin.php')));
+            exit;
+        }
+        
+        // Genera nome file univoco
+        $extension = pathinfo($_FILES['documento_file']['name'], PATHINFO_EXTENSION);
+        $filename = $tipo_documento . '_' . time() . '.' . $extension;
+        $filepath = $wecoop_dir . '/' . $filename;
+        
+        // Upload file
+        if (move_uploaded_file($_FILES['documento_file']['tmp_name'], $filepath)) {
+            // Salva riferimento in user_meta
+            $documenti = get_user_meta($user_id, 'documenti', true) ?: [];
+            $documenti[] = [
+                'tipo' => $tipo_documento,
+                'filename' => $filename,
+                'filepath' => $filepath,
+                'url' => $upload_dir['baseurl'] . '/wecoop-users/' . $user_id . '/' . $filename,
+                'data_upload' => current_time('mysql')
+            ];
+            update_user_meta($user_id, 'documenti', $documenti);
+            
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'documento_caricato'
+            ], admin_url('admin.php')));
+        } else {
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'errore',
+                'error_msg' => urlencode('Errore durante l\'upload del file')
             ], admin_url('admin.php')));
         }
         exit;
     }
     
-    public function handle_revoca_socio() {
+    public function handle_elimina_documento() {
         if (!current_user_can('manage_options')) {
             wp_die('Accesso negato');
+        }
+        
+        check_admin_referer('wecoop_users_elimina_documento');
+        
+        $user_id = intval($_POST['user_id']);
+        $doc_index = intval($_POST['doc_index']);
+        
+        $documenti = get_user_meta($user_id, 'documenti', true) ?: [];
+        
+        if (isset($documenti[$doc_index])) {
+            // Elimina file fisico
+            if (file_exists($documenti[$doc_index]['filepath'])) {
+                unlink($documenti[$doc_index]['filepath']);
+            }
+            
+            // Rimuovi da array
+            array_splice($documenti, $doc_index, 1);
+            update_user_meta($user_id, 'documenti', $documenti);
+            
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'documento_eliminato'
+            ], admin_url('admin.php')));
+        } else {
+            wp_redirect(add_query_arg([
+                'page' => 'wecoop-user-detail',
+                'user_id' => $user_id,
+                'message' => 'errore',
+                'error_msg' => urlencode('Documento non trovato')
+            ], admin_url('admin.php')));
+        }
+        exit;
+    }
+    
+    public function render_page() {);
         }
         
         check_admin_referer('wecoop_users_revoca_socio');

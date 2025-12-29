@@ -35,40 +35,50 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
 ?>
 
 <div class="profile-form-card">
-    <h2>✏️ Completa Profilo Utente</h2>
+    <h2>✏️ Modifica Profilo Utente</h2>
+    <p class="description">Puoi salvare anche solo alcuni campi. I campi obbligatori per l'approvazione come socio sono contrassegnati con *</p>
     
-    <form method="post" action="">
-        <?php wp_nonce_field('completa_profilo_' . $user_id, 'completa_profilo_nonce'); ?>
-        <input type="hidden" name="action" value="completa_profilo">
+    <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+        <?php wp_nonce_field('wecoop_users_completa_profilo', 'wecoop_users_completa_profilo'); ?>
+        <input type="hidden" name="action" value="wecoop_users_completa_profilo">
         <input type="hidden" name="user_id" value="<?php echo $user_id; ?>">
         
         <table class="form-table">
             <tr>
-                <th><label for="nome">Nome *</label></th>
+                <th><label for="first_name">Nome *</label></th>
                 <td>
-                    <input type="text" id="nome" name="nome" 
+                    <input type="text" id="first_name" name="first_name" 
                            value="<?php echo esc_attr($nome); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
             
             <tr>
-                <th><label for="cognome">Cognome *</label></th>
+                <th><label for="last_name">Cognome *</label></th>
                 <td>
-                    <input type="text" id="cognome" name="cognome" 
+                    <input type="text" id="last_name" name="last_name" 
                            value="<?php echo esc_attr($cognome); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
             
             <tr>
-                <th><label for="cf">Codice Fiscale *</label></th>
+                <th><label for="email">Email</label></th>
                 <td>
-                    <input type="text" id="cf" name="cf" 
+                    <input type="email" id="email" name="email" 
+                           value="<?php echo esc_attr($user->user_email); ?>" 
+                           class="regular-text">
+                </td>
+            </tr>
+            
+            <tr>
+                <th><label for="codice_fiscale">Codice Fiscale *</label></th>
+                <td>
+                    <input type="text" id="codice_fiscale" name="codice_fiscale" 
                            value="<?php echo esc_attr($cf); ?>" 
                            class="regular-text" maxlength="16" 
                            pattern="[A-Z0-9]{16}" 
-                           style="text-transform: uppercase;" required>
+                           style="text-transform: uppercase;">
                     <p class="description">16 caratteri alfanumerici (es: RSSMRA80A01H501U)</p>
                 </td>
             </tr>
@@ -77,7 +87,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="data_nascita">Data di Nascita *</label></th>
                 <td>
                     <input type="date" id="data_nascita" name="data_nascita" 
-                           value="<?php echo esc_attr($data_nascita); ?>" required>
+                           value="<?php echo esc_attr($data_nascita); ?>">
                 </td>
             </tr>
             
@@ -86,7 +96,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <td>
                     <input type="text" id="luogo_nascita" name="luogo_nascita" 
                            value="<?php echo esc_attr($luogo_nascita); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
             
@@ -99,7 +109,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <td>
                     <input type="text" id="indirizzo" name="indirizzo" 
                            value="<?php echo esc_attr($indirizzo); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
             
@@ -108,7 +118,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <td>
                     <input type="text" id="civico" name="civico" 
                            value="<?php echo esc_attr($civico); ?>" 
-                           class="small-text" required>
+                           class="small-text">
                 </td>
             </tr>
             
@@ -118,7 +128,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                     <input type="text" id="cap" name="cap" 
                            value="<?php echo esc_attr($cap); ?>" 
                            class="small-text" maxlength="5" 
-                           pattern="[0-9]{5}" required>
+                           pattern="[0-9]{5}">
                 </td>
             </tr>
             
@@ -127,7 +137,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <td>
                     <input type="text" id="citta" name="citta" 
                            value="<?php echo esc_attr($citta); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
             
@@ -137,7 +147,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                     <input type="text" id="provincia" name="provincia" 
                            value="<?php echo esc_attr($provincia); ?>" 
                            class="small-text" maxlength="2" 
-                           style="text-transform: uppercase;" required>
+                           style="text-transform: uppercase;">
                     <p class="description">Sigla provincia (es: RM, MI, NA)</p>
                 </td>
             </tr>
@@ -147,7 +157,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <td>
                     <input type="text" id="nazione" name="nazione" 
                            value="<?php echo esc_attr($nazione ?: 'Italia'); ?>" 
-                           class="regular-text" required>
+                           class="regular-text">
                 </td>
             </tr>
         </table>
@@ -156,6 +166,9 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
             <button type="submit" class="button button-primary button-large">
                 💾 Salva Profilo
             </button>
+            <span class="description" style="margin-left: 15px;">
+                Puoi salvare anche solo alcuni campi. L'approvazione come socio richiede tutti i campi obbligatori (*).
+            </span>
         </p>
     </form>
 </div>
@@ -182,6 +195,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
 }
 
 .profile-form-card input[type="text"],
+.profile-form-card input[type="email"],
 .profile-form-card input[type="date"] {
     padding: 8px;
 }
@@ -190,5 +204,10 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
     height: 40px;
     padding: 0 24px;
     font-size: 14px;
+}
+
+.profile-form-card .description {
+    color: #666;
+    font-style: italic;
 }
 </style>

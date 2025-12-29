@@ -35,6 +35,14 @@ if (!defined('ABSPATH')) exit;
         <div class="notice notice-success is-dismissible">
             <p><strong>✅ Profilo salvato con successo!</strong></p>
         </div>
+    <?php elseif ($message === 'documento_caricato'): ?>
+        <div class="notice notice-success is-dismissible">
+            <p><strong>✅ Documento caricato con successo!</strong></p>
+        </div>
+    <?php elseif ($message === 'documento_eliminato'): ?>
+        <div class="notice notice-success is-dismissible">
+            <p><strong>✅ Documento eliminato con successo!</strong></p>
+        </div>
     <?php elseif ($message === 'socio_approvato'): ?>
         <div class="notice notice-success is-dismissible">
             <p><strong>🎉 Utente approvato come SOCIO con successo!</strong></p>
@@ -56,6 +64,7 @@ if (!defined('ABSPATH')) exit;
     <hr class="wp-header-end">
     
     <?php require WECOOP_USERS_PLUGIN_DIR . 'templates/partials/user-info.php'; ?>
+    <?php require WECOOP_USERS_PLUGIN_DIR . 'templates/partials/user-documents.php'; ?>
     <?php require WECOOP_USERS_PLUGIN_DIR . 'templates/partials/user-form.php'; ?>
     <?php require WECOOP_USERS_PLUGIN_DIR . 'templates/partials/user-actions.php'; ?>
 </div>
