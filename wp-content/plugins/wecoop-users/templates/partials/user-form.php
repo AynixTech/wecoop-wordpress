@@ -5,33 +5,51 @@
 
 if (!defined('ABSPATH')) exit;
 
+// Recupera dati utente (priorità: user_meta, poi post_meta richiesta_socio)
+$nome = $user->first_name;
+$cognome = $user->last_name;
+$email = $user->user_email;
+
+// Dati da user_meta
+$cf = get_user_meta($user_id, 'codice_fiscale', true);
+$data_nascita = get_user_meta($user_id, 'data_nascita', true);
+$luogo_nascita = get_user_meta($user_id, 'luogo_nascita', true);
+$indirizzo_meta = get_user_meta($user_id, 'indirizzo', true);
+$civico_meta = get_user_meta($user_id, 'civico', true);
+$cap_meta = get_user_meta($user_id, 'cap', true);
+$citta_meta = get_user_meta($user_id, 'citta', true);
+$provincia_meta = get_user_meta($user_id, 'provincia', true);
+$nazione_meta = get_user_meta($user_id, 'nazione', true);
+
+// Cerca richiesta_socio per fallback dati
 $richiesta_socio = get_posts([
     'post_type' => 'richiesta_socio',
-    'author' => $user_id,
+    'meta_query' => [
+        [
+            'key' => 'user_id_socio',
+            'value' => $user_id,
+            'compare' => '='
+        ]
+    ],
     'posts_per_page' => 1,
     'post_status' => 'any'
 ]);
 
-if (empty($richiesta_socio)) {
-    echo '<div class="notice notice-error"><p>⚠️ Nessuna richiesta socio trovata per questo utente.</p></div>';
-    return;
+// Fallback: se user_meta vuoti, prendi da richiesta_socio
+if (!empty($richiesta_socio)) {
+    $richiesta_id = $richiesta_socio[0]->ID;
+    $nome = $nome ?: get_post_meta($richiesta_id, 'nome', true);
+    $cognome = $cognome ?: get_post_meta($richiesta_id, 'cognome', true);
+    $cf = $cf ?: get_post_meta($richiesta_id, 'codice_fiscale', true) ?: get_post_meta($richiesta_id, 'cf', true);
+    $data_nascita = $data_nascita ?: get_post_meta($richiesta_id, 'data_nascita', true);
+    $luogo_nascita = $luogo_nascita ?: get_post_meta($richiesta_id, 'luogo_nascita', true);
+    $indirizzo_meta = $indirizzo_meta ?: get_post_meta($richiesta_id, 'indirizzo', true);
+    $civico_meta = $civico_meta ?: get_post_meta($richiesta_id, 'civico', true);
+    $cap_meta = $cap_meta ?: get_post_meta($richiesta_id, 'cap', true);
+    $citta_meta = $citta_meta ?: get_post_meta($richiesta_id, 'citta', true);
+    $provincia_meta = $provincia_meta ?: get_post_meta($richiesta_id, 'provincia', true);
+    $nazione_meta = $nazione_meta ?: get_post_meta($richiesta_id, 'nazione', true);
 }
-
-$richiesta = $richiesta_socio[0];
-$richiesta_id = $richiesta->ID;
-
-// Dati dalla richiesta_socio (post_meta)
-$nome = get_post_meta($richiesta_id, 'nome', true);
-$cognome = get_post_meta($richiesta_id, 'cognome', true);
-$cf = get_post_meta($richiesta_id, 'cf', true);
-$data_nascita = get_post_meta($richiesta_id, 'data_nascita', true);
-$luogo_nascita = get_post_meta($richiesta_id, 'luogo_nascita', true);
-$indirizzo = get_post_meta($richiesta_id, 'indirizzo', true);
-$civico = get_post_meta($richiesta_id, 'civico', true);
-$cap = get_post_meta($richiesta_id, 'cap', true);
-$citta = get_post_meta($richiesta_id, 'citta', true);
-$provincia = get_post_meta($richiesta_id, 'provincia', true);
-$nazione = get_post_meta($richiesta_id, 'nazione', true);
 ?>
 
 <div class="profile-form-card">
@@ -45,10 +63,10 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
         
         <table class="form-table">
             <tr>
-                <th><label for="first_name">Nome *</label></th>
+                <th><label for="email">Email</label></th>
                 <td>
-                    <input type="text" id="first_name" name="first_name" 
-                           value="<?php echo esc_attr($nome); ?>" 
+                    <input type="email" id="email" name="email" 
+                           value="<?php echo esc_attr($email); ?>" 
                            class="regular-text">
                 </td>
             </tr>
@@ -108,7 +126,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="indirizzo">Via/Piazza *</label></th>
                 <td>
                     <input type="text" id="indirizzo" name="indirizzo" 
-                           value="<?php echo esc_attr($indirizzo); ?>" 
+                           value="<?php echo esc_attr($indirizzo_meta); ?>" 
                            class="regular-text">
                 </td>
             </tr>
@@ -117,7 +135,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="civico">Numero Civico *</label></th>
                 <td>
                     <input type="text" id="civico" name="civico" 
-                           value="<?php echo esc_attr($civico); ?>" 
+                           value="<?php echo esc_attr($civico_meta); ?>" 
                            class="small-text">
                 </td>
             </tr>
@@ -126,7 +144,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="cap">CAP *</label></th>
                 <td>
                     <input type="text" id="cap" name="cap" 
-                           value="<?php echo esc_attr($cap); ?>" 
+                           value="<?php echo esc_attr($cap_meta); ?>" 
                            class="small-text" maxlength="5" 
                            pattern="[0-9]{5}">
                 </td>
@@ -136,7 +154,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="citta">Città *</label></th>
                 <td>
                     <input type="text" id="citta" name="citta" 
-                           value="<?php echo esc_attr($citta); ?>" 
+                           value="<?php echo esc_attr($citta_meta); ?>" 
                            class="regular-text">
                 </td>
             </tr>
@@ -145,7 +163,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="provincia">Provincia *</label></th>
                 <td>
                     <input type="text" id="provincia" name="provincia" 
-                           value="<?php echo esc_attr($provincia); ?>" 
+                           value="<?php echo esc_attr($provincia_meta); ?>" 
                            class="small-text" maxlength="2" 
                            style="text-transform: uppercase;">
                     <p class="description">Sigla provincia (es: RM, MI, NA)</p>
@@ -156,7 +174,7 @@ $nazione = get_post_meta($richiesta_id, 'nazione', true);
                 <th><label for="nazione">Nazione *</label></th>
                 <td>
                     <input type="text" id="nazione" name="nazione" 
-                           value="<?php echo esc_attr($nazione ?: 'Italia'); ?>" 
+                           value="<?php echo esc_attr($nazione_meta ?: 'Italia'); ?>" 
                            class="regular-text">
                 </td>
             </tr>
