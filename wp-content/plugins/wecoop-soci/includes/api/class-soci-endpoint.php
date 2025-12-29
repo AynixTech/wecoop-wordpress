@@ -527,6 +527,9 @@ class WECOOP_Soci_Endpoint {
         error_log('[LOGIN-AUTO] Invio credenziali all\'app per login automatico...');
         error_log('========== FINE PRIMO ACCESSO (UTENTE CREATO) ==========');
         
+        // Invia messaggio WhatsApp con credenziali
+        self::send_welcome_whatsapp($telefono_completo, $nome, $username, $password);
+        
         // Risposta con credenziali di accesso
         return rest_ensure_response([
             'success' => true,
@@ -1624,6 +1627,86 @@ class WECOOP_Soci_Endpoint {
         $password = $parola1 . $numero . $parola2;
         
         return $password;
+    }
+    
+    /**
+     * Invia messaggio WhatsApp di benvenuto con credenziali
+     */
+    private static function send_welcome_whatsapp($telefono_completo, $nome, $username, $password) {
+        error_log('[WHATSAPP] Invio messaggio di benvenuto...');
+        error_log('[WHATSAPP] Telefono: ' . $telefono_completo);
+        
+        // Verifica se invio benvenuto è abilitato
+        $enable_welcome = get_option('wecoop_whatsapp_enable_welcome', '1');
+        if ($enable_welcome !== '1') {
+            error_log('[WHATSAPP] Invio messaggio di benvenuto disabilitato nelle impostazioni');
+            return false;
+        }
+        
+        // Verifica se WhatsApp è configurato
+        $api_key = get_option('wecoop_whatsapp_api_key');
+        $phone_number_id = get_option('wecoop_whatsapp_phone_number_id');
+        
+        if (empty($api_key) || empty($phone_number_id)) {
+            error_log('[WHATSAPP] WhatsApp non configurato - messaggio non inviato');
+            return false;
+        }
+        
+        // Prepara il messaggio di benvenuto
+        $message = "🎉 *Benvenuto in WeCoop, {$nome}!*\n\n";
+        $message .= "La tua registrazione è stata completata con successo.\n\n";
+        $message .= "📱 *Le tue credenziali di accesso:*\n";
+        $message .= "Username: *{$username}*\n";
+        $message .= "Password: *{$password}*\n\n";
+        $message .= "Puoi ora accedere all'app WeCoop usando queste credenziali.\n\n";
+        $message .= "💡 _Conserva queste informazioni in un luogo sicuro._\n\n";
+        $message .= "Benvenuto nella nostra cooperativa! 🤝";
+        
+        error_log('[WHATSAPP] Messaggio preparato: ' . substr($message, 0, 100) . '...');
+        
+        // Normalizza numero telefono per WhatsApp (rimuove spazi e caratteri speciali tranne +)
+        $phone_clean = preg_replace('/[^\d+]/', '', $telefono_completo);
+        error_log('[WHATSAPP] Telefono normalizzato: ' . $phone_clean);
+        
+        // Chiamata API WhatsApp Business
+        $url = "https://graph.facebook.com/v17.0/{$phone_number_id}/messages";
+        
+        $body = [
+            'messaging_product' => 'whatsapp',
+            'to' => $phone_clean,
+            'type' => 'text',
+            'text' => [
+                'body' => $message
+            ]
+        ];
+        
+        $response = wp_remote_post($url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type' => 'application/json'
+            ],
+            'body' => json_encode($body),
+            'timeout' => 15
+        ]);
+        
+        if (is_wp_error($response)) {
+            error_log('[WHATSAPP] Errore invio: ' . $response->get_error_message());
+            return false;
+        }
+        
+        $status_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+        
+        error_log('[WHATSAPP] Status code: ' . $status_code);
+        error_log('[WHATSAPP] Response: ' . $response_body);
+        
+        if ($status_code === 200) {
+            error_log('[WHATSAPP] ✅ Messaggio inviato con successo');
+            return true;
+        } else {
+            error_log('[WHATSAPP] ❌ Errore nell\'invio (status: ' . $status_code . ')');
+            return false;
+        }
     }
 }
 

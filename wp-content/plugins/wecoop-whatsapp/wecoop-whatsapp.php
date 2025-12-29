@@ -60,6 +60,12 @@ class WeCoop_WhatsApp_Plugin {
     
     private function load_dependencies() {
         require_once WECOOP_WHATSAPP_INCLUDES_DIR . 'whatsapp/class-whatsapp.php';
+        
+        // Admin
+        if (is_admin()) {
+            require_once WECOOP_WHATSAPP_INCLUDES_DIR . 'admin/class-whatsapp-settings.php';
+            require_once WECOOP_WHATSAPP_INCLUDES_DIR . 'admin/class-whatsapp-admin-actions.php';
+        }
     }
     
     private function init_hooks() {
