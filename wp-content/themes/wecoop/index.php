@@ -136,6 +136,14 @@
                                 <p><?php echo theme_translate('initiatives.calcio.description'); ?></p>
                             </div>
                         </div>
+                        <!--Umanitaria-->
+                         <div class="swiper-slide">
+                            <div class="iniziativa-card" style="background-image: url('<?php echo esc_url(home_url('/wp-content/uploads/2026/01/uniuma_banner.jpg')); ?>');">
+                                <div class="overlay"></div>
+                                <img class="card-logo" src="<?php echo esc_url(home_url('/wp-content/uploads/2025/11/Logo-Uniuma.png')); ?>" alt="UNIUMA">
+                                <h3><?php echo esc_html(theme_translate('initiatives.uniuma.title')); ?></h3>
+                                <p><?php echo esc_html(theme_translate('initiatives.uniuma.description')); ?></p>
+                        </div>
                     </div>
                     <div class="swiper-pagination"></div>
                     <div class="swiper-button-prev"></div>
