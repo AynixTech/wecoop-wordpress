@@ -6,12 +6,11 @@
                 <a href="<?php echo esc_url(home_url()); ?>">
                     <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/wecooplogo2.png')); ?>" alt="WeCoop footer logo" />
                 </a>
-                <p class="description"><?php echo theme_translate('footer.site_description'); ?></p>
-                <p class="description">WeCoop</p>
                 <p class="description"><?php echo theme_translate('footer.association_type'); ?></p>
                 <p class="description"><?php echo theme_translate('footer.address'); ?></p>
                 <p class="description">20159 Milano (MI)</p>
-                <p class="description"><?php echo theme_translate('footer.tax_code'); ?>: CF 97977210158</p>
+                <p class="description">CF 97977210158</p>
+                <p class="description">RUNTS 142852</p>
             </div>
 
             <a href="https://wa.me/393341390175?text=Ciao%20WeCoop!" class="whatsapp-link" target="_blank">

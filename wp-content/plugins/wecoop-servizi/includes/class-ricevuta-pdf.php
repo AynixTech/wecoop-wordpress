@@ -114,13 +114,6 @@ class WeCoop_Ricevuta_PDF {
         
         error_log("[WECOOP RICEVUTA] Risultato html_to_pdf: " . json_encode($result));
         
-        if (is_wp_error($result)) {
-            return [
-                'success' => false,
-                'message' => $result->get_error_message()
-            ];
-        }
-        
         if (!$result['success']) {
             return [
                 'success' => false,
@@ -450,10 +443,10 @@ class WeCoop_Ricevuta_PDF {
      * Scarica ricevuta PDF
      */
     public static function download_ricevuta($payment_id) {
-        $result = self::genera_ricevuta($payment_id);
+        $result = self::generate_ricevuta($payment_id);
         
-        if (is_wp_error($result)) {
-            wp_die($result->get_error_message());
+        if (!$result['success']) {
+            wp_die($result['message']);
         }
         
         if (file_exists($result['filepath'])) {
