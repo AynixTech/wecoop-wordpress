@@ -1001,6 +1001,8 @@ class CFF_Graph_Data
 	 */
 	public function process_api_error($fb_data, $cache_type)
 	{
+		$posts_json = null;
+		
 		if (false !== $this->feed_cache->get($cache_type . '_backup')) {
 			$posts_json = $this->feed_cache->get($cache_type . '_backup');
 
