@@ -119,7 +119,7 @@ if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
 }
 
 // Suppress deprecated notices (optional - removes the specific notices you're seeing)
-@ini_set( 'display_errors', 1 );
+@ini_set( 'display_errors', 0 );
 
 define( 'FS_METHOD', 'direct' );
 define( 'COOKIEHASH', 'a89c81cd3eeea5503dc0907f67d44e6e' );
