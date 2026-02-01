@@ -133,6 +133,7 @@
     }
     .header {
         flex-wrap: wrap;
+        padding: 10px 15px;
     }
 
     .header__nav,
@@ -145,6 +146,24 @@
         top: 100%;
         left: 0;
         padding: 1rem 0;
+        gap: 10px;
+    }
+
+    .header__contact a {
+        width: 100%;
+    }
+
+    .header__contact button {
+        width: 100%;
+        max-width: 300px;
+        margin: 0 auto;
+    }
+
+    .btn-5x1000,
+    .btn-primary {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 1rem;
     }
 
     .header__nav a,
