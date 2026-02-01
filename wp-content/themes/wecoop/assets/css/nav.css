@@ -159,6 +159,19 @@
         background-color: #f0f0f0;
     }
 
+    /* Stile speciale per 5x1000 nel menu mobile */
+    .mobile-nav-menu .menu-5x1000 {
+        background: #ff6f61;
+        color: white !important;
+        border-radius: 5px;
+        font-weight: 600;
+        padding: 12px 20px;
+    }
+
+    .mobile-nav-menu .menu-5x1000:hover {
+        background: #e55a4d !important;
+    }
+
     .mobile-submenu {
         position: relative;
     }

@@ -73,6 +73,23 @@ footer ul li a:hover {
     color: #ddd;
 }
 
+/* Stile speciale per link 5x1000 nel footer */
+.footer-5x1000-link {
+    display: inline-block;
+    background: #ff6f61;
+    color: white !important;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-top: 5px;
+}
+
+.footer-5x1000-link:hover {
+    background: #e55a4d !important;
+    color: white !important;
+    transform: translateY(-1px);
+}
+
 .description {
     font-size: 14px;
     line-height: 1.5;

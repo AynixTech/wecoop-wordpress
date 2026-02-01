@@ -43,6 +43,9 @@
 </div>
 
 <div class="header__contact">
+    <a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="cta-5x1000">
+         <button class="btn-5x1000"><?php echo theme_translate('nav.5x1000'); ?></button>
+    </a>
     <a href="<?php echo esc_url(home_url('/contatti')); ?>" class="contact-button">
          <button class="btn-primary"><?php echo theme_translate('nav.contact'); ?></button>
     </a>
@@ -65,6 +68,7 @@
                 <li><a href="<?php echo esc_url(home_url('/servizi')); ?>"><?php echo theme_translate('nav.services'); ?></a></li>
                 <li><a href="<?php echo esc_url(home_url('/progetti')); ?>"><?php echo theme_translate('nav.projects'); ?></a></li>
                 <li><a href="<?php echo esc_url(home_url('/iniziative')); ?>"><?php echo theme_translate('nav.initiatives'); ?></a></li>
+                <li><a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="menu-5x1000"><?php echo theme_translate('nav.5x1000'); ?></a></li>
                 <li><a href="<?php echo esc_url(home_url('/contatti')); ?>"><?php echo theme_translate('nav.contact'); ?></a></li>
             </ul>
         </nav>

@@ -94,6 +94,27 @@
 .header__contact {
     flex: 1;
     justify-content: flex-end;
+    display: flex;
+    gap: 10px;
+}
+
+/* Bottone 5x1000 nell'header */
+.btn-5x1000 {
+    background: #ff6f61;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.btn-5x1000:hover {
+    background: #e55a4d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 111, 97, 0.3);
 }
 
 /* Pulsante menu hamburger per mobile */

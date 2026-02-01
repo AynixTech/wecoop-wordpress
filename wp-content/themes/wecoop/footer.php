@@ -94,6 +94,7 @@
                 <li><a href="/diventa-volontario"><?php echo theme_translate('footer.become_volunteer'); ?></a></li>
                 <li><a href="/hai-un-idea"><?php echo theme_translate('footer.have_idea'); ?></a></li>
                 <li><a href="/sostienici"><?php echo theme_translate('footer.support_us'); ?></a></li>
+                <li><a href="/sostienici#5x1000" class="footer-5x1000-link"><?php echo theme_translate('nav.5x1000'); ?></a></li>
             </ul>
         </div>
 
