@@ -1,0 +1,397 @@
+/* ===================================
+   PAGINA SOSTIENICI - WECOOP
+   ================================== */
+
+/* Hero Section */
+.sostienici-hero {
+    background: linear-gradient(135deg, #2c5f8d 0%, #1a3d5c 100%);
+    color: white;
+    padding: 80px 20px 60px;
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.sostienici-hero h1 {
+    font-size: 2rem;
+    line-height: 1.3;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.sostienici-hero .hero-subtitle {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    opacity: 0.95;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn-hero {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 40px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    gap: 5px;
+}
+
+.btn-microcopy {
+    font-size: 0.85rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* Container */
+.sostienici-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+}
+
+/* Sezioni generali */
+.sostienici-page section {
+    margin-bottom: 60px;
+}
+
+.section-content {
+    background: white;
+    border-radius: 12px;
+    padding: 40px 30px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.sostienici-page h2 {
+    font-size: 1.8rem;
+    color: #1a3d5c;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.section-description {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #444;
+    margin-bottom: 30px;
+}
+
+.section-intro {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #444;
+    margin-bottom: 20px;
+}
+
+/* Sezione 5x1000 */
+.section-5x1000 {
+    scroll-margin-top: 100px;
+}
+
+.codice-fiscale-box {
+    background: #f8f9fb;
+    border: 2px solid #2c5f8d;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    margin: 30px 0;
+}
+
+.cf-label {
+    display: block;
+    font-size: 0.95rem;
+    color: #666;
+    margin-bottom: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cf-display {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2c5f8d;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+    user-select: all;
+}
+
+.btn-copy {
+    background: #2c5f8d;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.btn-copy:hover {
+    background: #1a3d5c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(44, 95, 141, 0.3);
+}
+
+.btn-copy:active {
+    transform: translateY(0);
+}
+
+.cf-note {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+}
+
+/* Toast notification */
+.copy-toast {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #28a745;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transition: bottom 0.3s ease;
+    z-index: 1000;
+}
+
+.copy-toast.show {
+    bottom: 30px;
+}
+
+/* Lista scopi */
+.purpose-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.purpose-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 20px;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: #444;
+}
+
+.purpose-list i {
+    color: #28a745;
+    font-size: 1.3rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Sezione altri modi per sostenerci */
+.section-other-support {
+    background: #f8f9fb;
+    border-radius: 12px;
+    padding: 40px 30px;
+}
+
+.donation-box {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 12px;
+    padding: 30px;
+    margin-top: 20px;
+}
+
+.donation-field {
+    margin-bottom: 20px;
+}
+
+.donation-field:last-child {
+    margin-bottom: 0;
+}
+
+.donation-field label {
+    display: block;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.field-value {
+    font-size: 1.1rem;
+    color: #222;
+    font-weight: 500;
+    padding: 8px 0;
+}
+
+.iban-value {
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    font-weight: 600;
+    color: #2c5f8d;
+}
+
+/* Sezione trasparenza */
+.transparency-box {
+    background: #f0f4f8;
+    border-left: 4px solid #2c5f8d;
+    border-radius: 8px;
+    padding: 30px;
+}
+
+.transparency-text {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #444;
+    margin-bottom: 25px;
+}
+
+.transparency-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-item strong {
+    color: #2c5f8d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-item span {
+    font-size: 1rem;
+    color: #444;
+}
+
+.detail-item a {
+    color: #2c5f8d;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.detail-item a:hover {
+    color: #1a3d5c;
+    text-decoration: underline;
+}
+
+/* Bottoni principali */
+.btn-primary {
+    background: #2c5f8d;
+    color: white;
+    padding: 14px 32px;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background: #1a3d5c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(44, 95, 141, 0.3);
+}
+
+/* ===================================
+   RESPONSIVE - TABLET
+   ================================== */
+@media (min-width: 768px) {
+    .sostienici-hero {
+        padding: 100px 40px 80px;
+    }
+
+    .sostienici-hero h1 {
+        font-size: 2.5rem;
+    }
+
+    .sostienici-hero .hero-subtitle {
+        font-size: 1.2rem;
+    }
+
+    .section-content {
+        padding: 50px 40px;
+    }
+
+    .codice-fiscale-box {
+        padding: 40px;
+    }
+
+    .cf-display {
+        font-size: 2.8rem;
+    }
+
+    .transparency-details {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 40px;
+    }
+
+    .detail-item {
+        flex: 1;
+    }
+}
+
+/* ===================================
+   RESPONSIVE - DESKTOP
+   ================================== */
+@media (min-width: 1024px) {
+    .sostienici-hero {
+        padding: 120px 40px 100px;
+    }
+
+    .sostienici-hero h1 {
+        font-size: 3rem;
+    }
+
+    .sostienici-container {
+        padding: 0 40px 100px;
+    }
+
+    .section-content {
+        padding: 60px 50px;
+    }
+
+    .codice-fiscale-box {
+        padding: 50px;
+    }
+
+    .cf-display {
+        font-size: 3.2rem;
+    }
+}
+
+/* ===================================
+   PRINT STYLES
+   ================================== */
+@media print {
+    .sostienici-hero,
+    .btn-copy,
+    .copy-toast {
+        display: none;
+    }
+
+    .cf-display {
+        color: #000;
+        border: 2px solid #000;
+        padding: 10px;
+    }
+}

@@ -23,6 +23,7 @@
         <li><a href="<?php echo esc_url(home_url('/diventa-volontario')); ?>"><?php echo theme_translate('nav.volunteer'); ?></a></li>
         <li><a href="<?php echo esc_url(home_url('/hai-un-idea')); ?>"><?php echo theme_translate('nav.idea'); ?></a></li>
         <li><a href="<?php echo esc_url(home_url('/sostienici')); ?>"><?php echo theme_translate('nav.support'); ?></a></li>
+        <li><a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="top-menu__5x1000"><?php echo theme_translate('nav.5x1000'); ?></a></li>
     </ul>
 </div>
 

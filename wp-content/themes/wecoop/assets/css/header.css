@@ -27,6 +27,20 @@
     color: #ff6f61;
 }
 
+/* Stile speciale per il link 5x1000 */
+.top-menu__5x1000 {
+    background: #2c5f8d;
+    color: white !important;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.top-menu__5x1000:hover {
+    background: #1a3d5c !important;
+    color: white !important;
+}
+
 /* Header principale */
 .header {
     display: flex;
