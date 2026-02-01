@@ -22,9 +22,6 @@ footer > * {
     z-index: 1;
 }
 
-.links-container {
-    display: none;
-}
 .container-footer {
     display: flex;
     flex-wrap: wrap;
