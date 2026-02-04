@@ -6,13 +6,7 @@
     <title><?php echo theme_translate('meta.title'); ?></title>
 
     <meta name="description" content="<?php echo theme_translate('meta.description'); ?>">
-    <meta property="og:title" content="<?php echo theme_translate('meta.title'); ?>" />
-    <meta property="og:description" content="<?php echo theme_translate('meta.description'); ?>" />
-    <meta property="og:image" content="https://www.wecoop.org/wp-content/uploads/2025/05/wecooplogo2.png" />
-    <meta property="og:url" content="https://www.wecoop.org" />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="WeCoop" />
-
+    
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
@@ -43,9 +37,6 @@
 </div>
 
 <div class="header__contact">
-    <a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="cta-5x1000">
-         <button class="btn-5x1000"><?php echo theme_translate('nav.5x1000'); ?></button>
-    </a>
     <a href="<?php echo esc_url(home_url('/contatti')); ?>" class="contact-button">
          <button class="btn-primary"><?php echo theme_translate('nav.contact'); ?></button>
     </a>

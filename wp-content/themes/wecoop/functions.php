@@ -167,4 +167,51 @@ function save_language_from_url() {
 }
 add_action('init', 'save_language_from_url');
 
+/**
+ * Rimuove meta tag duplicati generati da WordPress
+ */
+function wecoop_remove_default_meta_tags() {
+    // Rimuove il generatore WordPress
+    remove_action('wp_head', 'wp_generator');
+    
+    // Rimuove meta description duplicata se generata da plugin
+    remove_action('wp_head', 'rel_canonical');
+}
+add_action('init', 'wecoop_remove_default_meta_tags');
+
+/**
+ * Aggiungi meta tag Open Graph personalizzati
+ */
+function wecoop_custom_og_meta() {
+    if (is_front_page() || is_home()) {
+        $og_title = theme_translate('meta.title');
+        $og_description = theme_translate('meta.description');
+        $og_image = home_url('/wp-content/uploads/2025/05/wecooplogo2.png');
+    } elseif (is_singular()) {
+        global $post;
+        $og_title = get_the_title();
+        $og_description = get_the_excerpt() ? get_the_excerpt() : theme_translate('meta.description');
+        $og_image = has_post_thumbnail() ? get_the_post_thumbnail_url(null, 'large') : home_url('/wp-content/uploads/2025/05/wecooplogo2.png');
+    } else {
+        $og_title = theme_translate('meta.title');
+        $og_description = theme_translate('meta.description');
+        $og_image = home_url('/wp-content/uploads/2025/05/wecooplogo2.png');
+    }
+    
+    // Output meta tags
+    echo '<meta property="og:title" content="' . esc_attr($og_title) . '" />' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr($og_description) . '" />' . "\n";
+    echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
+    echo '<meta property="og:url" content="' . esc_url(get_permalink()) . '" />' . "\n";
+    echo '<meta property="og:type" content="website" />' . "\n";
+    echo '<meta property="og:site_name" content="WeCoop" />' . "\n";
+    
+    // Meta tag per Twitter
+    echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr($og_title) . '" />' . "\n";
+    echo '<meta name="twitter:description" content="' . esc_attr($og_description) . '" />' . "\n";
+    echo '<meta name="twitter:image" content="' . esc_url($og_image) . '" />' . "\n";
+}
+add_action('wp_head', 'wecoop_custom_og_meta', 5);
+
 ?>
