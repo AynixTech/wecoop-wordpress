@@ -198,19 +198,26 @@ function wecoop_custom_og_meta() {
         $og_image = home_url('/wp-content/uploads/2025/05/wecooplogo2.png');
     }
     
-    // Output meta tags
+    // Output meta tags Open Graph ottimizzati per WhatsApp/Facebook
     echo '<meta property="og:title" content="' . esc_attr($og_title) . '" />' . "\n";
     echo '<meta property="og:description" content="' . esc_attr($og_description) . '" />' . "\n";
     echo '<meta property="og:image" content="' . esc_url($og_image) . '" />' . "\n";
+    echo '<meta property="og:image:width" content="1200" />' . "\n";
+    echo '<meta property="og:image:height" content="630" />' . "\n";
+    echo '<meta property="og:image:alt" content="' . esc_attr($og_title) . '" />' . "\n";
     echo '<meta property="og:url" content="' . esc_url(get_permalink()) . '" />' . "\n";
     echo '<meta property="og:type" content="website" />' . "\n";
-    echo '<meta property="og:site_name" content="WeCoop" />' . "\n";
+    echo '<meta property="og:site_name" content="WeCoop APS" />' . "\n";
+    echo '<meta property="og:locale" content="it_IT" />' . "\n";
     
     // Meta tag per Twitter
     echo '<meta name="twitter:card" content="summary_large_image" />' . "\n";
     echo '<meta name="twitter:title" content="' . esc_attr($og_title) . '" />' . "\n";
     echo '<meta name="twitter:description" content="' . esc_attr($og_description) . '" />' . "\n";
     echo '<meta name="twitter:image" content="' . esc_url($og_image) . '" />' . "\n";
+    
+    // Meta tag specifici per WhatsApp
+    echo '<meta property="og:image:type" content="image/png" />' . "\n";
 }
 add_action('wp_head', 'wecoop_custom_og_meta', 5);
 
