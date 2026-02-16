@@ -173,12 +173,15 @@ class WECOOP_Servizi_Endpoint {
     }
     
     /**
-     * POST /richiesta-servizio - Crea richiesta
+     * POST /richiesta-servizio - Crea richiesta con documenti allegati
      */
     public static function crea_richiesta_servizio($request) {
         $servizio = $request->get_param('servizio');
         $categoria = $request->get_param('categoria');
-        $dati = $request->get_param('dati');
+        $dati_param = $request->get_param('dati');
+        
+        // Se dati è una stringa JSON, decodifica
+        $dati = is_string($dati_param) ? json_decode($dati_param, true) : $dati_param;
         
         $current_user_id = get_current_user_id();
         
@@ -216,6 +219,101 @@ class WECOOP_Servizi_Endpoint {
         update_post_meta($post_id, 'user_id', $current_user_id);
         if ($socio_id) {
             update_post_meta($post_id, 'socio_id', $socio_id);
+        }
+        
+        // ⭐ NUOVO: Gestione upload documenti
+        $documenti_caricati = [];
+        $files = $request->get_file_params();
+        
+        if (!empty($files)) {
+            error_log("[WECOOP API] Richiesta #{$post_id} - Trovati " . count($files) . " file da caricare");
+            
+            // Carica WordPress upload handler
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            require_once(ABSPATH . 'wp-admin/includes/media.php');
+            
+            foreach ($files as $field_name => $file_data) {
+                // Solo file con prefisso 'documento_'
+                if (strpos($field_name, 'documento_') !== 0) {
+                    error_log("[WECOOP API] ⚠️ Campo ignorato (non inizia con 'documento_'): {$field_name}");
+                    continue;
+                }
+                
+                // Estrai tipo documento dal nome campo
+                // es: documento_permesso_soggiorno → permesso_soggiorno
+                $tipo_documento = str_replace('documento_', '', $field_name);
+                
+                error_log("[WECOOP API] 📎 Elaborazione documento: {$tipo_documento} - {$file_data['name']}");
+                
+                // Validazione tipo file
+                $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+                if (!in_array($file_data['type'], $allowed_types)) {
+                    error_log("[WECOOP API] ⚠️ Tipo file non consentito: {$file_data['type']} per {$tipo_documento}");
+                    continue;
+                }
+                
+                // Validazione dimensione (max 10MB)
+                $max_size = 10 * 1024 * 1024; // 10MB
+                if ($file_data['size'] > $max_size) {
+                    error_log("[WECOOP API] ⚠️ File troppo grande: " . round($file_data['size'] / 1024 / 1024, 2) . "MB per {$tipo_documento}");
+                    continue;
+                }
+                
+                // Validazione errori upload
+                if ($file_data['error'] !== UPLOAD_ERR_OK) {
+                    error_log("[WECOOP API] ⚠️ Errore upload (code {$file_data['error']}): {$tipo_documento}");
+                    continue;
+                }
+                
+                // Upload file alla Media Library
+                // Prepara $_FILES per media_handle_upload
+                $_FILES['upload_file'] = $file_data;
+                
+                $attachment_id = media_handle_upload(
+                    'upload_file',
+                    $post_id,
+                    [],
+                    [
+                        'test_form' => false,
+                        'test_type' => false,
+                    ]
+                );
+                
+                if (is_wp_error($attachment_id)) {
+                    error_log("[WECOOP API] ❌ Errore upload documento {$tipo_documento}: " . $attachment_id->get_error_message());
+                    continue;
+                }
+                
+                // Salva metadati documento
+                update_post_meta($attachment_id, 'tipo_documento', $tipo_documento);
+                update_post_meta($attachment_id, 'richiesta_id', $post_id);
+                
+                // Recupera data scadenza se presente
+                $scadenza_field = "scadenza_$tipo_documento";
+                $data_scadenza = $request->get_param($scadenza_field);
+                if ($data_scadenza) {
+                    update_post_meta($attachment_id, 'data_scadenza', $data_scadenza);
+                }
+                
+                $file_url = wp_get_attachment_url($attachment_id);
+                
+                $documenti_caricati[] = [
+                    'tipo' => $tipo_documento,
+                    'attachment_id' => $attachment_id,
+                    'file_name' => basename($file_data['name']),
+                    'url' => $file_url,
+                    'data_scadenza' => $data_scadenza,
+                ];
+                
+                error_log("[WECOOP API] ✅ Caricato documento: {$tipo_documento} (ID: {$attachment_id}) - {$file_url}");
+            }
+            
+            // Salva riferimenti documenti nella richiesta
+            if (!empty($documenti_caricati)) {
+                update_post_meta($post_id, 'documenti_allegati', $documenti_caricati);
+                error_log("[WECOOP API] 📦 Totale documenti caricati: " . count($documenti_caricati));
+            }
         }
         
         // Genera numero pratica
@@ -293,6 +391,7 @@ class WECOOP_Servizi_Endpoint {
             'id' => $post_id,
             'numero_pratica' => $numero_pratica,
             'data_richiesta' => get_the_date('Y-m-d H:i:s', $post_id),
+            'documenti_caricati' => $documenti_caricati, // ⭐ NUOVO: Lista documenti allegati
             'requires_payment' => false, // Sempre false - pagamenti gestiti da backoffice
             'payment_id' => null,
             'importo' => $importo // Importo suggerito (se disponibile nel listino)

@@ -76,6 +76,7 @@ class WECOOP_Richiesta_Servizio_CPT {
         $numero_pratica = get_post_meta($post->ID, 'numero_pratica', true);
         $user_id = get_post_meta($post->ID, 'user_id', true);
         $socio_id = get_post_meta($post->ID, 'socio_id', true);
+        $documenti_allegati = get_post_meta($post->ID, 'documenti_allegati', true);
         
         // Decodifica dati JSON
         $dati = json_decode($dati_json, true) ?: [];
@@ -107,6 +108,46 @@ class WECOOP_Richiesta_Servizio_CPT {
                 border-left: 4px solid #2271b1;
                 margin-bottom: 15px;
             }
+            .documenti-box {
+                background: #f9f9f9;
+                padding: 15px;
+                border-left: 4px solid #46b450;
+                margin-bottom: 15px;
+            }
+            .documenti-box h4 {
+                margin-top: 0;
+                color: #46b450;
+            }
+            .documento-item {
+                display: flex;
+                align-items: center;
+                padding: 10px;
+                background: white;
+                margin-bottom: 8px;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+            }
+            .documento-icon {
+                font-size: 24px;
+                margin-right: 12px;
+            }
+            .documento-info {
+                flex: 1;
+            }
+            .documento-info strong {
+                display: block;
+                margin-bottom: 4px;
+            }
+            .documento-info small {
+                color: #666;
+            }
+            .documento-actions {
+                display: flex;
+                gap: 8px;
+            }
+            .documento-actions a {
+                text-decoration: none;
+            }
         </style>
         
         <div class="servizio-info-box">
@@ -115,6 +156,57 @@ class WECOOP_Richiesta_Servizio_CPT {
             <strong>Socio ID:</strong> <?php echo $socio_id ?: 'N/A'; ?><br>
             <strong>Data Richiesta:</strong> <?php echo get_the_date('d/m/Y H:i', $post); ?>
         </div>
+        
+        <?php if (!empty($documenti_allegati) && is_array($documenti_allegati)): ?>
+        <div class="documenti-box">
+            <h4>📎 Documenti Allegati (<?php echo count($documenti_allegati); ?>)</h4>
+            <?php foreach ($documenti_allegati as $doc): ?>
+                <?php 
+                $attachment_id = isset($doc['attachment_id']) ? $doc['attachment_id'] : 0;
+                $tipo = isset($doc['tipo']) ? $doc['tipo'] : 'Documento';
+                $file_name = isset($doc['file_name']) ? $doc['file_name'] : 'N/A';
+                $url = isset($doc['url']) ? $doc['url'] : '';
+                $data_scadenza = isset($doc['data_scadenza']) ? $doc['data_scadenza'] : null;
+                
+                // Determina icona dal tipo file
+                $icon = '📄';
+                if (strpos($file_name, '.pdf') !== false) {
+                    $icon = '📕';
+                } elseif (preg_match('/\.(jpg|jpeg|png|gif)$/i', $file_name)) {
+                    $icon = '🖼️';
+                }
+                
+                // Formatta tipo documento
+                $tipo_formattato = ucwords(str_replace('_', ' ', $tipo));
+                ?>
+                <div class="documento-item">
+                    <div class="documento-icon"><?php echo $icon; ?></div>
+                    <div class="documento-info">
+                        <strong><?php echo esc_html($tipo_formattato); ?></strong>
+                        <small>
+                            File: <?php echo esc_html($file_name); ?>
+                            <?php if ($data_scadenza): ?>
+                                • Scadenza: <?php echo date('d/m/Y', strtotime($data_scadenza)); ?>
+                            <?php endif; ?>
+                        </small>
+                    </div>
+                    <div class="documento-actions">
+                        <?php if ($url): ?>
+                            <a href="<?php echo esc_url($url); ?>" class="button button-small" target="_blank">
+                                Visualizza
+                            </a>
+                        <?php endif; ?>
+                        <?php if ($attachment_id): ?>
+                            <a href="<?php echo admin_url('post.php?post=' . $attachment_id . '&action=edit'); ?>" 
+                               class="button button-small">
+                                Modifica
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
         
         <div class="servizio-grid">
             <div class="servizio-field">
