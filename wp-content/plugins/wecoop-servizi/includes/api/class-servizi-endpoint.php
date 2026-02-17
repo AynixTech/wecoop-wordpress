@@ -316,6 +316,51 @@ class WECOOP_Servizi_Endpoint {
             }
         }
         
+        // ⭐ RECUPERA documenti già caricati dall'utente se non inviati con la richiesta
+        if (empty($documenti_caricati)) {
+            error_log("[WECOOP API] Richiesta #{$post_id} - Nessun documento caricato con la richiesta, cerco documenti utente esistenti");
+            
+            // Recupera documenti dal profilo utente
+            $documenti_utente = get_posts([
+                'post_type' => 'attachment',
+                'author' => $current_user_id,
+                'posts_per_page' => -1,
+                'meta_query' => [[
+                    'key' => 'documento_socio',
+                    'value' => 'yes'
+                ]]
+            ]);
+            
+            if (!empty($documenti_utente)) {
+                error_log("[WECOOP API] ✅ Trovati " . count($documenti_utente) . " documenti nel profilo utente");
+                
+                foreach ($documenti_utente as $doc) {
+                    $attachment_id = $doc->ID;
+                    $tipo_documento = get_post_meta($attachment_id, 'tipo_documento', true);
+                    $data_scadenza = get_post_meta($attachment_id, 'data_scadenza', true);
+                    
+                    // Associa documento alla richiesta
+                    update_post_meta($attachment_id, 'richiesta_id', $post_id);
+                    
+                    $documenti_caricati[] = [
+                        'tipo' => $tipo_documento ?: 'altro',
+                        'attachment_id' => $attachment_id,
+                        'file_name' => basename(get_attached_file($attachment_id)),
+                        'url' => wp_get_attachment_url($attachment_id),
+                        'data_scadenza' => $data_scadenza,
+                    ];
+                    
+                    error_log("[WECOOP API] 📎 Collegato documento: {$tipo_documento} (ID: {$attachment_id})");
+                }
+                
+                // Salva riferimenti documenti nella richiesta
+                update_post_meta($post_id, 'documenti_allegati', $documenti_caricati);
+                error_log("[WECOOP API] 📦 Totale documenti collegati dal profilo: " . count($documenti_caricati));
+            } else {
+                error_log("[WECOOP API] ℹ️ Nessun documento trovato nel profilo utente");
+            }
+        }
+        
         // Genera numero pratica
         $numero_pratica = WECOOP_Richiesta_Servizio_CPT::genera_numero_pratica($post_id);
         update_post_meta($post_id, 'numero_pratica', $numero_pratica);

@@ -237,6 +237,13 @@ class WECOOP_Soci_Endpoint {
             'permission_callback' => [__CLASS__, 'check_jwt_auth']
         ]);
         
+        // 17b. READ: Lista documenti dell'utente corrente (self-service)
+        register_rest_route('wecoop/v1', '/soci/me/documenti', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'get_miei_documenti'],
+            'permission_callback' => [__CLASS__, 'check_jwt_auth']
+        ]);
+        
         // 18. CHECK: Verifica se username esiste (pubblico per debug app)
         register_rest_route('wecoop/v1', '/soci/check-username', [
             'methods' => 'GET',
@@ -1370,6 +1377,9 @@ class WECOOP_Soci_Endpoint {
     /**
      * 17. Upload documento identità (self-service)
      */
+    /**
+     * 17. Upload documento identità (self-service)
+     */
     public static function upload_documento_identita($request) {
         $current_user = wp_get_current_user();
         $user_id = $current_user->ID;
@@ -1422,6 +1432,47 @@ class WECOOP_Soci_Endpoint {
                 'tipo' => $tipo_documento,
                 'filename' => basename(get_attached_file($attachment_id))
             ]
+        ]);
+    }
+    
+    /**
+     * 17b. Lista documenti dell'utente corrente (self-service)
+     */
+    public static function get_miei_documenti($request) {
+        $current_user = wp_get_current_user();
+        $user_id = $current_user->ID;
+        
+        if (!$user_id) {
+            return new WP_Error('not_logged_in', 'Utente non autenticato', ['status' => 401]);
+        }
+        
+        // Recupera documenti dal profilo utente
+        $documenti = get_posts([
+            'post_type' => 'attachment',
+            'author' => $user_id,
+            'posts_per_page' => -1,
+            'meta_query' => [[
+                'key' => 'documento_socio',
+                'value' => 'yes'
+            ]]
+        ]);
+        
+        $result = [];
+        foreach ($documenti as $doc) {
+            $result[] = [
+                'id' => $doc->ID,
+                'title' => $doc->post_title,
+                'filename' => basename(get_attached_file($doc->ID)),
+                'url' => wp_get_attachment_url($doc->ID),
+                'tipo' => get_post_meta($doc->ID, 'tipo_documento', true),
+                'data_upload' => get_the_date('c', $doc),
+                'data_scadenza' => get_post_meta($doc->ID, 'data_scadenza', true)
+            ];
+        }
+        
+        return rest_ensure_response([
+            'success' => true,
+            'data' => $result
         ]);
     }
     
