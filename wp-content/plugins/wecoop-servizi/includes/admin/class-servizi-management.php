@@ -1493,6 +1493,9 @@ class WECOOP_Servizi_Management {
                         <h3>Dati Richiedente</h3>
                         <div id="dati-richiedente" class="form-grid"></div>
                         
+                        <h3>📎 Documenti Allegati</h3>
+                        <div id="documenti-allegati" style="margin-bottom: 20px;"></div>
+                        
                         <div class="wecoop-modal-footer">
                             <button type="button" class="button wecoop-modal-close">Annulla</button>
                             <button type="submit" class="button button-primary">Salva Modifiche</button>
@@ -1931,6 +1934,51 @@ class WECOOP_Servizi_Management {
                             }
                             
                             $('#dati-richiedente').html(datiHtml);
+                            
+                            // ⭐ Popola documenti allegati
+                            let documentiHtml = '';
+                            const documenti = data.documenti || [];
+                            
+                            if (documenti.length > 0) {
+                                documentiHtml = '<div class="documenti-list" style="display: flex; flex-wrap: wrap; gap: 10px;">';
+                                documenti.forEach(function(doc) {
+                                    const icon = doc.tipo.includes('identita') || doc.tipo.includes('carta') ? '🪪' :
+                                                 doc.tipo.includes('fiscale') ? '🧾' : 
+                                                 doc.tipo.includes('permesso') || doc.tipo.includes('soggiorno') ? '📋' : '📄';
+                                    
+                                    const scadenza = doc.data_scadenza ? '<small>Scad: ' + doc.data_scadenza + '</small>' : '';
+                                    
+                                    documentiHtml += `
+                                        <div class="documento-item" style="
+                                            border: 1px solid #ddd;
+                                            border-radius: 8px;
+                                            padding: 12px;
+                                            background: #f9f9f9;
+                                            min-width: 200px;
+                                            display: flex;
+                                            flex-direction: column;
+                                            gap: 5px;
+                                        ">
+                                            <div style="font-size: 24px;">${icon}</div>
+                                            <strong style="font-size: 12px; text-transform: uppercase; color: #666;">
+                                                ${doc.tipo.replace(/_/g, ' ')}
+                                            </strong>
+                                            <div style="font-size: 11px; color: #999; overflow: hidden; text-overflow: ellipsis;">
+                                                ${doc.file_name}
+                                            </div>
+                                            ${scadenza}
+                                            <a href="${doc.url}" target="_blank" class="button button-small" style="margin-top: 5px;">
+                                                👁️ Visualizza
+                                            </a>
+                                        </div>
+                                    `;
+                                });
+                                documentiHtml += '</div>';
+                            } else {
+                                documentiHtml = '<p style="color: #999; font-style: italic;">Nessun documento allegato</p>';
+                            }
+                            
+                            $('#documenti-allegati').html(documentiHtml);
                             $('#edit-richiesta-modal').fadeIn();
                         }
                     }
@@ -2125,6 +2173,22 @@ class WECOOP_Servizi_Management {
         // Aggiungi link all'utente se esiste
         if ($user_id) {
             $response['user_edit_link'] = get_edit_user_link($user_id);
+        }
+        
+        // ⭐ Aggiungi documenti allegati
+        $documenti_allegati = get_post_meta($richiesta_id, 'documenti_allegati', true);
+        $response['documenti'] = [];
+        
+        if (!empty($documenti_allegati)) {
+            foreach ($documenti_allegati as $doc) {
+                $response['documenti'][] = [
+                    'tipo' => $doc['tipo'] ?? 'altro',
+                    'attachment_id' => $doc['attachment_id'] ?? 0,
+                    'file_name' => $doc['file_name'] ?? '',
+                    'url' => $doc['url'] ?? '',
+                    'data_scadenza' => $doc['data_scadenza'] ?? ''
+                ];
+            }
         }
         
         wp_send_json_success($response);
