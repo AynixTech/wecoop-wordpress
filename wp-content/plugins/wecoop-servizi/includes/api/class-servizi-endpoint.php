@@ -180,12 +180,18 @@ class WECOOP_Servizi_Endpoint {
         $categoria = $request->get_param('categoria');
         $dati_param = $request->get_param('dati');
         
+        error_log("[WECOOP API] 🎉 ========== NUOVA RICHIESTA SERVIZIO ==========");
+        error_log("[WECOOP API] 📝 Servizio: {$servizio}, Categoria: {$categoria}");
+        
         // Se dati è una stringa JSON, decodifica
         $dati = is_string($dati_param) ? json_decode($dati_param, true) : $dati_param;
         
         $current_user_id = get_current_user_id();
         
+        error_log("[WECOOP API] 👤 User ID: {$current_user_id}");
+        
         if (!$current_user_id) {
+            error_log("[WECOOP API] ❌ Utente non autenticato");
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'Utente non autenticato'
@@ -194,6 +200,7 @@ class WECOOP_Servizi_Endpoint {
         
         // Recupera socio_id se disponibile
         $socio_id = get_user_meta($current_user_id, 'socio_id', true);
+        error_log("[WECOOP API] 🎫 Socio ID: " . ($socio_id ?: 'non impostato'));
         
         // Crea post
         $post_data = [
@@ -205,11 +212,14 @@ class WECOOP_Servizi_Endpoint {
         $post_id = wp_insert_post($post_data);
         
         if (is_wp_error($post_id)) {
+            error_log("[WECOOP API] ❌ Errore creazione post: " . $post_id->get_error_message());
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'Errore nella creazione della richiesta'
             ], 500);
         }
+        
+        error_log("[WECOOP API] ✅ Richiesta creata con ID: {$post_id}");
         
         // Salva metadati
         update_post_meta($post_id, 'servizio', $servizio);
@@ -221,12 +231,14 @@ class WECOOP_Servizi_Endpoint {
             update_post_meta($post_id, 'socio_id', $socio_id);
         }
         
+        error_log("[WECOOP API] 💾 Metadati salvati per richiesta #{$post_id}");
+        
         // ⭐ NUOVO: Gestione upload documenti
         $documenti_caricati = [];
         $files = $request->get_file_params();
         
         if (!empty($files)) {
-            error_log("[WECOOP API] Richiesta #{$post_id} - Trovati " . count($files) . " file da caricare");
+            error_log("[WECOOP API] 📤 Richiesta #{$post_id} - Trovati " . count($files) . " file da caricare nel payload");
             
             // Carica WordPress upload handler
             require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -318,7 +330,7 @@ class WECOOP_Servizi_Endpoint {
         
         // ⭐ RECUPERA documenti già caricati dall'utente se non inviati con la richiesta
         if (empty($documenti_caricati)) {
-            error_log("[WECOOP API] Richiesta #{$post_id} - Nessun documento caricato con la richiesta, cerco documenti utente esistenti");
+            error_log("[WECOOP API] 🔍 AUTO-RECOVERY: Nessun documento nel payload, cerco documenti esistenti per user {$current_user_id}");
             
             // Recupera documenti dal profilo utente
             $documenti_utente = get_posts([
@@ -332,33 +344,42 @@ class WECOOP_Servizi_Endpoint {
             ]);
             
             if (!empty($documenti_utente)) {
-                error_log("[WECOOP API] ✅ Trovati " . count($documenti_utente) . " documenti nel profilo utente");
+                error_log("[WECOOP API] ✅ AUTO-RECOVERY: Trovati " . count($documenti_utente) . " documenti nel profilo utente");
                 
                 foreach ($documenti_utente as $doc) {
                     $attachment_id = $doc->ID;
                     $tipo_documento = get_post_meta($attachment_id, 'tipo_documento', true);
                     $data_scadenza = get_post_meta($attachment_id, 'data_scadenza', true);
+                    $file_name = basename(get_attached_file($attachment_id));
+                    $file_url = wp_get_attachment_url($attachment_id);
+                    
+                    error_log("[WECOOP API] 📄 AUTO-RECOVERY: Documento #{$attachment_id} - Tipo: {$tipo_documento}, File: {$file_name}");
                     
                     // Associa documento alla richiesta
                     update_post_meta($attachment_id, 'richiesta_id', $post_id);
+                    error_log("[WECOOP API] 🔗 AUTO-RECOVERY: Impostato richiesta_id={$post_id} per attachment #{$attachment_id}");
                     
                     $documenti_caricati[] = [
                         'tipo' => $tipo_documento ?: 'altro',
                         'attachment_id' => $attachment_id,
-                        'file_name' => basename(get_attached_file($attachment_id)),
-                        'url' => wp_get_attachment_url($attachment_id),
+                        'file_name' => $file_name,
+                        'url' => $file_url,
                         'data_scadenza' => $data_scadenza,
                     ];
                     
-                    error_log("[WECOOP API] 📎 Collegato documento: {$tipo_documento} (ID: {$attachment_id})");
+                    error_log("[WECOOP API] ✅ AUTO-RECOVERY: Collegato documento {$tipo_documento} (ID: {$attachment_id}) alla richiesta #{$post_id}");
                 }
                 
                 // Salva riferimenti documenti nella richiesta
                 update_post_meta($post_id, 'documenti_allegati', $documenti_caricati);
-                error_log("[WECOOP API] 📦 Totale documenti collegati dal profilo: " . count($documenti_caricati));
+                error_log("[WECOOP API] 📦 AUTO-RECOVERY: Salvato meta 'documenti_allegati' con " . count($documenti_caricati) . " documenti per richiesta #{$post_id}");
+                error_log("[WECOOP API] 🎉 AUTO-RECOVERY: Totale documenti collegati dal profilo: " . count($documenti_caricati));
             } else {
-                error_log("[WECOOP API] ℹ️ Nessun documento trovato nel profilo utente");
+                error_log("[WECOOP API] ⚠️ AUTO-RECOVERY: Nessun documento trovato nel profilo utente {$current_user_id}");
+                error_log("[WECOOP API] 💡 AUTO-RECOVERY: L'utente deve caricare documenti via /soci/me/upload-documento prima di creare richieste");
             }
+        } else {
+            error_log("[WECOOP API] ✅ Documenti già presenti nel payload, skip auto-recovery");
         }
         
         // Genera numero pratica
@@ -429,6 +450,15 @@ class WECOOP_Servizi_Endpoint {
             );
             error_log("WECOOP Servizi: Email conferma inviata a {$user->user_email}");
         }
+        
+        error_log("[WECOOP API] ========== RIEPILOGO RICHIESTA #{$post_id} ==========");
+        error_log("[WECOOP API] 📋 Numero Pratica: {$numero_pratica}");
+        error_log("[WECOOP API] 🎫 Servizio: {$servizio}");
+        error_log("[WECOOP API] 👤 User ID: {$current_user_id}");
+        error_log("[WECOOP API] 📎 Documenti collegati: " . count($documenti_caricati));
+        error_log("[WECOOP API] 💰 Importo suggerito: " . ($importo ? "€{$importo}" : "Non definito"));
+        error_log("[WECOOP API] ✅ Richiesta creata con successo!");
+        error_log("[WECOOP API] ================================================");
         
         return new WP_REST_Response([
             'success' => true,

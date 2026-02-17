@@ -1384,7 +1384,10 @@ class WECOOP_Soci_Endpoint {
         $current_user = wp_get_current_user();
         $user_id = $current_user->ID;
         
+        error_log("[WECOOP UPLOAD] 📤 Inizio upload documento per user_id: {$user_id}");
+        
         if (!$user_id) {
+            error_log("[WECOOP UPLOAD] ❌ Utente non autenticato");
             return new WP_Error('not_logged_in', 'Utente non autenticato', ['status' => 401]);
         }
         
@@ -1395,24 +1398,31 @@ class WECOOP_Soci_Endpoint {
         $files = $request->get_file_params();
         
         if (empty($files['file'])) {
+            error_log("[WECOOP UPLOAD] ❌ Nessun file nel payload");
             return new WP_Error('no_file', 'Nessun file caricato', ['status' => 400]);
         }
         
         // Tipo documento (carta_identita, codice_fiscale, altro)
         $tipo_documento = $request->get_param('tipo_documento') ?? 'carta_identita';
+        error_log("[WECOOP UPLOAD] 📎 Tipo documento: {$tipo_documento}, File: {$files['file']['name']}, Size: " . round($files['file']['size'] / 1024, 2) . " KB");
         
         // Upload file
         $attachment_id = media_handle_upload('file', 0);
         
         if (is_wp_error($attachment_id)) {
+            error_log("[WECOOP UPLOAD] ❌ Errore upload: " . $attachment_id->get_error_message());
             return $attachment_id;
         }
+        
+        error_log("[WECOOP UPLOAD] ✅ File caricato - Attachment ID: {$attachment_id}");
         
         // Salva metadata
         update_post_meta($attachment_id, 'documento_socio', 'yes');
         update_post_meta($attachment_id, 'socio_id', $user_id);
         update_post_meta($attachment_id, 'tipo_documento', $tipo_documento);
         update_post_meta($attachment_id, 'data_upload', current_time('mysql'));
+        
+        error_log("[WECOOP UPLOAD] 💾 Meta salvati: documento_socio=yes, socio_id={$user_id}, tipo_documento={$tipo_documento}");
         
         // Segna che l'utente ha caricato documenti
         $documenti_caricati = get_user_meta($user_id, 'documenti_caricati', true) ?: [];
@@ -1423,12 +1433,15 @@ class WECOOP_Soci_Endpoint {
         ];
         update_user_meta($user_id, 'documenti_caricati', $documenti_caricati);
         
+        $file_url = wp_get_attachment_url($attachment_id);
+        error_log("[WECOOP UPLOAD] 🎉 Upload completato con successo! URL: {$file_url}");
+        
         return rest_ensure_response([
             'success' => true,
             'message' => 'Documento caricato con successo',
             'data' => [
                 'id' => $attachment_id,
-                'url' => wp_get_attachment_url($attachment_id),
+                'url' => $file_url,
                 'tipo' => $tipo_documento,
                 'filename' => basename(get_attached_file($attachment_id))
             ]
@@ -1442,7 +1455,10 @@ class WECOOP_Soci_Endpoint {
         $current_user = wp_get_current_user();
         $user_id = $current_user->ID;
         
+        error_log("[WECOOP DOCUMENTI] 🔍 Richiesta lista documenti per user_id: {$user_id}");
+        
         if (!$user_id) {
+            error_log("[WECOOP DOCUMENTI] ❌ Utente non autenticato");
             return new WP_Error('not_logged_in', 'Utente non autenticato', ['status' => 401]);
         }
         
@@ -1457,18 +1473,24 @@ class WECOOP_Soci_Endpoint {
             ]]
         ]);
         
+        error_log("[WECOOP DOCUMENTI] 📊 Trovati " . count($documenti) . " documenti per user {$user_id}");
+        
         $result = [];
         foreach ($documenti as $doc) {
+            $tipo = get_post_meta($doc->ID, 'tipo_documento', true);
             $result[] = [
                 'id' => $doc->ID,
                 'title' => $doc->post_title,
                 'filename' => basename(get_attached_file($doc->ID)),
                 'url' => wp_get_attachment_url($doc->ID),
-                'tipo' => get_post_meta($doc->ID, 'tipo_documento', true),
+                'tipo' => $tipo,
                 'data_upload' => get_the_date('c', $doc),
                 'data_scadenza' => get_post_meta($doc->ID, 'data_scadenza', true)
             ];
+            error_log("[WECOOP DOCUMENTI] 📄 ID: {$doc->ID}, Tipo: {$tipo}, File: {$doc->post_title}");
         }
+        
+        error_log("[WECOOP DOCUMENTI] ✅ Response inviata con " . count($result) . " documenti");
         
         return rest_ensure_response([
             'success' => true,
