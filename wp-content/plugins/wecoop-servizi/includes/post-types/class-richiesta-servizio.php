@@ -157,6 +157,45 @@ class WECOOP_Richiesta_Servizio_CPT {
             <strong>Data Richiesta:</strong> <?php echo get_the_date('d/m/Y H:i', $post); ?>
         </div>
         
+        <?php 
+        // Debug: mostra il contenuto raw dei documenti allegati
+        if (current_user_can('manage_options')) {
+            echo '<!-- DEBUG documenti_allegati: ' . esc_html(print_r($documenti_allegati, true)) . ' -->';
+        }
+        
+        // Cerca documenti allegati anche come attachment con meta richiesta_id
+        $attachment_args = array(
+            'post_type' => 'attachment',
+            'post_status' => 'inherit',
+            'posts_per_page' => -1,
+            'meta_query' => array(
+                array(
+                    'key' => 'richiesta_id',
+                    'value' => $post->ID,
+                    'compare' => '='
+                )
+            )
+        );
+        $attachments = get_posts($attachment_args);
+        
+        // Se non ci sono documenti nel meta ma ci sono attachment, costruisci l'array
+        if (empty($documenti_allegati) && !empty($attachments)) {
+            $documenti_allegati = array();
+            foreach ($attachments as $attachment) {
+                $tipo_documento = get_post_meta($attachment->ID, 'tipo_documento', true);
+                $data_scadenza = get_post_meta($attachment->ID, 'data_scadenza', true);
+                
+                $documenti_allegati[] = array(
+                    'tipo' => $tipo_documento ?: 'documento',
+                    'attachment_id' => $attachment->ID,
+                    'file_name' => basename(get_attached_file($attachment->ID)),
+                    'url' => wp_get_attachment_url($attachment->ID),
+                    'data_scadenza' => $data_scadenza
+                );
+            }
+        }
+        ?>
+        
         <?php if (!empty($documenti_allegati) && is_array($documenti_allegati)): ?>
         <div class="documenti-box">
             <h4>📎 Documenti Allegati (<?php echo count($documenti_allegati); ?>)</h4>
