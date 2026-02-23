@@ -1923,14 +1923,57 @@ class WECOOP_Servizi_Management {
                             let datiHtml = '';
                             const dati = data.dati || {};
                             
+                            // Traduzioni modalità consegna
+                            const deliveryMethodLabels = {
+                                'pickup': 'Ritiro in sede',
+                                'email': 'Indirizzo email',
+                                'courier': 'Corriere'
+                            };
+                            
                             for (const [key, value] of Object.entries(dati)) {
                                 const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                                datiHtml += `
-                                    <div class="form-field">
-                                        <label>${label}</label>
-                                        <input type="text" name="dati[${key}]" value="${value || ''}" readonly>
-                                    </div>
-                                `;
+                                
+                                // Gestione speciale per modalità consegna
+                                if (key === 'modalita_consegna') {
+                                    let consegnaHtml = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+                                    
+                                    // Se value è un array o stringa separata da virgole
+                                    const metodi = Array.isArray(value) ? value : (value || '').split(',').map(m => m.trim()).filter(Boolean);
+                                    
+                                    metodi.forEach(function(metodo) {
+                                        const labelTradotta = deliveryMethodLabels[metodo] || metodo;
+                                        consegnaHtml += `
+                                            <span style="
+                                                background: #e3f2fd;
+                                                color: #1976d2;
+                                                padding: 6px 12px;
+                                                border-radius: 16px;
+                                                font-size: 13px;
+                                                font-weight: 500;
+                                                display: inline-block;
+                                            ">
+                                                ${labelTradotta}
+                                            </span>
+                                        `;
+                                    });
+                                    
+                                    consegnaHtml += '</div>';
+                                    
+                                    datiHtml += `
+                                        <div class="form-field">
+                                            <label>Modalità Consegna</label>
+                                            ${consegnaHtml}
+                                        </div>
+                                    `;
+                                } else {
+                                    // Campo normale
+                                    datiHtml += `
+                                        <div class="form-field">
+                                            <label>${label}</label>
+                                            <input type="text" name="dati[${key}]" value="${value || ''}" readonly>
+                                        </div>
+                                    `;
+                                }
                             }
                             
                             $('#dati-richiedente').html(datiHtml);
