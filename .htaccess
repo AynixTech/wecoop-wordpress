@@ -13,3 +13,13 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . /index.php [L]
 </IfModule>
 # END WordPress
+
+# Allow access to media files in uploads (required for plugins like Custom Facebook Feed)
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf|mp4|webm|ogg|css|js)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        allow from all
+    </IfModule>
+</FilesMatch>
