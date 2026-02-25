@@ -32,9 +32,11 @@ package-lock.json
 wp-content/plugins/*
 !wp-content/plugins/wecoop-*
 
+# WordPress Core files (updated via backoffice)
+wp-admin/
+wp-includes/
+
 # WordPress Uploads and cache files
 wp-content/uploads/
 .htaccess
 llms.txt
-wp-content/uploads/really-simple-ssl/
-wp-content/uploads/wpforms/cache/
