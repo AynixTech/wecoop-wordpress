@@ -38,5 +38,7 @@ wp-includes/
 
 # WordPress Uploads and cache files
 wp-content/uploads/
+wp-content/uploads/.htaccess
+wp-content/uploads/really-simple-ssl/
 .htaccess
 llms.txt
