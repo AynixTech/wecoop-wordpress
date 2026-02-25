@@ -543,7 +543,7 @@ function cff_get_processed_options($feed_options)
 		'albumordertype' => isset($options[ 'cff_album_order_type' ]) ? $options[ 'cff_album_order_type' ] : 'default',
 		'timelinepag' => isset($options[ 'cff_timeline_pag' ]) ? $options[ 'cff_timeline_pag' ] : '',
 		'gridpag' => isset($options[ 'cff_grid_pag' ]) ? $options[ 'cff_grid_pag' ] : '',
-		'disableresize' => isset($options[ 'cff_disable_resize' ]) ? $options[ 'cff_disable_resize' ] : false,
+		'disableresize' => isset($options[ 'cff_disable_resize' ]) ? $options[ 'cff_disable_resize' ] : true,
 
 
 		// Page Header

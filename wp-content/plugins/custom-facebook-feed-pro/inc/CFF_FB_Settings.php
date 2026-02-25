@@ -305,14 +305,7 @@ class CFF_FB_Settings
 				'nofollow' 					=> 'true',
 				'timelinepag' 				=> isset($options[ 'cff_timeline_pag' ]) ? $options[ 'cff_timeline_pag' ] : '',
 				'gridpag' 					=> isset($options[ 'cff_grid_pag' ]) ? $options[ 'cff_grid_pag' ] : '',
-				'disableresize' 			=> isset($options[ 'cff_disable_resize' ]) ? $options[ 'cff_disable_resize' ] : false,
-
-
-				// Page Header
-				'showheader' 				=> isset($options[ 'cff_show_header' ]) ? $options[ 'cff_show_header' ] : '',
-				'headertype' 				=> isset($options[ 'cff_header_type' ]) ? $options[ 'cff_header_type' ] : '',
-				'headercover' 				=> isset($options[ 'cff_header_cover' ]) ? $options[ 'cff_header_cover' ] : '',
-				'headeravatar' 				=> isset($options[ 'cff_header_avatar' ]) ? $options[ 'cff_header_avatar' ] : '',
+			'disableresize' 			=> isset($options[ 'cff_disable_resize' ]) ? $options[ 'cff_disable_resize' ] : true,
 				'headername' 				=> isset($options[ 'cff_header_name' ]) ? $options[ 'cff_header_name' ] : '',
 				'headerbio' 				=> isset($options[ 'cff_header_bio' ]) ? $options[ 'cff_header_bio' ] : '',
 				'headercoverheight' 		=> isset($options[ 'cff_header_cover_height' ]) ? $options[ 'cff_header_cover_height' ] : '',

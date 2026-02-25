@@ -735,7 +735,7 @@ class CFF_Feed_Saver
 				'albumordertype' => 'default',
 				'timelinepag' => 'date',
 				'gridpag' => 'auto',
-				'disableresize' => false,
+			'disableresize' => true,
 				'showheader' => 'on',
 				'headertype' => 'visual',
 				'headercover' => 'on',
