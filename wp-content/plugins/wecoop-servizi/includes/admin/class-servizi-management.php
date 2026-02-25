@@ -32,6 +32,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_bulk_delete_richieste', [__CLASS__, 'ajax_bulk_delete_richieste']);
         add_action('wp_ajax_get_prezzo_listino', [__CLASS__, 'ajax_get_prezzo_listino']);
         add_action('wp_ajax_generate_receipt', [__CLASS__, 'ajax_generate_receipt']);
+        add_action('wp_ajax_send_documento_unico', [__CLASS__, 'ajax_send_documento_unico']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -2091,6 +2092,124 @@ class WECOOP_Servizi_Management {
                     }
                 });
             });
+            
+            // 🔐 GESTORE: Manda Documento Unico (Firma Digitale)
+            $(document).on('click', '.send-documento-unico', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $(this).data('id');
+                const $button = $(this);
+                const originalText = $button.text();
+                const originalStyle = $button.attr('style');
+                
+                console.log('🔐 FIRMA: Click su send-documento-unico', {
+                    richiestaId: richiestaId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Conferma dell'utente
+                if (!confirm('Vuoi mandare il documento unico per la firma digitale?\n\nIl cliente riceverà una notifica con il link al documento.')) {
+                    console.log('❌ FIRMA: Annullato dall\'utente');
+                    return;
+                }
+                
+                // Mostra loader
+                $button.prop('disabled', true)
+                       .html('⏳ <span style="display: inline-block; animation: spin 1s linear infinite;">⟳</span> Generazione documento...')
+                       .css('background-color', '#f0b849')
+                       .css('cursor', 'not-allowed');
+                
+                console.log('⏳ FIRMA: Loader mostrato, invio richiesta...');
+                
+                // Richiesta AJAX per generare documento
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'send_documento_unico',
+                        richiesta_id: richiestaId,
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    timeout: 30000, // 30 secondi timeout
+                    success: function(response) {
+                        console.log('✅ FIRMA: Risposta server ricevuta', response);
+                        
+                        if (response.success) {
+                            console.log('✅ FIRMA: Documento generato con successo', {
+                                pdf_url: response.data.documento?.url,
+                                hash: response.data.documento?.hash_sha256?.substring(0, 16) + '...'
+                            });
+                            
+                            // Aggiorna bottone
+                            $button.html('✅ Documento Generato')
+                                   .css('background-color', '#4caf50')
+                                   .css('cursor', 'default');
+                            
+                            alert('✅ Documento generato con successo!\n\nIl cliente potrà ora firmare il documento tramite l\'app.');
+                            
+                            // Mostra il link al PDF in console
+                            console.log('📄 FIRMA: Link al PDF:', response.data.documento?.url);
+                            
+                            // Ricarica la pagina dopo 2 secondi
+                            setTimeout(function() {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            console.error('❌ FIRMA: Errore nella risposta', response.data);
+                            
+                            $button.prop('disabled', false)
+                                   .text(originalText)
+                                   .attr('style', originalStyle);
+                            
+                            alert('❌ Errore: ' + (response.data || 'Errore sconosciuto'));
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ FIRMA: Errore AJAX completamente', {
+                            status: status,
+                            error: error,
+                            statusCode: xhr.status,
+                            responseText: xhr.responseText,
+                            readyState: xhr.readyState
+                        });
+                        
+                        // Log della risposta grezzo per debugging
+                        if (xhr.responseText) {
+                            console.error('📜 FIRMA: Response Body:', xhr.responseText.substring(0, 500));
+                        }
+                        
+                        $button.prop('disabled', false)
+                               .text(originalText)
+                               .attr('style', originalStyle);
+                        
+                        let errorMsg = 'Errore di comunicazione con il server';
+                        
+                        if (status === 'timeout') {
+                            errorMsg = 'Timeout: il server ha impiegato troppo tempo (>30s)';
+                        } else if (xhr.status === 0) {
+                            errorMsg = 'Errore di connessione network';
+                        } else if (xhr.status === 500) {
+                            errorMsg = 'Errore interno del server (500)';
+                        } else if (xhr.status === 403) {
+                            errorMsg = 'Accesso negato - Non hai permessi sufficienti';
+                        } else if (xhr.status === 404) {
+                            errorMsg = 'Endpoint non trovato';
+                        }
+                        
+                        alert('❌ ' + errorMsg + '\n\nApri la console (F12) per dettagli completi');
+                    }
+                });
+            });
+            
+            // CSS per animazione loader
+            $('<style>')
+                .text(`
+                    @keyframes spin {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                    }
+                `)
+                .appendTo('head');
         });
         </script>
         <?php
@@ -3857,6 +3976,115 @@ class WECOOP_Servizi_Management {
             ]);
         } else {
             wp_send_json_error(['message' => $result['message']]);
+        }
+    }
+    
+    /**
+     * AJAX: Invia/Genera Documento Unico per firma digitale (v1.1 PDF)
+     */
+    public static function ajax_send_documento_unico() {
+        try {
+            error_log('🔐 FIRMA: Inizio ajax_send_documento_unico');
+            
+            check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+            error_log('✅ FIRMA: Nonce verificato');
+            
+            if (!current_user_can('manage_options')) {
+                error_log('❌ FIRMA: Permessi insufficienti');
+                wp_send_json_error('Permessi insufficienti');
+            }
+            error_log('✅ FIRMA: Permessi verificati');
+            
+            // Ottieni richiesta_id
+            $richiesta_id = absint($_POST['richiesta_id'] ?? 0);
+            error_log("📊 FIRMA: Richiesta ID: $richiesta_id");
+            
+            if (!$richiesta_id) {
+                error_log('❌ FIRMA: Richiesta ID non valido');
+                wp_send_json_error('Richiesta ID non specificato');
+            }
+            
+            // Verifica che la richiesta esista e sia pagata
+            $richiesta = get_post($richiesta_id);
+            if (!$richiesta || $richiesta->post_type !== 'richiesta_servizio') {
+                error_log("❌ FIRMA: Richiesta non trovata o tipo non valido");
+                wp_send_json_error('Richiesta non trovata');
+            }
+            error_log("✅ FIRMA: Richiesta trovata: {$richiesta->post_title}");
+            
+            // Verifica che sia pagata
+            $payment_status = get_post_meta($richiesta_id, 'payment_status', true);
+            $stato = get_post_meta($richiesta_id, 'stato', true);
+            
+            error_log("📋 FIRMA: Payment status: $payment_status, Stato: $stato");
+            
+            if ($payment_status !== 'paid' && $stato !== 'completed') {
+                error_log("❌ FIRMA: Richiesta non pagata (payment_status: $payment_status, stato: $stato)");
+                wp_send_json_error('La richiesta non è stata ancora pagata. Stato: ' . $payment_status);
+            }
+            error_log('✅ FIRMA: Richiesta pagata');
+            
+            // Verifica che la classe PDF esista
+            if (!class_exists('WECOOP_Documento_Unico_PDF')) {
+                error_log('❌ FIRMA: Classe WECOOP_Documento_Unico_PDF non trovata');
+                wp_send_json_error('Classe generazione PDF non disponibile. Contatta l\'amministratore.');
+            }
+            error_log('✅ FIRMA: Classe WECOOP_Documento_Unico_PDF disponibile');
+            
+            // Ottieni user_id
+            $user_id = get_post_meta($richiesta_id, 'user_id', true);
+            error_log("📄 FIRMA: User ID: $user_id");
+            
+            if (!$user_id) {
+                error_log('❌ FIRMA: User ID non trovato');
+                wp_send_json_error('User ID non trovato nella richiesta');
+            }
+            
+            // Genera documento PDF
+            error_log('🔨 FIRMA: Inizio generazione PDF...');
+            $result = WECOOP_Documento_Unico_PDF::generate_documento_unico($richiesta_id, $user_id);
+            
+            error_log('📊 FIRMA: Risultato generazione PDF: ' . json_encode([
+                'success' => isset($result['success']) ? $result['success'] : false,
+                'url' => $result['url'] ?? 'N/A',
+                'hash' => isset($result['hash_sha256']) ? substr($result['hash_sha256'], 0, 16) . '...' : 'N/A'
+            ]));
+            
+            if (!isset($result['success']) || !$result['success']) {
+                error_log('❌ FIRMA: Generazione PDF fallita: ' . json_encode($result));
+                wp_send_json_error('Errore durante la generazione del PDF: ' . ($result['message'] ?? 'Errore sconosciuto'));
+            }
+            
+            error_log('✅ FIRMA: PDF generato con successo');
+            error_log('📄 FIRMA: URL PDF: ' . $result['url']);
+            error_log('🔐 FIRMA: Hash SHA-256: ' . substr($result['hash_sha256'], 0, 32) . '...');
+            
+            // Aggiorna metadata della richiesta
+            update_post_meta($richiesta_id, 'documento_unico_generato', 'yes');
+            update_post_meta($richiesta_id, 'documento_unico_url', $result['url']);
+            update_post_meta($richiesta_id, 'documento_unico_hash', $result['hash_sha256']);
+            update_post_meta($richiesta_id, 'documento_unico_generato_il', current_time('mysql'));
+            
+            error_log('✅ FIRMA: Metadata salvati');
+            
+            // Riposta di successo
+            wp_send_json_success([
+                'message' => 'Documento generato con successo',
+                'documento' => [
+                    'url' => $result['url'],
+                    'contenuto_testo' => $result['contenuto_testo'] ?? '',
+                    'hash_sha256' => $result['hash_sha256'],
+                    'nome' => $result['nome'] ?? 'documento_unico.pdf'
+                ]
+            ]);
+            
+        } catch (Throwable $e) {
+            error_log('❌ FIRMA: ERRORE FATALE in ajax_send_documento_unico');
+            error_log('❌ FIRMA: Messaggio: ' . $e->getMessage());
+            error_log('❌ FIRMA: File: ' . $e->getFile() . ':' . $e->getLine());
+            error_log('❌ FIRMA: Stack trace: ' . $e->getTraceAsString());
+            
+            wp_send_json_error('Errore interno: ' . $e->getMessage());
         }
     }
 }
