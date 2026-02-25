@@ -27,3 +27,14 @@ package-lock.json
 
 # Logs
 *.log
+
+# WordPress Plugins (ignore all except wecoop-*)
+wp-content/plugins/*
+!wp-content/plugins/wecoop-*
+
+# WordPress Uploads and cache files
+wp-content/uploads/
+.htaccess
+llms.txt
+wp-content/uploads/really-simple-ssl/
+wp-content/uploads/wpforms/cache/
