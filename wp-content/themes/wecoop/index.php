@@ -110,7 +110,7 @@
             </div>
              <div class="container-facebook-feed">
                 <h3>Facebook Post</h3>
-                <?php echo do_shortcode('[custom-facebook-feed feed=1]'); ?>
+                <?php echo do_shortcode('[custom-facebook-feed feed=2]'); ?>
             </div>
 
             <!-- Initiatives -->
