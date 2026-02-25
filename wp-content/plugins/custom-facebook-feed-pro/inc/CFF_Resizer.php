@@ -393,8 +393,10 @@ class CFF_Resizer
 	 */
 	public function image_resizing_disabled()
 	{
-		$disable_resizing = isset($this->feed_options['disableresize']) ? $this->feed_options['disableresize'] === 'on' || $this->feed_options['disableresize'] === true : false;
-		return $disable_resizing;
+		// Force disable image resizing to use Facebook CDN directly (Feb 2026)
+		// This prevents the plugin from attempting to serve cached images from
+		// the empty sb-facebook-feed-images folder
+		return true;
 	}
 
 	/**

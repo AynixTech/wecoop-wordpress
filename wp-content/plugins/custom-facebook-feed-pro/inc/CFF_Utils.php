@@ -1024,7 +1024,9 @@ class CFF_Utils
 	 */
 	public static function cff_add_resized_image_data($feed_id, $settings, $page = 1, $cache_feed_id = false)
 	{
-		$disable_resizing = CFF_Utils::check_if_on($settings['disableresize']);
+		// Force disable image resizing to use Facebook CDN directly
+		// This bypasses the local cache folder (sb-facebook-feed-images) that was causing 404 errors
+		$disable_resizing = true;
 		if ($disable_resizing) {
 			return '';
 		}
