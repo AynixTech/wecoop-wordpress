@@ -170,6 +170,75 @@ class WECOOP_Servizi_Endpoint {
                 ]
             ]
         ]);
+        
+        // ===== FIRMA DIGITALE - Nuovi Endpoint =====
+        
+        // POST /documento-unico/{id}/send - Invia documento unico
+        register_rest_route('wecoop/v1', '/documento-unico/(?P<id>\d+)/send', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'send_documento_unico'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'id' => ['required' => true, 'type' => 'integer']
+            ]
+        ]);
+        
+        // POST /firma-digitale/otp/generate - Genera OTP per firma
+        register_rest_route('wecoop/v1', '/firma-digitale/otp/generate', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'generate_otp_firma'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'richiesta_id' => ['required' => true, 'type' => 'integer'],
+                'telefono' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field']
+            ]
+        ]);
+        
+        // POST /firma-digitale/otp/verify - Verifica OTP
+        register_rest_route('wecoop/v1', '/firma-digitale/otp/verify', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'verify_otp_firma'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'otp_id' => ['required' => true, 'type' => 'integer'],
+                'otp_code' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field']
+            ]
+        ]);
+        
+        // POST /firma-digitale/sign - Firma documento con OTP verificato
+        register_rest_route('wecoop/v1', '/firma-digitale/sign', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'sign_documento'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'otp_id' => ['required' => true, 'type' => 'integer'],
+                'richiesta_id' => ['required' => true, 'type' => 'integer'],
+                'documento_contenuto' => ['required' => true, 'type' => 'string'],
+                'device_info' => ['type' => 'object'],
+                'app_version' => ['type' => 'string'],
+                'ip_address' => ['type' => 'string']
+            ]
+        ]);
+        
+        // GET /firma-digitale/{richiesta_id}/status - Stato firma documento
+        register_rest_route('wecoop/v1', '/firma-digitale/(?P<richiesta_id>\d+)/status', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'get_firma_status'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'richiesta_id' => ['required' => true, 'type' => 'integer']
+            ]
+        ]);
+        
+        // GET /firma-digitale/{firma_id}/verifica - Verifica integrità firma
+        register_rest_route('wecoop/v1', '/firma-digitale/(?P<firma_id>\d+)/verifica', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'verify_firma_integrity'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'firma_id' => ['required' => true, 'type' => 'integer']
+            ]
+        ]);
     }
     
     /**
@@ -786,5 +855,176 @@ class WECOOP_Servizi_Endpoint {
         $response->header('Cache-Control', 'private, max-age=3600');
         
         return $response;
+    }
+    
+    /**
+     * POST /documento-unico/{id}/send - Invia documento unico
+     * Legge il file documento_unico.txt, lo compila e lo converte in PDF
+     */
+    public static function send_documento_unico($request) {
+        $richiesta_id = intval($request['id']);
+        $current_user = wp_get_current_user();
+        
+        // Verifica richiesta e ownership
+        $post = get_post($richiesta_id);
+        if (!$post || $post->post_type !== 'richiesta_servizio') {
+            return new WP_Error('invalid_request', 'Richiesta non valida', ['status' => 404]);
+        }
+        
+        $richiesta_user_id = get_post_meta($richiesta_id, 'user_id', true);
+        if ($richiesta_user_id != $current_user->ID && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non hai i permessi', ['status' => 403]);
+        }
+        
+        // Verifica che sia pagata
+        $payment_status = get_post_meta($richiesta_id, 'payment_status', true);
+        if ($payment_status !== 'paid') {
+            return new WP_Error('not_paid', 'La richiesta non è stata pagata', ['status' => 400]);
+        }
+        
+        if (!class_exists('WECOOP_Documento_Unico_PDF')) {
+            return new WP_Error('pdf_handler_not_found', 'Modulo PDF non disponibile', ['status' => 500]);
+        }
+        
+        // Genera PDF
+        $result = WECOOP_Documento_Unico_PDF::generate_documento_unico($richiesta_id, $current_user->ID);
+        
+        if (!$result['success']) {
+            return new WP_Error('pdf_generation_failed', $result['message'], ['status' => 500]);
+        }
+        
+        error_log("[WECOOP API] ✅ Documento unico PDF inviato per richiesta #{$richiesta_id}");
+        
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Documento unico generato in PDF',
+            'richiesta_id' => $richiesta_id,
+            'documento' => $result['documento']
+        ], 200);
+    }
+    
+    /**
+     * POST /firma-digitale/otp/generate - Genera OTP
+     */
+    public static function generate_otp_firma($request) {
+        $richiesta_id = intval($request->get_param('richiesta_id'));
+        $telefono = $request->get_param('telefono');
+        $current_user_id = get_current_user_id();
+        
+        if (!class_exists('WECOOP_OTP_Handler')) {
+            return new WP_Error('otp_handler_not_found', 'Modulo OTP non disponibile', ['status' => 500]);
+        }
+        
+        $result = WECOOP_OTP_Handler::generate_otp($richiesta_id, $current_user_id, $telefono);
+        
+        if (!$result['success']) {
+            return new WP_Error('otp_generation_failed', $result['message'], ['status' => 400]);
+        }
+        
+        return new WP_REST_Response($result, 200);
+    }
+    
+    /**
+     * POST /firma-digitale/otp/verify - Verifica OTP
+     */
+    public static function verify_otp_firma($request) {
+        $otp_id = intval($request->get_param('otp_id'));
+        $otp_code = sanitize_text_field($request->get_param('otp_code'));
+        
+        if (!class_exists('WECOOP_OTP_Handler')) {
+            return new WP_Error('otp_handler_not_found', 'Modulo OTP non disponibile', ['status' => 500]);
+        }
+        
+        $result = WECOOP_OTP_Handler::verify_otp($otp_id, $otp_code);
+        
+        if (!$result['success']) {
+            return new WP_Error('otp_verification_failed', $result['message'], ['status' => 400]);
+        }
+        
+        return new WP_REST_Response($result, 200);
+    }
+    
+    /**
+     * POST /firma-digitale/sign - Firma documento
+     */
+    public static function sign_documento($request) {
+        $otp_id = intval($request->get_param('otp_id'));
+        $richiesta_id = intval($request->get_param('richiesta_id'));
+        $documento_contenuto = $request->get_param('documento_contenuto');
+        $device_info = $request->get_param('device_info');
+        $app_version = $request->get_param('app_version');
+        $ip_address = $request->get_param('ip_address');
+        
+        if (!class_exists('WECOOP_Firma_Handler')) {
+            return new WP_Error('firma_handler_not_found', 'Modulo firma non disponibile', ['status' => 500]);
+        }
+        
+        $firma_data = [
+            'device_info' => $device_info,
+            'app_version' => $app_version,
+            'ip_address' => $ip_address
+        ];
+        
+        $result = WECOOP_Firma_Handler::sign_document($otp_id, $richiesta_id, $documento_contenuto, $firma_data);
+        
+        if (!$result['success']) {
+            return new WP_Error('signing_failed', $result['message'], ['status' => 400]);
+        }
+        
+        return new WP_REST_Response($result, 200);
+    }
+    
+    /**
+     * GET /firma-digitale/{richiesta_id}/status - Stato firma
+     */
+    public static function get_firma_status($request) {
+        $richiesta_id = intval($request['richiesta_id']);
+        $current_user_id = get_current_user_id();
+        
+        // Verifica ownership
+        $richiesta_user_id = get_post_meta($richiesta_id, 'user_id', true);
+        if ($richiesta_user_id != $current_user_id && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non hai i permessi', ['status' => 403]);
+        }
+        
+        if (!class_exists('WECOOP_Firma_Handler')) {
+            return new WP_Error('firma_handler_not_found', 'Modulo firma non disponibile', ['status' => 500]);
+        }
+        
+        $firma = WECOOP_Firma_Handler::get_firma($richiesta_id);
+        
+        if (!$firma) {
+            return new WP_REST_Response([
+                'firmato' => false,
+                'message' => 'Documento non ancora firmato',
+                'richiesta_id' => $richiesta_id
+            ], 200);
+        }
+        
+        return new WP_REST_Response([
+            'firmato' => true,
+            'firma_id' => $firma->id,
+            'firma_timestamp' => $firma->firma_timestamp,
+            'firma_hash' => $firma->firma_hash,
+            'firma_tipo' => $firma->firma_tipo,
+            'documento_hash_sha256' => $firma->documento_hash,
+            'metadata' => json_decode($firma->firma_metadata, true),
+            'richiesta_id' => $richiesta_id
+        ], 200);
+    }
+    
+    /**
+     * GET /firma-digitale/{firma_id}/verifica - Verifica firma
+     */
+    public static function verify_firma_integrity($request) {
+        $firma_id = intval($request['firma_id']);
+        
+        if (!class_exists('WECOOP_Firma_Handler')) {
+            return new WP_Error('firma_handler_not_found', 'Modulo firma non disponibile', ['status' => 500]);
+        }
+        
+        $result = WECOOP_Firma_Handler::verify_signature($firma_id);
+        
+        return new WP_REST_Response($result, 200);
     }
 }

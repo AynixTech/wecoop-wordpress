@@ -1430,6 +1430,17 @@ class WECOOP_Servizi_Management {
                             📄 Genera Ricevuta
                         </button>
                     <?php endif; ?>
+                    <?php 
+                    // Verifica se il documento unico è stato già firmato
+                    $doc_firmato = get_post_meta($post_id, 'documento_unico_firmato', true);
+                    ?>
+                    <br>
+                    <button class="button button-small button-primary send-documento-unico" 
+                            data-id="<?php echo $post_id; ?>"
+                            style="margin-top: 5px; background: #2196f3;"
+                            title="Invia documento unico da firmare">
+                        📝 <?php echo $doc_firmato === 'yes' ? 'Documento Firmato ✅' : 'Manda Documento Unico'; ?>
+                    </button>
                 <?php endif; ?>
                 <button class="button button-small button-link-delete delete-richiesta" 
                         data-id="<?php echo $post_id; ?>"

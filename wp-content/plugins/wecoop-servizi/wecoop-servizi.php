@@ -62,6 +62,11 @@ class WeCoop_Servizi {
         // Normalizer
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-servizi-normalizer.php';
         
+        // Firma Digitale
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-otp-handler.php';
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-firma-handler.php';
+        require_once WECOOP_SERVIZI_INCLUDES_DIR . 'class-documento-unico-pdf.php';
+        
         // Post Types
         require_once WECOOP_SERVIZI_INCLUDES_DIR . 'post-types/class-richiesta-servizio.php';
         
@@ -89,6 +94,14 @@ class WeCoop_Servizi {
         register_deactivation_hook(__FILE__, [$this, 'on_deactivation']);
         
         add_action('init', [$this, 'register_cpts'], 10);
+        
+        // Inizializza moduli firma digitale
+        if (class_exists('WECOOP_OTP_Handler')) {
+            WECOOP_OTP_Handler::init();
+        }
+        if (class_exists('WECOOP_Firma_Handler')) {
+            WECOOP_Firma_Handler::init();
+        }
         
         // Inizializza componenti
         if (class_exists('WECOOP_Servizi_Endpoint')) {
