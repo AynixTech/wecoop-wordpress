@@ -32,7 +32,7 @@ package-lock.json
 # WordPress Plugins (ignore all except wecoop-*)
 wp-content/plugins/*
 !wp-content/plugins/wecoop-*
-!wp-content/plugins/custom-facebook-feed-pro
+!wp-content/plugins/custom-facebook-feed-pro/
 
 # WordPress Core files (updated via backoffice)
 wp-admin/
