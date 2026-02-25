@@ -1,6 +1,7 @@
 # WordPress locale
 wp-config-local.php
 wp-config-stripe.php
+wp-config.php
 
 # Composer
 vendor/
@@ -36,9 +37,13 @@ wp-content/plugins/*
 wp-admin/
 wp-includes/
 
+# WordPress Languages (generated translations)
+wp-content/languages/
+
 # WordPress Uploads and cache files
 wp-content/uploads/
 wp-content/uploads/.htaccess
 wp-content/uploads/really-simple-ssl/
+wp-content/uploads/complianz/
 .htaccess
 llms.txt
