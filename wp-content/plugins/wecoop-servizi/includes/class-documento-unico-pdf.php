@@ -89,8 +89,8 @@ class WECOOP_Documento_Unico_PDF {
         
         error_log('[WECOOP DOC UNICO] ✅ HTML generato');
         
-        // Genera PDF
-        $result = self::html_to_pdf($html, "Documento_Unico_" . $richiesta_id);
+        // Genera PDF (passa richiesta_id per eliminare i precedenti)
+        $result = self::html_to_pdf($html, "Documento_Unico_" . $richiesta_id, $richiesta_id);
         
         if (!$result['success']) {
             error_log('[WECOOP DOC UNICO] ❌ Errore generazione PDF: ' . $result['message']);
@@ -346,8 +346,13 @@ class WECOOP_Documento_Unico_PDF {
     /**
      * Converte HTML in PDF usando mPDF
      */
-    private static function html_to_pdf($html, $filename) {
-        error_log("[WECOOP DOC PDF] html_to_pdf chiamato per: $filename");
+    private static function html_to_pdf($html, $filename, $richiesta_id = null) {
+        error_log("[WECOOP DOC PDF] html_to_pdf chiamato per: $filename (richiesta_id: " . ($richiesta_id ?? 'null') . ")");
+        
+        // Se è una richiesta, elimina i PDF vecchi
+        if ($richiesta_id) {
+            self::elimina_pdf_precedenti($richiesta_id);
+        }
         
         // Carica mPDF dal vendor del plugin
         $autoload = WECOOP_SERVIZI_PLUGIN_DIR . 'vendor/autoload.php';
@@ -431,6 +436,43 @@ class WECOOP_Documento_Unico_PDF {
                 'message' => 'Errore nella generazione PDF: ' . $e->getMessage()
             ];
         }
+    }
+    
+    /**
+     * Elimina PDF precedenti per la stessa richiesta
+     */
+    private static function elimina_pdf_precedenti($richiesta_id) {
+        error_log("[WECOOP DOC PDF] 🗑️ Controllo PDF precedenti per richiesta #$richiesta_id");
+        
+        $upload_dir = wp_upload_dir();
+        $firma_dir = $upload_dir['basedir'] . '/wecoop-documenti-unici/';
+        
+        if (!is_dir($firma_dir)) {
+            error_log("[WECOOP DOC PDF] ℹ️ Directory non esiste ancora");
+            return;
+        }
+        
+        // Cerca file PDF per questa richiesta
+        $pattern = 'Documento_Unico_' . $richiesta_id . '_*.pdf';
+        $files = glob($firma_dir . $pattern);
+        
+        if (empty($files)) {
+            error_log("[WECOOP DOC PDF] ℹ️ Nessun PDF precedente trovato per richiesta #$richiesta_id");
+            return;
+        }
+        
+        // Elimina ogni file trovato
+        foreach ($files as $file) {
+            if (file_exists($file)) {
+                if (unlink($file)) {
+                    error_log("[WECOOP DOC PDF] ✅ PDF rimosso: $file");
+                } else {
+                    error_log("[WECOOP DOC PDF] ❌ Impossibile rimuovere: $file");
+                }
+            }
+        }
+        
+        error_log("[WECOOP DOC PDF] ✅ Pulizia completata - " . count($files) . " file rimossi");
     }
     
     /**
