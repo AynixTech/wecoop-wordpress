@@ -1249,7 +1249,6 @@ class WECOOP_Servizi_Management {
                             <input type="checkbox" id="cb-select-all">
                         </td>
                         <th>Numero Pratica</th>
-                        <th>ID Servizio</th>
                         <th>Servizio</th>
                         <th>Categoria</th>
                         <th>Richiedente</th>
@@ -1266,7 +1265,7 @@ class WECOOP_Servizi_Management {
                         <?php endwhile; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="10">Nessuna richiesta trovata.</td>
+                            <td colspan="9">Nessuna richiesta trovata.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1365,7 +1364,6 @@ class WECOOP_Servizi_Management {
                 <input type="checkbox" class="richiesta-checkbox" value="<?php echo $post_id; ?>">
             </th>
             <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
-            <td><code>#<?php echo esc_html($post_id); ?></code></td>
             <td>
                 <?php 
                 $servizio_normalizzato = WECOOP_Servizi_Normalizer::normalize($servizio);
@@ -1460,6 +1458,14 @@ class WECOOP_Servizi_Management {
                            title="Apri documento unico PDF">
                             📄 Visualizza Documento <?php echo $doc_firmato === 'yes' ? '✅' : ''; ?>
                         </a>
+                        <?php if ($doc_firmato !== 'yes'): ?>
+                            <button class="button button-small button-primary send-documento-unico" 
+                                    data-id="<?php echo $post_id; ?>"
+                                    style="margin-top: 5px; margin-left: 5px; background: #2196f3;"
+                                    title="Reinvia documento unico da firmare">
+                                🔄 Reinvia per Firma
+                            </button>
+                        <?php endif; ?>
                         <button class="button button-small delete-documento-unico" 
                                 data-id="<?php echo $post_id; ?>"
                                 style="margin-top: 5px; margin-left: 5px; background: #f44336; color: white; border-color: #f44336;"

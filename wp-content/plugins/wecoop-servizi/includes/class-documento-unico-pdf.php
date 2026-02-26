@@ -45,9 +45,7 @@ class WECOOP_Documento_Unico_PDF {
         $dati = json_decode($dati_json, true) ?: [];
         
         // Prepara dati per compilazione
-        $nome = trim($dati['nome'] ?? '');
-        $cognome = trim($dati['cognome'] ?? '');
-        $nome_completo = trim($nome . ' ' . $cognome);
+        [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
         $codice_fiscale = trim($dati['codice_fiscale'] ?? '');
         $telefono = trim($dati['telefono'] ?? '');
         
@@ -511,14 +509,16 @@ class WECOOP_Documento_Unico_PDF {
         $user = get_userdata($user_id);
         $dati_json = get_post_meta($richiesta_id, 'dati', true);
         $dati = json_decode($dati_json, true) ?: [];
+
+        [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
         
         // Compila placeholders
         return self::compila_placeholders(
             $documento_testo,
             [
-                'nome' => $dati['nome'] ?? '',
-                'cognome' => $dati['cognome'] ?? '',
-                'nome_completo' => trim(($dati['nome'] ?? '') . ' ' . ($dati['cognome'] ?? '')),
+                'nome' => $nome,
+                'cognome' => $cognome,
+                'nome_completo' => $nome_completo,
                 'codice_fiscale' => $dati['codice_fiscale'] ?? '',
                 'email' => $user->user_email,
                 'telefono' => $dati['telefono'] ?? '',
@@ -527,6 +527,77 @@ class WECOOP_Documento_Unico_PDF {
                 'timestamp' => current_time('mysql')
             ]
         );
+    }
+
+    /**
+     * Risolve nome/cognome con fallback robusto:
+     * 1) dati richiesta
+     * 2) nome completo nei dati
+     * 3) user meta (nome/cognome, first_name/last_name)
+     * 4) campi WP_User
+     */
+    private static function resolve_nome_cognome($user_id, array $dati, $user = null) {
+        $nome = trim((string) ($dati['nome'] ?? $dati['first_name'] ?? ''));
+        $cognome = trim((string) ($dati['cognome'] ?? $dati['last_name'] ?? ''));
+
+        if ((empty($nome) || empty($cognome)) && !empty($dati['nome_completo'])) {
+            [$nome_full, $cognome_full] = self::split_nome_completo((string) $dati['nome_completo']);
+            $nome = $nome ?: $nome_full;
+            $cognome = $cognome ?: $cognome_full;
+        }
+
+        if (empty($nome)) {
+            $nome = trim((string) get_user_meta($user_id, 'nome', true));
+        }
+        if (empty($cognome)) {
+            $cognome = trim((string) get_user_meta($user_id, 'cognome', true));
+        }
+
+        if (empty($nome)) {
+            $nome = trim((string) get_user_meta($user_id, 'first_name', true));
+        }
+        if (empty($cognome)) {
+            $cognome = trim((string) get_user_meta($user_id, 'last_name', true));
+        }
+
+        if ($user instanceof WP_User) {
+            if (empty($nome)) {
+                $nome = trim((string) $user->first_name);
+            }
+            if (empty($cognome)) {
+                $cognome = trim((string) $user->last_name);
+            }
+
+            if ((empty($nome) || empty($cognome)) && !empty($user->display_name)) {
+                [$nome_display, $cognome_display] = self::split_nome_completo((string) $user->display_name);
+                $nome = $nome ?: $nome_display;
+                $cognome = $cognome ?: $cognome_display;
+            }
+        }
+
+        $nome_completo = trim($nome . ' ' . $cognome);
+
+        return [$nome, $cognome, $nome_completo];
+    }
+
+    /**
+     * Divide un nome completo in nome e cognome.
+     */
+    private static function split_nome_completo($nome_completo) {
+        $nome_completo = trim((string) $nome_completo);
+        if ($nome_completo === '') {
+            return ['', ''];
+        }
+
+        $parts = preg_split('/\s+/', $nome_completo);
+        if (count($parts) === 1) {
+            return [$parts[0], ''];
+        }
+
+        $nome = array_shift($parts);
+        $cognome = implode(' ', $parts);
+
+        return [trim($nome), trim($cognome)];
     }
     
     /**
