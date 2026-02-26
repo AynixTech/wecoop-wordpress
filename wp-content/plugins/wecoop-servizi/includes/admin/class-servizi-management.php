@@ -4370,4 +4370,71 @@ class WECOOP_Servizi_Management {
             wp_send_json_error('Errore nel salvataggio del log');
         }
     }
+    
+    /**
+     * 🗑️ AJAX: Elimina Documento Unico generato
+     * Rimuove il PDF e ripulisce i metadati
+     */
+    public static function ajax_delete_documento_unico() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $richiesta_id = intval($_POST['richiesta_id'] ?? 0);
+        
+        if (!$richiesta_id) {
+            wp_send_json_error('ID richiesta non valido');
+        }
+        
+        error_log('🗑️ DELETE: Inizio eliminazione documento per richiesta ' . $richiesta_id);
+        
+        try {
+            // Ottieni URL del documento dal metadato
+            $doc_url = get_post_meta($richiesta_id, 'documento_unico_url', true);
+            
+            if (!$doc_url) {
+                error_log('🗑️ DELETE: Nessun documento trovato per richiesta ' . $richiesta_id);
+                wp_send_json_error('Nessun documento trovato');
+            }
+            
+            error_log('🗑️ DELETE: URL documento: ' . $doc_url);
+            
+            // Estrai il nome file dall'URL
+            $filename = basename($doc_url);
+            $file_path = WP_CONTENT_DIR . '/uploads/wecoop-documenti-unici/' . $filename;
+            
+            error_log('🗑️ DELETE: Percorso file: ' . $file_path);
+            
+            // Controlla se il file esiste
+            if (!file_exists($file_path)) {
+                error_log('⚠️ DELETE: File non esiste ma metadato presente - ripulisco metadati');
+            } else {
+                // Elimina il file
+                if (!unlink($file_path)) {
+                    error_log('❌ DELETE: Errore nell\'eliminazione del file');
+                    wp_send_json_error('Errore nell\'eliminazione del file');
+                }
+                error_log('✅ DELETE: File eliminato con successo');
+            }
+            
+            // Ripulisci i metadati
+            delete_post_meta($richiesta_id, 'documento_unico_url');
+            delete_post_meta($richiesta_id, 'documento_unico_hash');
+            delete_post_meta($richiesta_id, 'documento_unico_generato');
+            delete_post_meta($richiesta_id, 'documento_unico_generato_il');
+            
+            error_log('✅ DELETE: Metadati ripuliti');
+            
+            wp_send_json_success([
+                'message' => 'Documento eliminato con successo',
+                'richiesta_id' => $richiesta_id
+            ]);
+            
+        } catch (Exception $e) {
+            error_log('❌ DELETE: Eccezione - ' . $e->getMessage());
+            wp_send_json_error($e->getMessage());
+        }
+    }
 }
