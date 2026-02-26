@@ -36,17 +36,8 @@ class WECOOP_Documento_Unico_PDF {
             ];
         }
         
-        // Leggi documento_unico.txt
-        $doc_file = WECOOP_SERVIZI_PLUGIN_DIR . 'documento_unico.txt';
-        if (!file_exists($doc_file)) {
-            error_log('[WECOOP DOC UNICO] ❌ File documento_unico.txt non trovato');
-            return [
-                'success' => false,
-                'message' => 'Documento template non trovato'
-            ];
-        }
-        
-        $documento_testo = file_get_contents($doc_file);
+        // Ottieni il template del documento
+        $documento_testo = self::get_documento_template();
         
         // Recupera dati richiesta e utente
         $user = get_userdata($user_id);
@@ -185,75 +176,95 @@ class WECOOP_Documento_Unico_PDF {
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.4;
             color: #333;
             padding: 0;
             margin: 0;
+            orphans: 2;
+            widows: 2;
         }
         .container {
-            padding: 20mm;
+            padding: 15mm 20mm;
             max-width: 210mm;
         }
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #4CAF50;
-            padding-bottom: 15px;
+            padding-bottom: 10px;
+            page-break-after: avoid;
         }
         .header h1 {
             font-size: 16px;
             font-weight: bold;
             color: #333;
-            margin-bottom: 5px;
+            margin: 0 0 3px 0;
+            padding: 0;
         }
         .header .subtitle {
             font-size: 11px;
             color: #666;
+            margin: 0;
+            padding: 0;
         }
         .document-id {
             background: #e8f5e9;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 3px;
-            margin-bottom: 20px;
-            font-size: 11px;
+            margin-bottom: 15px;
+            font-size: 10px;
             text-align: center;
+            page-break-after: avoid;
         }
         .document-id strong {
             color: #2e7d32;
         }
         .document-content {
             font-size: 11px;
-            line-height: 1.6;
+            line-height: 1.4;
             text-align: justify;
         }
         .document-content p {
-            margin-bottom: 10px;
+            margin: 0 0 8px 0;
             text-align: left;
+            padding: 0;
+            page-break-inside: avoid;
         }
         .document-content h2 {
             font-size: 12px;
             font-weight: bold;
-            margin-top: 15px;
-            margin-bottom: 8px;
+            margin: 12px 0 6px 0;
+            padding: 0;
             color: #333;
+            page-break-after: avoid;
         }
         .document-content ul {
-            margin-left: 20px;
-            margin-bottom: 10px;
+            margin: 0 0 8px 18px;
+            padding: 0;
+            page-break-inside: avoid;
         }
         .document-content li {
-            margin-bottom: 5px;
+            margin: 3px 0;
+            padding: 0;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 15px;
+            margin-top: 20px;
+            padding-top: 10px;
             border-top: 1px solid #ddd;
             font-size: 10px;
             color: #999;
             text-align: center;
+        }
+        .footer p {
+            margin: 5px 0;
+            padding: 0;
         }
         @page {
             size: A4;
@@ -280,7 +291,7 @@ class WECOOP_Documento_Unico_PDF {
         <div class="footer">
             <p>Questo documento è stato generato digitalmente e sarà firmato tramite autenticazione OTP.</p>
             <p>Firma: _________________________________ Data: _______________________</p>
-            <p style="margin-top: 15px;">© <?php echo date('Y'); ?> WECOOP APS | Documento privato</p>
+            <p style="margin-top: 10px;">© <?php echo date('Y'); ?> WECOOP APS | Documento privato</p>
         </div>
     </div>
 </body>
@@ -293,8 +304,11 @@ class WECOOP_Documento_Unico_PDF {
      * Formatta il testo in HTML pulito
      */
     private static function formatta_testo_html($testo) {
-        // Pulisci spazi eccedenti
+        // Pulisci spazi eccedenti all'inizio e fine
         $testo = trim($testo);
+        
+        // Rimuovi multiple newline consecutive (più di 2)
+        $testo = preg_replace('/\n{3,}/', "\n\n", $testo);
         
         // Dividi per righe vuote (paragrafi)
         $paragrafi = preg_split('/\n\s*\n/', $testo);
@@ -311,12 +325,12 @@ class WECOOP_Documento_Unico_PDF {
                 $html .= '<h2>' . esc_html($paragrafo) . '</h2>';
             }
             // Controlla se contiene bullet points
-            elseif (strpos($paragrafo, '-') === 0 || strpos($paragrafo, '•') === 0) {
+            elseif (strpos($paragrafo, '-') === 0 || strpos($paragrafo, '•') === 0 || strpos($paragrafo, '☐') === 0) {
                 $linee = explode("\n", $paragrafo);
                 $html .= '<ul>';
                 foreach ($linee as $linea) {
                     $linea = trim($linea);
-                    if (preg_match('/^[-•]\s*(.+)$/', $linea, $matches)) {
+                    if (preg_match('/^[-•☐]\s*(.+)$/', $linea, $matches)) {
                         $html .= '<li>' . esc_html($matches[1]) . '</li>';
                     }
                 }
@@ -327,15 +341,14 @@ class WECOOP_Documento_Unico_PDF {
                 // Gestisci righe multiple dentro il paragrafo
                 $linee = explode("\n", $paragrafo);
                 $html .= '<p>';
-                foreach ($linee as $idx => $linea) {
+                $line_parts = [];
+                foreach ($linee as $linea) {
                     $linea = trim($linea);
                     if (!empty($linea)) {
-                        $html .= esc_html($linea);
-                        if ($idx < count($linee) - 1) {
-                            $html .= '<br>';
-                        }
+                        $line_parts[] = esc_html($linea);
                     }
                 }
+                $html .= implode('<br>', $line_parts);
                 $html .= '</p>';
             }
         }
@@ -518,4 +531,56 @@ class WECOOP_Documento_Unico_PDF {
             ]
         );
     }
+    
+    /**
+     * Restituisce il template del documento direttamente
+     * Non dipende da file esterno per evitare spazi nascosti
+     */
+    private static function get_documento_template() {
+        return <<<'EOT'
+DOCUMENTO UNICO – WECOOP APS
+Privacy • Adesione Socio • Mandato
+
+DATI DELL'INTERESSATO
+Nome e Cognome: {{nome}} {{cognome}}
+Codice Fiscale: {{codice_fiscale}}
+Email: {{email}}
+Telefono (WhatsApp): {{telefono}}
+Case ID: {{case_id}}
+Data: {{data}}
+
+1) INFORMATIVA PRIVACY (GDPR)
+Il/La sottoscritto/a dichiara di aver ricevuto e compreso l'Informativa Privacy di WECOOP APS e autorizza il trattamento dei dati personali per:
+- gestione delle pratiche e dei servizi richiesti;
+- comunicazioni operative tramite email e WhatsApp;
+- adempimenti amministrativi e fiscali;
+- archiviazione digitale della documentazione.
+
+☐ Acconsento alle comunicazioni operative via WhatsApp.
+
+2) ADESIONE A SOCIO WECOOP APS
+Il/La sottoscritto/a chiede di aderire a WECOOP APS in qualità di socio/a.
+- L'adesione è gratuita.
+- La qualità di socio si rinnova annualmente.
+- L'adesione non comporta obbligo di usufruire dei servizi.
+
+3) MANDATO / INCARICO
+Il/La sottoscritto/a conferisce mandato a WECOOP APS per l'assistenza e la gestione delle pratiche amministrative richieste di volta in volta, inclusa:
+- raccolta, verifica e gestione della documentazione;
+- compilazione e trasmissione delle istanze agli enti competenti;
+- assistenza amministrativa connessa.
+
+Il/La sottoscritto/a dichiara:
+- di fornire dati e documenti veritieri;
+- di autorizzare la conservazione delle copie digitali;
+- che il mandato è revocabile solo per iscritto.
+
+FIRMA DIGITALE
+Il presente documento viene firmato una sola volta tramite firma digitale con OTP via SMS ed è valido per adesione a socio WECOOP APS e conferimento del mandato generale per i servizi futuri.
+
+Firma digitale (OTP): _______________________
+Data e ora firma: {{timestamp_firma}}
+EOT;
+    }
 }
+
