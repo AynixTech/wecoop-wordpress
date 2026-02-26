@@ -1446,7 +1446,7 @@ class WECOOP_Servizi_Management {
                     <?php endif; ?>
                     <?php 
                     // Verifica se il documento unico è stato già generato
-                    $doc_url = get_post_meta($post_id, 'documento_unico_url', true);
+                    $doc_url = self::get_resolved_document_url($post_id, get_post_meta($post_id, 'documento_unico_url', true));
                     $doc_firmato = get_post_meta($post_id, 'documento_unico_firmato', true);
                     ?>
                     <br>
@@ -4546,7 +4546,7 @@ class WECOOP_Servizi_Management {
                                 <?php foreach ($signed_documents as $doc): ?>
                                     <?php
                                     $metadata = json_decode($doc->firma_metadata, true);
-                                    $doc_url = get_post_meta($doc->richiesta_id, 'documento_unico_url', true);
+                                    $doc_url = self::get_resolved_document_url($doc->richiesta_id, get_post_meta($doc->richiesta_id, 'documento_unico_url', true));
                                     $doc_hash = get_post_meta($doc->richiesta_id, 'documento_unico_hash', true);
                                     $generated_at = get_post_meta($doc->richiesta_id, 'documento_unico_generato_il', true);
                                     $resolved_path = self::get_local_file_path_from_upload_url($doc_url);
@@ -4657,7 +4657,7 @@ class WECOOP_Servizi_Management {
             exit;
         }
 
-        $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
+        $doc_url = self::get_resolved_document_url($row->richiesta_id, get_post_meta($row->richiesta_id, 'documento_unico_url', true));
         if (empty($doc_url)) {
             wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=meta_missing&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
             exit;
@@ -4760,7 +4760,7 @@ class WECOOP_Servizi_Management {
 
         $added = 0;
         foreach ($firme_rows as $row) {
-            $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
+            $doc_url = self::get_resolved_document_url($row->richiesta_id, get_post_meta($row->richiesta_id, 'documento_unico_url', true));
             $file_path = self::get_local_file_path_from_upload_url($doc_url);
             $entry_name = 'richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
 
@@ -4846,6 +4846,63 @@ class WECOOP_Servizi_Management {
         }
 
         return null;
+    }
+
+    private static function get_resolved_document_url($richiesta_id, $stored_url = '') {
+        $stored_url = trim((string) $stored_url);
+
+        if (!empty($stored_url)) {
+            $current_path = self::get_local_file_path_from_upload_url($stored_url);
+            if (!empty($current_path) && file_exists($current_path)) {
+                return $stored_url;
+            }
+        }
+
+        $latest_url = self::get_latest_document_url_for_richiesta($richiesta_id);
+        if (!empty($latest_url)) {
+            if ($latest_url !== $stored_url) {
+                update_post_meta($richiesta_id, 'documento_unico_url', $latest_url);
+            }
+            return $latest_url;
+        }
+
+        return $stored_url;
+    }
+
+    private static function get_latest_document_url_for_richiesta($richiesta_id) {
+        $richiesta_id = absint($richiesta_id);
+        if (!$richiesta_id) {
+            return null;
+        }
+
+        $uploads = wp_get_upload_dir();
+        if (empty($uploads['basedir']) || empty($uploads['baseurl'])) {
+            return null;
+        }
+
+        $directory = trailingslashit($uploads['basedir']) . 'wecoop-documenti-unici/';
+        if (!is_dir($directory)) {
+            return null;
+        }
+
+        $pattern = $directory . 'Documento_Unico_' . $richiesta_id . '_*.pdf';
+        $files = glob($pattern);
+        if (empty($files)) {
+            return null;
+        }
+
+        usort($files, function ($a, $b) {
+            return filemtime($b) <=> filemtime($a);
+        });
+
+        $latest_file = wp_normalize_path($files[0]);
+        $basedir = wp_normalize_path($uploads['basedir']);
+        if (strpos($latest_file, $basedir) !== 0) {
+            return null;
+        }
+
+        $relative = ltrim(substr($latest_file, strlen($basedir)), '/');
+        return trailingslashit($uploads['baseurl']) . str_replace(' ', '%20', $relative);
     }
 
     private static function stream_file_download($file_path, $download_name, $content_type, $delete_after = false, $disposition = 'attachment') {
