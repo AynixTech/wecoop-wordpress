@@ -2825,8 +2825,32 @@ class WECOOP_Servizi_Management {
         // Ottieni dati utente
         $nome = get_user_meta($user_id, 'nome', true);
         $cognome = get_user_meta($user_id, 'cognome', true);
+        $nome = $nome ?: $user->first_name;
+        $cognome = $cognome ?: $user->last_name;
+
+        if (!$nome || !$cognome) {
+            $richiesta_socio = get_posts([
+                'post_type' => 'richiesta_socio',
+                'meta_key' => 'user_id_socio',
+                'meta_value' => $user_id,
+                'posts_per_page' => 1,
+                'post_status' => 'any'
+            ]);
+
+            if (!empty($richiesta_socio)) {
+                $richiesta_id = $richiesta_socio[0]->ID;
+                $nome = $nome ?: get_post_meta($richiesta_id, 'nome', true);
+                $cognome = $cognome ?: get_post_meta($richiesta_id, 'cognome', true);
+            }
+        }
+
+        $nome_completo = trim($nome . ' ' . $cognome);
+        if (empty($nome_completo)) {
+            $nome_completo = $user->display_name ?: '—';
+        }
+
         $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
-        $telefono = get_user_meta($user_id, 'telefono', true);
+        $telefono = get_user_meta($user_id, 'telefono', true) ?: get_user_meta($user_id, 'telefono_completo', true);
         $indirizzo = get_user_meta($user_id, 'indirizzo', true);
         $citta = get_user_meta($user_id, 'citta', true);
         $cap = get_user_meta($user_id, 'cap', true);
@@ -2879,7 +2903,7 @@ class WECOOP_Servizi_Management {
         <div class="wrap">
             <h1>
                 <span class="dashicons dashicons-admin-users" style="font-size: 32px;"></span>
-                Dettaglio Utente: <?php echo esc_html($nome . ' ' . $cognome); ?>
+                Dettaglio Utente: <?php echo esc_html($nome_completo); ?>
             </h1>
             
             <a href="<?php echo admin_url('admin.php?page=wecoop-richieste-servizi'); ?>" class="button">
@@ -2896,7 +2920,7 @@ class WECOOP_Servizi_Management {
                         <table class="form-table">
                             <tr>
                                 <th>Nome Completo:</th>
-                                <td><strong><?php echo esc_html($nome . ' ' . $cognome); ?></strong></td>
+                                <td><strong><?php echo esc_html($nome_completo); ?></strong></td>
                             </tr>
                             <tr>
                                 <th>Codice Fiscale:</th>
