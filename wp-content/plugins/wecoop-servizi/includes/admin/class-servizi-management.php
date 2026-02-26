@@ -1249,6 +1249,7 @@ class WECOOP_Servizi_Management {
                             <input type="checkbox" id="cb-select-all">
                         </td>
                         <th>Numero Pratica</th>
+                        <th>ID Servizio</th>
                         <th>Servizio</th>
                         <th>Categoria</th>
                         <th>Richiedente</th>
@@ -1265,7 +1266,7 @@ class WECOOP_Servizi_Management {
                         <?php endwhile; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="9">Nessuna richiesta trovata.</td>
+                            <td colspan="10">Nessuna richiesta trovata.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1364,6 +1365,7 @@ class WECOOP_Servizi_Management {
                 <input type="checkbox" class="richiesta-checkbox" value="<?php echo $post_id; ?>">
             </th>
             <td><strong><?php echo esc_html($numero_pratica); ?></strong></td>
+            <td><code>#<?php echo esc_html($post_id); ?></code></td>
             <td>
                 <?php 
                 $servizio_normalizzato = WECOOP_Servizi_Normalizer::normalize($servizio);
