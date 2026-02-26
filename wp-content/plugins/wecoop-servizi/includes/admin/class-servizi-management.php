@@ -4477,6 +4477,16 @@ class WECOOP_Servizi_Management {
         }
 
         $notice = sanitize_text_field($_GET['wecoop_notice'] ?? '');
+        $notice_reason = sanitize_text_field($_GET['reason'] ?? '');
+        $notice_firma_id = absint($_GET['firma_id'] ?? 0);
+        $notice_richiesta_id = absint($_GET['richiesta_id'] ?? 0);
+
+        $reason_labels = [
+            'meta_missing' => 'metadato documento_unico_url mancante',
+            'path_unresolved' => 'impossibile convertire URL in percorso locale',
+            'file_missing' => 'file non presente su disco',
+            'record_missing' => 'record firma non trovato'
+        ];
         ?>
         <div class="wrap">
             <h1>✍️ Documenti Firmati</h1>
@@ -4486,7 +4496,16 @@ class WECOOP_Servizi_Management {
             <?php elseif ($notice === 'bulk_no_files'): ?>
                 <div class="notice notice-warning"><p>Nessun PDF disponibile per il download.</p></div>
             <?php elseif ($notice === 'single_not_found'): ?>
-                <div class="notice notice-error"><p>Documento non trovato o file non più disponibile.</p></div>
+                <div class="notice notice-error">
+                    <p>
+                        Documento non trovato o file non più disponibile.
+                        <?php if (!empty($notice_reason) && isset($reason_labels[$notice_reason])): ?>
+                            Motivo: <strong><?php echo esc_html($reason_labels[$notice_reason]); ?></strong>.
+                        <?php endif; ?>
+                        <?php if ($notice_firma_id): ?>Firma ID: <strong>#<?php echo intval($notice_firma_id); ?></strong>.<?php endif; ?>
+                        <?php if ($notice_richiesta_id): ?>Richiesta ID: <strong>#<?php echo intval($notice_richiesta_id); ?></strong>.<?php endif; ?>
+                    </p>
+                </div>
             <?php endif; ?>
 
             <p>Elenco completo dei documenti firmati con informazioni firma, utente, orari e metadati tecnici.</p>
@@ -4516,12 +4535,13 @@ class WECOOP_Servizi_Management {
                                 <th>Firma</th>
                                 <th>Orari</th>
                                 <th>Metadata</th>
+                                <th>Diagnostica file</th>
                                 <th>Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (empty($signed_documents)): ?>
-                                <tr><td colspan="10">Nessun documento firmato trovato.</td></tr>
+                                <tr><td colspan="11">Nessun documento firmato trovato.</td></tr>
                             <?php else: ?>
                                 <?php foreach ($signed_documents as $doc): ?>
                                     <?php
@@ -4529,6 +4549,8 @@ class WECOOP_Servizi_Management {
                                     $doc_url = get_post_meta($doc->richiesta_id, 'documento_unico_url', true);
                                     $doc_hash = get_post_meta($doc->richiesta_id, 'documento_unico_hash', true);
                                     $generated_at = get_post_meta($doc->richiesta_id, 'documento_unico_generato_il', true);
+                                    $resolved_path = self::get_local_file_path_from_upload_url($doc_url);
+                                    $file_exists = (!empty($resolved_path) && file_exists($resolved_path));
                                     $download_url = wp_nonce_url(
                                         admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id)),
                                         'wecoop_download_signed_document_' . intval($doc->id)
@@ -4568,11 +4590,19 @@ class WECOOP_Servizi_Management {
                                             <small><strong>Device:</strong> <?php echo esc_html(is_array($metadata['device_info'] ?? null) ? wp_json_encode($metadata['device_info']) : ($metadata['device_info'] ?? '—')); ?></small>
                                         </td>
                                         <td>
-                                            <?php if (!empty($doc_url)): ?>
+                                            <small><strong>URL:</strong> <?php echo !empty($doc_url) ? '✅' : '❌'; ?></small><br>
+                                            <small><strong>Path:</strong> <?php echo !empty($resolved_path) ? '✅' : '❌'; ?></small><br>
+                                            <small><strong>File:</strong> <?php echo $file_exists ? '✅' : '❌'; ?></small>
+                                            <?php if (!empty($resolved_path)): ?>
+                                                <br><small style="color:#666; word-break: break-all;"><?php echo esc_html($resolved_path); ?></small>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if ($file_exists): ?>
                                                 <a class="button button-small" target="_blank" href="<?php echo esc_url($open_url); ?>">👁️ Apri</a>
                                                 <a class="button button-small" href="<?php echo esc_url($download_url); ?>">⬇️ Scarica</a>
                                             <?php else: ?>
-                                                <span style="color:#999;">Nessun PDF</span>
+                                                <span style="color:#999;">PDF non disponibile</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
@@ -4612,15 +4642,24 @@ class WECOOP_Servizi_Management {
         $row = $wpdb->get_row($wpdb->prepare("SELECT id, richiesta_id, firma_timestamp FROM {$firme_table} WHERE id = %d", $firma_id));
 
         if (!$row) {
-            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found'));
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=record_missing&firma_id=' . intval($firma_id)));
             exit;
         }
 
         $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
-        $file_path = self::get_local_file_path_from_upload_url($doc_url);
+        if (empty($doc_url)) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=meta_missing&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
+            exit;
+        }
 
-        if (!$file_path || !file_exists($file_path)) {
-            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found'));
+        $file_path = self::get_local_file_path_from_upload_url($doc_url);
+        if (empty($file_path)) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=path_unresolved&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
+            exit;
+        }
+
+        if (!file_exists($file_path)) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=file_missing&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
             exit;
         }
 
