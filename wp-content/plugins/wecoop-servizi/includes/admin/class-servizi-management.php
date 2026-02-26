@@ -2347,6 +2347,76 @@ class WECOOP_Servizi_Management {
                 });
             });
             
+            // 🗑️ GESTORE: Elimina Documento Unico
+            $(document).on('click', '.delete-documento-unico', function(e) {
+                e.preventDefault();
+                
+                const richiestaId = $(this).data('id');
+                const $button = $(this);
+                
+                console.log('🗑️ DELETE: Click su delete-documento-unico', {
+                    richiestaId: richiestaId
+                });
+                
+                if (!confirm('Sei sicuro di voler eliminare il documento unico?\n\nQuesta azione non può essere annullata.')) {
+                    console.log('❌ DELETE: Annullato dall\'utente');
+                    return;
+                }
+                
+                // Mostra loader
+                const originalText = $button.text();
+                $button.prop('disabled', true)
+                       .text('⏳ Eliminazione...')
+                       .css('background-color', '#ff9800');
+                
+                console.log('⏳ DELETE: Invio richiesta eliminazione...');
+                
+                // Richiesta AJAX
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'delete_documento_unico',
+                        richiesta_id: richiestaId,
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    timeout: 15000,
+                    success: function(response) {
+                        console.log('✅ DELETE: Risposta server', response);
+                        
+                        if (response.success) {
+                            console.log('✅ DELETE: Documento eliminato con successo');
+                            alert('✅ Documento eliminato con successo!');
+                            
+                            // Ricarica la pagina
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            console.error('❌ DELETE: Errore nella risposta', response.data);
+                            alert('❌ Errore: ' + (response.data || 'Errore sconosciuto'));
+                            
+                            $button.prop('disabled', false)
+                                   .text(originalText)
+                                   .css('background-color', '');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ DELETE: Errore AJAX', {
+                            status: status,
+                            error: error,
+                            statusCode: xhr.status
+                        });
+                        
+                        alert('❌ Errore di comunicazione con il server');
+                        
+                        $button.prop('disabled', false)
+                               .text(originalText)
+                               .css('background-color', '');
+                    }
+                });
+            });
+            
             // CSS per animazione loader
             $('<style>')
                 .text(`
