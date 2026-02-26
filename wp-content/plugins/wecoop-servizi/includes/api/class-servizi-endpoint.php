@@ -182,6 +182,17 @@ class WECOOP_Servizi_Endpoint {
                 'id' => ['required' => true, 'type' => 'integer']
             ]
         ]);
+
+        // GET /documento-unico/{id}/download-merged - Download PDF unito (documento + allegato firma)
+        register_rest_route('wecoop/v1', '/documento-unico/(?P<id>\d+)/download-merged', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'download_documento_unico_merged'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'id' => ['required' => true, 'type' => 'integer'],
+                'force_merge' => ['required' => false, 'type' => 'boolean', 'default' => false]
+            ]
+        ]);
         
         // POST /firma-digitale/otp/generate - Genera OTP per firma
         register_rest_route('wecoop/v1', '/firma-digitale/otp/generate', [
@@ -902,6 +913,82 @@ class WECOOP_Servizi_Endpoint {
             'documento' => $result['documento']
         ], 200);
     }
+
+    /**
+     * GET /documento-unico/{id}/download-merged - Download PDF unito
+     */
+    public static function download_documento_unico_merged($request) {
+        $richiesta_id = intval($request['id']);
+        $current_user_id = self::get_user_id_from_jwt($request);
+
+        if (!$current_user_id) {
+            return new WP_Error('unauthorized', 'Utente non autenticato', ['status' => 401]);
+        }
+
+        $post = get_post($richiesta_id);
+        if (!$post || $post->post_type !== 'richiesta_servizio') {
+            return new WP_Error('invalid_request', 'Richiesta non valida', ['status' => 404]);
+        }
+
+        $richiesta_user_id = intval(get_post_meta($richiesta_id, 'user_id', true));
+        if ($richiesta_user_id !== intval($current_user_id) && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non hai i permessi', ['status' => 403]);
+        }
+
+        $documento_url = self::resolve_documento_unico_url($richiesta_id);
+        if (empty($documento_url)) {
+            return new WP_Error('document_not_found', 'Documento unico non trovato', ['status' => 404]);
+        }
+
+        $is_firmato = (get_post_meta($richiesta_id, 'documento_unico_firmato', true) === 'yes');
+        $attestato_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', true));
+        $is_merged = (get_post_meta($richiesta_id, 'documento_unico_merged_firma', true) === 'yes');
+        $force_merge = filter_var($request->get_param('force_merge'), FILTER_VALIDATE_BOOLEAN);
+
+        if ($is_firmato && empty($attestato_url)) {
+            return new WP_Error('attestato_missing', 'Attestato firma non disponibile', ['status' => 404]);
+        }
+
+        // Se firmato e attestato disponibile, forza merge su richiesta o se non ancora merged
+        if ($is_firmato && !empty($attestato_url) && class_exists('WECOOP_Documento_Unico_PDF') && ($force_merge || !$is_merged)) {
+            $merge_result = WECOOP_Documento_Unico_PDF::merge_documento_unico_with_attestato(
+                $richiesta_id,
+                $documento_url,
+                $attestato_url
+            );
+
+            if (!empty($merge_result['success']) && !empty($merge_result['url'])) {
+                $documento_url = (string) $merge_result['url'];
+                update_post_meta($richiesta_id, 'documento_unico_url', $documento_url);
+                update_post_meta($richiesta_id, 'documento_unico_hash', (string) ($merge_result['hash_sha256'] ?? ''));
+                update_post_meta($richiesta_id, 'documento_unico_merged_firma', 'yes');
+                update_post_meta($richiesta_id, 'documento_unico_merged_firma_il', current_time('mysql'));
+            } else {
+                return new WP_Error('merge_failed', $merge_result['message'] ?? 'Errore merge PDF', ['status' => 500]);
+            }
+        }
+
+        $file_path = self::upload_url_to_path($documento_url);
+        if (empty($file_path) || !file_exists($file_path)) {
+            return new WP_Error('file_not_found', 'File PDF non trovato sul server', ['status' => 404]);
+        }
+
+        $file_content = file_get_contents($file_path);
+        if ($file_content === false) {
+            return new WP_Error('read_failed', 'Impossibile leggere il file PDF', ['status' => 500]);
+        }
+
+        $filename = 'Documento_Unico_' . $richiesta_id . ($is_firmato ? '_Firmato' : '') . '.pdf';
+
+        $response = new WP_REST_Response($file_content);
+        $response->set_status(200);
+        $response->header('Content-Type', 'application/pdf');
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        $response->header('Content-Length', filesize($file_path));
+        $response->header('Cache-Control', 'private, max-age=300');
+
+        return $response;
+    }
     
     /**
      * POST /firma-digitale/otp/generate - Genera OTP
@@ -1089,5 +1176,22 @@ class WECOOP_Servizi_Endpoint {
 
         update_post_meta($richiesta_id, 'documento_unico_url', $resolved_url);
         return $resolved_url;
+    }
+
+    /**
+     * Converte URL upload in path locale filesystem.
+     */
+    private static function upload_url_to_path($url) {
+        $uploads = wp_get_upload_dir();
+        $baseurl = rtrim((string) ($uploads['baseurl'] ?? ''), '/');
+        $basedir = rtrim((string) ($uploads['basedir'] ?? ''), '/');
+        $url = trim((string) $url);
+
+        if (empty($baseurl) || empty($basedir) || empty($url) || strpos($url, $baseurl) !== 0) {
+            return '';
+        }
+
+        $relative = ltrim(substr($url, strlen($baseurl)), '/');
+        return $basedir . '/' . $relative;
     }
 }
