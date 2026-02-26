@@ -87,6 +87,26 @@ class WECOOP_Firma_Handler {
      */
     public static function sign_document($otp_id, $richiesta_id, $documento_contenuto, $firma_data = []) {
         global $wpdb;
+
+        // Verifica se il documento è già stato firmato per questa richiesta
+        $existing_firma = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, firma_timestamp, firma_hash FROM " . self::$table_name . "
+             WHERE richiesta_id = %d AND documento_id = 'documento_unico'
+             ORDER BY created_at DESC LIMIT 1",
+            $richiesta_id
+        ));
+
+        if ($existing_firma) {
+            return [
+                'success' => false,
+                'code' => 'document_already_signed',
+                'message' => 'Documento già firmato',
+                'firma_id' => intval($existing_firma->id),
+                'firma_timestamp' => $existing_firma->firma_timestamp,
+                'firma_hash' => $existing_firma->firma_hash,
+                'status' => 409
+            ];
+        }
         
         // Verifica OTP verificato
         $otp_record = WECOOP_OTP_Handler::get_otp_record($otp_id);
@@ -165,7 +185,9 @@ class WECOOP_Firma_Handler {
             error_log('[WECOOP FIRMA] ❌ Errore salvataggio firma: ' . $wpdb->last_error);
             return [
                 'success' => false,
-                'message' => 'Errore nel salvataggio della firma'
+                'code' => 'sign_save_failed',
+                'message' => 'Errore nel salvataggio della firma',
+                'status' => 400
             ];
         }
         

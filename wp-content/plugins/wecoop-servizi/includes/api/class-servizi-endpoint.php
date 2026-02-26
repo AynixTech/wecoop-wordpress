@@ -968,7 +968,17 @@ class WECOOP_Servizi_Endpoint {
         $result = WECOOP_Firma_Handler::sign_document($otp_id, $richiesta_id, $documento_contenuto, $firma_data);
         
         if (!$result['success']) {
-            return new WP_Error('signing_failed', $result['message'], ['status' => 400]);
+            $error_code = !empty($result['code']) ? $result['code'] : 'signing_failed';
+            $error_status = !empty($result['status']) ? intval($result['status']) : 400;
+
+            $error_data = ['status' => $error_status];
+            foreach (['firma_id', 'firma_timestamp', 'firma_hash'] as $field) {
+                if (isset($result[$field])) {
+                    $error_data[$field] = $result[$field];
+                }
+            }
+
+            return new WP_Error($error_code, $result['message'], $error_data);
         }
         
         return new WP_REST_Response($result, 200);
