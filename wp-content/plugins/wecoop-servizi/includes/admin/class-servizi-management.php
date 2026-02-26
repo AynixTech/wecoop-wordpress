@@ -4551,6 +4551,14 @@ class WECOOP_Servizi_Management {
                                     $generated_at = get_post_meta($doc->richiesta_id, 'documento_unico_generato_il', true);
                                     $resolved_path = self::get_local_file_path_from_upload_url($doc_url);
                                     $file_exists = (!empty($resolved_path) && file_exists($resolved_path));
+                                    $full_doc_hash = (string) ($doc_hash ?: $doc->documento_hash);
+                                    $short_doc_hash = strlen($full_doc_hash) > 20
+                                        ? substr($full_doc_hash, 0, 12) . '...' . substr($full_doc_hash, -8)
+                                        : $full_doc_hash;
+                                    $full_firma_hash = (string) $doc->firma_hash;
+                                    $short_firma_hash = strlen($full_firma_hash) > 20
+                                        ? substr($full_firma_hash, 0, 12) . '...' . substr($full_firma_hash, -8)
+                                        : $full_firma_hash;
                                     $download_url = wp_nonce_url(
                                         admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id)),
                                         'wecoop_download_signed_document_' . intval($doc->id)
@@ -4573,11 +4581,11 @@ class WECOOP_Servizi_Management {
                                         </td>
                                         <td><?php echo esc_html($doc->telefono ?: '—'); ?></td>
                                         <td>
-                                            <small><strong>Hash doc:</strong> <?php echo esc_html($doc_hash ?: $doc->documento_hash); ?></small>
+                                            <small><strong>Hash doc:</strong> <span title="<?php echo esc_attr($full_doc_hash); ?>"><?php echo esc_html($short_doc_hash); ?></span></small>
                                         </td>
                                         <td>
                                             <small><strong>Tipo:</strong> <?php echo esc_html($doc->firma_tipo); ?></small><br>
-                                            <small><strong>Hash firma:</strong> <?php echo esc_html($doc->firma_hash); ?></small>
+                                            <small><strong>Hash firma:</strong> <span title="<?php echo esc_attr($full_firma_hash); ?>"><?php echo esc_html($short_firma_hash); ?></span></small>
                                         </td>
                                         <td>
                                             <small><strong>OTP verificato:</strong> <?php echo esc_html($doc->otp_verified_at ?: '—'); ?></small><br>
