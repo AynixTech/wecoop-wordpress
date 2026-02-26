@@ -4606,9 +4606,12 @@ class WECOOP_Servizi_Management {
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <?php if ($file_exists): ?>
+                                            <?php if (!empty($doc_url)): ?>
                                                 <a class="button button-small" target="_blank" href="<?php echo esc_url($open_url); ?>">👁️ Apri</a>
                                                 <a class="button button-small" href="<?php echo esc_url($download_url); ?>">⬇️ Scarica</a>
+                                                <?php if (!$file_exists): ?>
+                                                    <br><small style="color:#d97706;">⚠️ fallback URL</small>
+                                                <?php endif; ?>
                                             <?php else: ?>
                                                 <span style="color:#999;">PDF non disponibile</span>
                                             <?php endif; ?>
@@ -4661,13 +4664,47 @@ class WECOOP_Servizi_Management {
         }
 
         $file_path = self::get_local_file_path_from_upload_url($doc_url);
-        if (empty($file_path)) {
-            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=path_unresolved&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
-            exit;
-        }
+        if (empty($file_path) || !file_exists($file_path)) {
+            // Fallback: se abbiamo URL pubblico valido, usa quello
+            if (filter_var($doc_url, FILTER_VALIDATE_URL)) {
+                $is_inline = !empty($_GET['inline']);
 
-        if (!file_exists($file_path)) {
-            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=file_missing&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
+                // Per apertura inline basta redirect alla risorsa pubblica
+                if ($is_inline) {
+                    wp_redirect(esc_url_raw($doc_url));
+                    exit;
+                }
+
+                // Per download prova prima a proxy-are il file con Content-Disposition attachment
+                $remote = wp_remote_get($doc_url, [
+                    'timeout' => 25,
+                    'redirection' => 5
+                ]);
+
+                if (!is_wp_error($remote)) {
+                    $status = wp_remote_retrieve_response_code($remote);
+                    $body = wp_remote_retrieve_body($remote);
+                    if ($status >= 200 && $status < 300 && $body !== '') {
+                        if (ob_get_level()) {
+                            ob_end_clean();
+                        }
+                        $download_name = 'documento_firmato_richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
+                        nocache_headers();
+                        header('Content-Type: application/pdf');
+                        header('Content-Disposition: attachment; filename="' . sanitize_file_name($download_name) . '"');
+                        header('Content-Length: ' . strlen($body));
+                        echo $body;
+                        exit;
+                    }
+                }
+
+                // Ultimo fallback: redirect diretto
+                wp_redirect(esc_url_raw($doc_url));
+                exit;
+            }
+
+            $reason = empty($file_path) ? 'path_unresolved' : 'file_missing';
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found&reason=' . $reason . '&firma_id=' . intval($row->id) . '&richiesta_id=' . intval($row->richiesta_id)));
             exit;
         }
 
@@ -4725,12 +4762,30 @@ class WECOOP_Servizi_Management {
         foreach ($firme_rows as $row) {
             $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
             $file_path = self::get_local_file_path_from_upload_url($doc_url);
-            if (!$file_path || !file_exists($file_path)) {
+            $entry_name = 'richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
+
+            if ($file_path && file_exists($file_path)) {
+                if ($zip->addFile($file_path, $entry_name)) {
+                    $added++;
+                }
                 continue;
             }
-            $entry_name = 'richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
-            if ($zip->addFile($file_path, $entry_name)) {
-                $added++;
+
+            // Fallback: recupera da URL pubblico se il file locale non è disponibile
+            if (!empty($doc_url) && filter_var($doc_url, FILTER_VALIDATE_URL)) {
+                $remote = wp_remote_get($doc_url, [
+                    'timeout' => 25,
+                    'redirection' => 5
+                ]);
+                if (!is_wp_error($remote)) {
+                    $status = wp_remote_retrieve_response_code($remote);
+                    $body = wp_remote_retrieve_body($remote);
+                    if ($status >= 200 && $status < 300 && $body !== '') {
+                        if ($zip->addFromString($entry_name, $body)) {
+                            $added++;
+                        }
+                    }
+                }
             }
         }
         $zip->close();
