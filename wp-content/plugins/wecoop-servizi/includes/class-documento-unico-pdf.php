@@ -54,11 +54,18 @@ class WECOOP_Documento_Unico_PDF {
         $dati = json_decode($dati_json, true) ?: [];
         
         // Prepara dati per compilazione
-        $nome = $dati['nome'] ?? '';
-        $cognome = $dati['cognome'] ?? '';
+        $nome = trim($dati['nome'] ?? '');
+        $cognome = trim($dati['cognome'] ?? '');
         $nome_completo = trim($nome . ' ' . $cognome);
-        $codice_fiscale = $dati['codice_fiscale'] ?? '';
-        $telefono = $dati['telefono'] ?? '';
+        $codice_fiscale = trim($dati['codice_fiscale'] ?? '');
+        $telefono = trim($dati['telefono'] ?? '');
+        
+        error_log('[WECOOP DOC UNICO] 📋 Dati compilazione:');
+        error_log('[WECOOP DOC UNICO] - Nome: ' . $nome);
+        error_log('[WECOOP DOC UNICO] - Cognome: ' . $cognome);
+        error_log('[WECOOP DOC UNICO] - CF: ' . $codice_fiscale);
+        error_log('[WECOOP DOC UNICO] - Email: ' . $user->user_email);
+        error_log('[WECOOP DOC UNICO] - Tel: ' . $telefono);
         
         // Compila placeholders
         $documento_compilato = self::compila_placeholders(
@@ -72,7 +79,8 @@ class WECOOP_Documento_Unico_PDF {
                 'telefono' => $telefono,
                 'case_id' => $richiesta_id,
                 'data' => date('d/m/Y'),
-                'timestamp' => current_time('mysql')
+                'timestamp' => current_time('mysql'),
+                'timestamp_firma' => current_time('mysql')
             ]
         );
         
@@ -112,13 +120,44 @@ class WECOOP_Documento_Unico_PDF {
      * Compila placeholders nel documento
      */
     private static function compila_placeholders($testo, $dati) {
+        error_log('[WECOOP DOC UNICO] 🔄 Inizio compilazione placeholders');
+        error_log('[WECOOP DOC UNICO] - Testo size: ' . strlen($testo) . ' bytes');
+        error_log('[WECOOP DOC UNICO] - Numero dati: ' . count($dati));
+        
+        $testo_originale = $testo;
+        $placeholder_count = 0;
+        
+        // Compila ogni placeholder
         foreach ($dati as $key => $value) {
             $placeholder = '{{' . $key . '}}';
-            $testo = str_replace($placeholder, $value, $testo);
+            
+            // Verifica se il placeholder è nel testo
+            if (strpos($testo, $placeholder) !== false) {
+                $prima = $testo;
+                $testo = str_replace($placeholder, (string)$value, $testo);
+                $dopo = $testo;
+                
+                if ($prima !== $dopo) {
+                    $placeholder_count++;
+                    error_log("[WECOOP DOC UNICO] ✅ Compilato: $placeholder → " . substr((string)$value, 0, 30));
+                } else {
+                    error_log("[WECOOP DOC UNICO] ⚠️ Placeholder trovato ma non sostituito: $placeholder");
+                }
+            } else {
+                error_log("[WECOOP DOC UNICO] ℹ️ Placeholder non trovato nel testo: $placeholder");
+            }
         }
         
-        // Rimuovi placeholder non compilati
-        $testo = preg_replace('/\{\{[^}]+\}\}/', '', $testo);
+        error_log("[WECOOP DOC UNICO] 📊 Placeholders compilati: $placeholder_count");
+        
+        // Rimuovi placeholder non compilati (rimasti)
+        $rimanenti = preg_match_all('/\{\{[^}]+\}\}/', $testo, $matches);
+        if ($rimanenti) {
+            error_log("[WECOOP DOC UNICO] ⚠️ Placeholder non compilati rimasti: " . implode(', ', $matches[0]));
+            $testo = preg_replace('/\{\{[^}]+\}\}/', '', $testo);
+        } else {
+            error_log('[WECOOP DOC UNICO] ✅ Tutti i placeholders compilati o rimossi');
+        }
         
         return $testo;
     }
@@ -128,7 +167,9 @@ class WECOOP_Documento_Unico_PDF {
      */
     private static function genera_html_documento($documento_testo, $richiesta_id) {
         $timestamp = date('d/m/Y H:i');
-        $wecoop_logo = WECOOP_SERVIZI_PLUGIN_URL . 'assets/logo-wecoop.png';
+        
+        // Formatta il testo in paragrafi HTML
+        $html_content = self::formatta_testo_html($documento_testo);
         
         ob_start();
         ?>
@@ -145,80 +186,78 @@ class WECOOP_Documento_Unico_PDF {
             box-sizing: border-box;
         }
         body {
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 11px;
-            line-height: 1.6;
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
             color: #333;
-            background: white;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
         }
         .container {
+            padding: 20mm;
             max-width: 210mm;
-            margin: 0 auto;
-            background: white;
-            padding: 40px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #4CAF50;
-            padding-bottom: 20px;
-        }
-        .header img {
-            height: 40px;
-            margin-bottom: 10px;
+            padding-bottom: 15px;
         }
         .header h1 {
-            font-size: 18px;
+            font-size: 16px;
+            font-weight: bold;
             color: #333;
             margin-bottom: 5px;
         }
         .header .subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
-        }
-        .document-content {
-            background: #fafafa;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 30px;
-            line-height: 1.8;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 9px;
-            color: #999;
-            text-align: center;
         }
         .document-id {
             background: #e8f5e9;
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 3px;
             margin-bottom: 20px;
+            font-size: 11px;
             text-align: center;
-            font-size: 10px;
         }
         .document-id strong {
             color: #2e7d32;
         }
+        .document-content {
+            font-size: 11px;
+            line-height: 1.6;
+            text-align: justify;
+        }
+        .document-content p {
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .document-content h2 {
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 15px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .document-content ul {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        .document-content li {
+            margin-bottom: 5px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 10px;
+            color: #999;
+            text-align: center;
+        }
         @page {
             size: A4;
-            margin: 10mm;
-        }
-        @media print {
-            body {
-                padding: 0;
-            }
-            .container {
-                box-shadow: none;
-            }
+            margin: 0;
         }
     </style>
 </head>
@@ -235,21 +274,73 @@ class WECOOP_Documento_Unico_PDF {
         </div>
         
         <div class="document-content">
-<?php echo esc_html($documento_testo); ?>
+            <?php echo $html_content; ?>
         </div>
         
         <div class="footer">
             <p>Questo documento è stato generato digitalmente e sarà firmato tramite autenticazione OTP.</p>
             <p>Firma: _________________________________ Data: _______________________</p>
-            <p style="margin-top: 20px; font-size: 8px;">
-                © <?php echo date('Y'); ?> WECOOP APS | Documento privato | Dispositione di legge sulla privacy
-            </p>
+            <p style="margin-top: 15px;">© <?php echo date('Y'); ?> WECOOP APS | Documento privato</p>
         </div>
     </div>
 </body>
 </html>
         <?php
         return ob_get_clean();
+    }
+    
+    /**
+     * Formatta il testo in HTML pulito
+     */
+    private static function formatta_testo_html($testo) {
+        // Pulisci spazi eccedenti
+        $testo = trim($testo);
+        
+        // Dividi per righe vuote (paragrafi)
+        $paragrafi = preg_split('/\n\s*\n/', $testo);
+        
+        $html = '';
+        foreach ($paragrafi as $paragrafo) {
+            $paragrafo = trim($paragrafo);
+            if (empty($paragrafo)) {
+                continue;
+            }
+            
+            // Controlla se è un heading (contiene numero all'inizio)
+            if (preg_match('/^(\d+\)|\d+\.)\s+(.+)$/m', $paragrafo, $matches)) {
+                $html .= '<h2>' . esc_html($paragrafo) . '</h2>';
+            }
+            // Controlla se contiene bullet points
+            elseif (strpos($paragrafo, '-') === 0 || strpos($paragrafo, '•') === 0) {
+                $linee = explode("\n", $paragrafo);
+                $html .= '<ul>';
+                foreach ($linee as $linea) {
+                    $linea = trim($linea);
+                    if (preg_match('/^[-•]\s*(.+)$/', $linea, $matches)) {
+                        $html .= '<li>' . esc_html($matches[1]) . '</li>';
+                    }
+                }
+                $html .= '</ul>';
+            }
+            // Paragrafo normale
+            else {
+                // Gestisci righe multiple dentro il paragrafo
+                $linee = explode("\n", $paragrafo);
+                $html .= '<p>';
+                foreach ($linee as $idx => $linea) {
+                    $linea = trim($linea);
+                    if (!empty($linea)) {
+                        $html .= esc_html($linea);
+                        if ($idx < count($linee) - 1) {
+                            $html .= '<br>';
+                        }
+                    }
+                }
+                $html .= '</p>';
+            }
+        }
+        
+        return $html;
     }
     
     /**
