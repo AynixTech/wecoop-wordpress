@@ -157,7 +157,7 @@ class WECOOP_Documento_Unico_PDF {
      * Genera HTML documento formattato per PDF
      */
     private static function genera_html_documento($documento_testo, $richiesta_id) {
-        $data_ora = date('d/m/Y H:i:s');
+        $data_ora = wp_date('d/m/Y H:i:s');
         
         // Formatta il testo in paragrafi HTML
         $html_content = self::formatta_testo_html($documento_testo);
