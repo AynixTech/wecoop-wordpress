@@ -2133,12 +2133,32 @@ class WECOOP_Servizi_Management {
                     timeout: 30000, // 30 secondi timeout
                     success: function(response) {
                         console.log('✅ FIRMA: Risposta server ricevuta', response);
+                        console.log('📊 FIRMA: Struttura risposta:', {
+                            success: response.success,
+                            data_type: typeof response.data,
+                            data_keys: Object.keys(response.data || {}),
+                            documento: response.data?.documento,
+                            url: response.data?.documento?.url,
+                            hash: response.data?.documento?.hash_sha256?.substring(0, 16)
+                        });
                         
                         if (response.success) {
+                            const url = response.data?.documento?.url;
+                            const hash = response.data?.documento?.hash_sha256;
+                            
                             console.log('✅ FIRMA: Documento generato con successo', {
-                                pdf_url: response.data.documento?.url,
-                                hash: response.data.documento?.hash_sha256?.substring(0, 16) + '...'
+                                pdf_url: url,
+                                hash: hash?.substring(0, 16) + '...',
+                                has_url: !!url,
+                                has_hash: !!hash
                             });
+                            
+                            if (!url) {
+                                console.error('❌ FIRMA: URL PDF è vuoto!', {
+                                    documento: response.data?.documento,
+                                    response_data: response.data
+                                });
+                            }
                             
                             // Aggiorna bottone
                             $button.html('✅ Documento Generato')
@@ -2148,7 +2168,9 @@ class WECOOP_Servizi_Management {
                             alert('✅ Documento generato con successo!\n\nIl cliente potrà ora firmare il documento tramite l\'app.');
                             
                             // Mostra il link al PDF in console
-                            console.log('📄 FIRMA: Link al PDF:', response.data.documento?.url);
+                            if (url) {
+                                console.log('📄 FIRMA: Link al PDF:', url);
+                            }
                             
                             // Ricarica la pagina dopo 2 secondi
                             setTimeout(function() {
@@ -4046,8 +4068,9 @@ class WECOOP_Servizi_Management {
             
             error_log('📊 FIRMA: Risultato generazione PDF: ' . json_encode([
                 'success' => isset($result['success']) ? $result['success'] : false,
-                'url' => $result['url'] ?? 'N/A',
-                'hash' => isset($result['hash_sha256']) ? substr($result['hash_sha256'], 0, 16) . '...' : 'N/A'
+                'has_doc' => isset($result['documento']),
+                'url' => $result['documento']['url'] ?? 'N/A',
+                'hash' => isset($result['documento']['hash_sha256']) ? substr($result['documento']['hash_sha256'], 0, 16) . '...' : 'N/A'
             ]));
             
             if (!isset($result['success']) || !$result['success']) {
@@ -4055,26 +4078,33 @@ class WECOOP_Servizi_Management {
                 wp_send_json_error('Errore durante la generazione del PDF: ' . ($result['message'] ?? 'Errore sconosciuto'));
             }
             
+            // Estrai dati dal nidificato
+            $doc_data = $result['documento'] ?? [];
+            $url = $doc_data['url'] ?? '';
+            $hash = $doc_data['hash_sha256'] ?? '';
+            $contenuto = $doc_data['contenuto_testo'] ?? '';
+            $nome = $doc_data['nome'] ?? 'documento_unico.pdf';
+            
             error_log('✅ FIRMA: PDF generato con successo');
-            error_log('📄 FIRMA: URL PDF: ' . $result['url']);
-            error_log('🔐 FIRMA: Hash SHA-256: ' . substr($result['hash_sha256'], 0, 32) . '...');
+            error_log('📄 FIRMA: URL PDF: ' . $url);
+            error_log('🔐 FIRMA: Hash SHA-256: ' . substr($hash, 0, 32) . '...');
             
             // Aggiorna metadata della richiesta
             update_post_meta($richiesta_id, 'documento_unico_generato', 'yes');
-            update_post_meta($richiesta_id, 'documento_unico_url', $result['url']);
-            update_post_meta($richiesta_id, 'documento_unico_hash', $result['hash_sha256']);
+            update_post_meta($richiesta_id, 'documento_unico_url', $url);
+            update_post_meta($richiesta_id, 'documento_unico_hash', $hash);
             update_post_meta($richiesta_id, 'documento_unico_generato_il', current_time('mysql'));
             
             error_log('✅ FIRMA: Metadata salvati');
             
-            // Riposta di successo
+            // Risposta di successo
             wp_send_json_success([
                 'message' => 'Documento generato con successo',
                 'documento' => [
-                    'url' => $result['url'],
-                    'contenuto_testo' => $result['contenuto_testo'] ?? '',
-                    'hash_sha256' => $result['hash_sha256'],
-                    'nome' => $result['nome'] ?? 'documento_unico.pdf'
+                    'url' => $url,
+                    'contenuto_testo' => $contenuto,
+                    'hash_sha256' => $hash,
+                    'nome' => $nome
                 ]
             ]);
             
