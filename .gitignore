@@ -48,3 +48,20 @@ wp-content/uploads/really-simple-ssl/
 wp-content/uploads/complianz/
 .htaccess
 llms.txt
+# 🔐 Firma Digitale - Generated PDFs and configs
+wp-content/uploads/wecoop-documenti-unici/
+wp-content/uploads/wecoop-ricevute/
+wp-content/plugins/wecoop-servizi/config-sms-*.php
+wp-content/plugins/wecoop-servizi/.env.local
+wp-content/plugins/wecoop-servizi/debug-*.log
+
+# 📊 System logs
+*.log
+wp-content/debug.log
+wp-content/plugins/wecoop-servizi/logs/
+
+# 📋 Temporary files
+*.tmp
+*.temp
+.tmp/
+temp/
