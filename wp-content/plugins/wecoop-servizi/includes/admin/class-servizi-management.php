@@ -33,6 +33,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_get_prezzo_listino', [__CLASS__, 'ajax_get_prezzo_listino']);
         add_action('wp_ajax_generate_receipt', [__CLASS__, 'ajax_generate_receipt']);
         add_action('wp_ajax_send_documento_unico', [__CLASS__, 'ajax_send_documento_unico']);
+        add_action('wp_ajax_delete_documento_unico', [__CLASS__, 'ajax_delete_documento_unico']);
         add_action('wp_ajax_save_debug_logs', [__CLASS__, 'ajax_save_debug_logs']);
         
         // Row actions
@@ -1446,6 +1447,12 @@ class WECOOP_Servizi_Management {
                            title="Apri documento unico PDF">
                             📄 Visualizza Documento <?php echo $doc_firmato === 'yes' ? '✅' : ''; ?>
                         </a>
+                        <button class="button button-small delete-documento-unico" 
+                                data-id="<?php echo $post_id; ?>"
+                                style="margin-top: 5px; margin-left: 5px; background: #f44336; color: white; border-color: #f44336;"
+                                title="Elimina il documento generato">
+                            ❌ Elimina Documento
+                        </button>
                     <?php else: ?>
                         <button class="button button-small button-primary send-documento-unico" 
                                 data-id="<?php echo $post_id; ?>"
