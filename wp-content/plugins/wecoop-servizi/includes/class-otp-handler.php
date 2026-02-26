@@ -24,6 +24,11 @@ class WECOOP_OTP_Handler {
      * Massimi tentativi falliti
      */
     const MAX_ATTEMPTS = 3;
+
+    /**
+     * Timeout chiamate HTTP verso provider SMS
+     */
+    const SMS_HTTP_TIMEOUT = 15;
     
     /**
      * Inizializza
@@ -130,6 +135,10 @@ class WECOOP_OTP_Handler {
             $dati_array = json_decode($dati, true);
             $telefono = $dati_array['telefono'] ?? null;
         }
+
+        // Prendi email utente
+        $user = get_userdata($user_id);
+        $email = $user ? $user->user_email : null;
         
         // Salva OTP in database
         $result = $wpdb->insert(
@@ -158,16 +167,59 @@ class WECOOP_OTP_Handler {
         
         $otp_id = $wpdb->insert_id;
         
-        // Invia OTP via SMS (integrazione con servizio SMS)
-        $sms_sent = self::send_otp_via_sms($telefono, $otp_code);
+        // Invio OTP su canali disponibili
+        $sms_sent = self::send_otp_via_sms($telefono, $otp_code, $richiesta_id, $user_id);
+        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id);
+
+        // Almeno un canale deve riuscire
+        if (!$sms_sent && !$email_sent) {
+            $wpdb->update(
+                self::$table_name,
+                [
+                    'status' => 'delivery_failed',
+                    'updated_at' => current_time('mysql')
+                ],
+                ['id' => $otp_id],
+                ['%s', '%s'],
+                ['%d']
+            );
+
+            error_log("[WECOOP OTP] ❌ Invio OTP fallito su tutti i canali (richiesta #{$richiesta_id}, otp_id #{$otp_id})");
+
+            return [
+                'success' => false,
+                'message' => 'Impossibile inviare OTP via SMS o email. Contatta supporto.'
+            ];
+        }
         
-        error_log("[WECOOP OTP] ✅ OTP generato per richiesta #{$richiesta_id}: {$otp_code}");
+        $canali = [];
+        if ($sms_sent) {
+            $canali[] = 'sms';
+        }
+        if ($email_sent) {
+            $canali[] = 'email';
+        }
+
+        error_log("[WECOOP OTP] ✅ OTP generato per richiesta #{$richiesta_id}, otp_id #{$otp_id}, canali: " . implode(',', $canali));
+
+        $masked_phone = self::mask_phone($telefono);
+        $masked_email = self::mask_email($email);
+
+        if ($sms_sent && $email_sent) {
+            $message = 'OTP inviato via SMS ed email';
+        } elseif ($sms_sent) {
+            $message = 'OTP inviato via SMS al numero ' . $masked_phone;
+        } else {
+            $message = 'OTP inviato via email a ' . $masked_email;
+        }
         
         return [
             'success' => true,
-            'message' => 'OTP inviato al numero ' . self::mask_phone($telefono),
+            'message' => $message,
             'otp_id' => $otp_id,
-            'masked_phone' => self::mask_phone($telefono),
+            'delivery_channels' => $canali,
+            'masked_phone' => $masked_phone,
+            'masked_email' => $masked_email,
             'expires_in' => self::OTP_EXPIRY_TIME
         ];
     }
@@ -262,19 +314,163 @@ class WECOOP_OTP_Handler {
     }
     
     /**
-     * Invia OTP via SMS (stub - implementare con servizio SMS preferito)
+     * Invia OTP via SMS.
+     * Supporta due modalità:
+     * - Twilio (provider: twilio)
+     * - Webhook custom (provider: webhook)
      */
-    private static function send_otp_via_sms($telefono, $otp_code) {
+    private static function send_otp_via_sms($telefono, $otp_code, $richiesta_id = null, $user_id = null) {
         if (!$telefono) {
             error_log('[WECOOP OTP] ⚠️ Nessun numero telefonico fornito');
             return false;
         }
-        
-        // TODO: Implementare integrazione SMS
-        // Possibili servizi: Twilio, Signalwire, Trengo, ecc.
-        
-        error_log("[WECOOP OTP] 📱 SMS con OTP inviato a {$telefono}: {$otp_code}");
-        
+
+        $normalized_phone = self::normalize_phone($telefono);
+        if (!$normalized_phone) {
+            error_log("[WECOOP OTP] ❌ Numero telefonico non valido: {$telefono}");
+            return false;
+        }
+
+        $provider = strtolower((string) self::get_otp_setting('WECOOP_SMS_PROVIDER', 'webhook'));
+        $message = "Codice OTP WECOOP: {$otp_code}. Valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.";
+
+        if ($provider === 'twilio') {
+            return self::send_sms_via_twilio($normalized_phone, $message);
+        }
+
+        if ($provider === 'webhook') {
+            return self::send_sms_via_webhook($normalized_phone, $message, $otp_code, $richiesta_id, $user_id);
+        }
+
+        error_log("[WECOOP OTP] ❌ Provider SMS non supportato: {$provider}");
+        return false;
+    }
+
+    /**
+     * Invio OTP via email.
+     */
+    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null) {
+        if (!$email || !is_email($email)) {
+            error_log('[WECOOP OTP] ⚠️ Email non valida o assente per invio OTP');
+            return false;
+        }
+
+        $subject = '🔐 Codice OTP Firma Documento WECOOP';
+        $message = "Ciao,\n\n";
+        $message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n\n";
+        $message .= "Il codice è valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+        if ($richiesta_id) {
+            $message .= "ID richiesta: {$richiesta_id}\n";
+        }
+        $message .= "\nSe non hai richiesto tu questo codice, ignora questa email.\n\n";
+        $message .= "Team WECOOP";
+
+        $sent = wp_mail($email, $subject, $message);
+        if (!$sent) {
+            error_log("[WECOOP OTP] ❌ Invio email OTP fallito per {$email}");
+            return false;
+        }
+
+        error_log("[WECOOP OTP] ✅ OTP email inviato a " . self::mask_email($email));
+        return true;
+    }
+
+    /**
+     * Invio SMS via Twilio API.
+     */
+    private static function send_sms_via_twilio($to, $message) {
+        $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
+        $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
+        $from = self::get_otp_setting('WECOOP_TWILIO_FROM');
+
+        if (!$sid || !$token || !$from) {
+            error_log('[WECOOP OTP] ❌ Config Twilio incompleta (SID/TOKEN/FROM)');
+            return false;
+        }
+
+        $endpoint = "https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json";
+        $auth = base64_encode($sid . ':' . $token);
+
+        $response = wp_remote_post($endpoint, [
+            'timeout' => self::SMS_HTTP_TIMEOUT,
+            'headers' => [
+                'Authorization' => 'Basic ' . $auth,
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ],
+            'body' => [
+                'To' => $to,
+                'From' => $from,
+                'Body' => $message
+            ]
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[WECOOP OTP] ❌ Twilio error: ' . $response->get_error_message());
+            return false;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+
+        if ($status_code < 200 || $status_code >= 300) {
+            error_log("[WECOOP OTP] ❌ Twilio HTTP {$status_code}: " . substr($body, 0, 500));
+            return false;
+        }
+
+        error_log('[WECOOP OTP] ✅ SMS inviato via Twilio a ' . self::mask_phone($to));
+        return true;
+    }
+
+    /**
+     * Invio SMS via webhook custom.
+     */
+    private static function send_sms_via_webhook($to, $message, $otp_code, $richiesta_id = null, $user_id = null) {
+        $endpoint = self::get_otp_setting('WECOOP_SMS_WEBHOOK_URL');
+        $token = self::get_otp_setting('WECOOP_SMS_WEBHOOK_TOKEN');
+        $sender = self::get_otp_setting('WECOOP_SMS_SENDER', 'WECOOP');
+
+        if (!$endpoint) {
+            error_log('[WECOOP OTP] ❌ WECOOP_SMS_WEBHOOK_URL non configurato');
+            return false;
+        }
+
+        $headers = [
+            'Content-Type' => 'application/json'
+        ];
+
+        if ($token) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+
+        $payload = [
+            'to' => $to,
+            'message' => $message,
+            'sender' => $sender,
+            'otp_code' => $otp_code,
+            'richiesta_id' => $richiesta_id,
+            'user_id' => $user_id
+        ];
+
+        $response = wp_remote_post($endpoint, [
+            'timeout' => self::SMS_HTTP_TIMEOUT,
+            'headers' => $headers,
+            'body' => wp_json_encode($payload)
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[WECOOP OTP] ❌ SMS webhook error: ' . $response->get_error_message());
+            return false;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+
+        if ($status_code < 200 || $status_code >= 300) {
+            error_log("[WECOOP OTP] ❌ SMS webhook HTTP {$status_code}: " . substr($body, 0, 500));
+            return false;
+        }
+
+        error_log('[WECOOP OTP] ✅ SMS inviato via webhook a ' . self::mask_phone($to));
         return true;
     }
     
@@ -286,6 +482,74 @@ class WECOOP_OTP_Handler {
         $phone = preg_replace('/\D/', '', $phone);
         if (strlen($phone) < 4) return '****';
         return substr($phone, 0, -4) . '****';
+    }
+
+    /**
+     * Maschera email per output/log.
+     */
+    private static function mask_email($email) {
+        if (!$email || !strpos($email, '@')) {
+            return 'email sconosciuta';
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        if (strlen($local) <= 2) {
+            $masked_local = substr($local, 0, 1) . '*';
+        } else {
+            $masked_local = substr($local, 0, 2) . str_repeat('*', max(1, strlen($local) - 2));
+        }
+
+        return $masked_local . '@' . $domain;
+    }
+
+    /**
+     * Normalizza numero telefono in formato E.164 semplificato.
+     */
+    private static function normalize_phone($phone) {
+        if (!$phone) {
+            return null;
+        }
+
+        $phone = trim($phone);
+        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
+
+        if (strpos($phone, '00') === 0) {
+            $phone = '+' . substr($phone, 2);
+        }
+
+        if (strpos($phone, '+') === 0) {
+            $digits = preg_replace('/\D/', '', $phone);
+            return $digits ? '+' . $digits : null;
+        }
+
+        $digits = preg_replace('/\D/', '', $phone);
+        if (!$digits) {
+            return null;
+        }
+
+        if (strpos($digits, '39') === 0) {
+            return '+' . $digits;
+        }
+
+        // default Italia
+        return '+39' . $digits;
+    }
+
+    /**
+     * Recupera configurazione OTP da costanti o option.
+     */
+    private static function get_otp_setting($const_name, $default = null) {
+        if (defined($const_name)) {
+            return constant($const_name);
+        }
+
+        $option_key = strtolower($const_name);
+        $option_value = get_option($option_key, null);
+        if ($option_value !== null && $option_value !== '') {
+            return $option_value;
+        }
+
+        return $default;
     }
     
     /**
