@@ -4533,6 +4533,10 @@ class WECOOP_Servizi_Management {
                                         admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id)),
                                         'wecoop_download_signed_document_' . intval($doc->id)
                                     );
+                                    $open_url = wp_nonce_url(
+                                        admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id) . '&inline=1'),
+                                        'wecoop_download_signed_document_' . intval($doc->id)
+                                    );
                                     ?>
                                     <tr>
                                         <td><input type="checkbox" name="firma_ids[]" value="<?php echo intval($doc->id); ?>"></td>
@@ -4565,7 +4569,7 @@ class WECOOP_Servizi_Management {
                                         </td>
                                         <td>
                                             <?php if (!empty($doc_url)): ?>
-                                                <a class="button button-small" target="_blank" href="<?php echo esc_url($doc_url); ?>">👁️ Apri</a>
+                                                <a class="button button-small" target="_blank" href="<?php echo esc_url($open_url); ?>">👁️ Apri</a>
                                                 <a class="button button-small" href="<?php echo esc_url($download_url); ?>">⬇️ Scarica</a>
                                             <?php else: ?>
                                                 <span style="color:#999;">Nessun PDF</span>
@@ -4621,7 +4625,9 @@ class WECOOP_Servizi_Management {
         }
 
         $download_name = 'documento_firmato_richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
-        self::stream_file_download($file_path, $download_name, 'application/pdf');
+        $is_inline = !empty($_GET['inline']);
+        $disposition = $is_inline ? 'inline' : 'attachment';
+        self::stream_file_download($file_path, $download_name, 'application/pdf', false, $disposition);
     }
 
     public static function handle_download_signed_documents_bulk() {
@@ -4702,17 +4708,45 @@ class WECOOP_Servizi_Management {
             return null;
         }
 
-        if (strpos($url, $uploads['baseurl']) !== 0) {
-            return null;
+        // Caso standard: URL appartenente al baseurl uploads corrente
+        if (strpos($url, $uploads['baseurl']) === 0) {
+            $relative = ltrim(substr($url, strlen($uploads['baseurl'])), '/');
+            $path = trailingslashit($uploads['basedir']) . $relative;
+            $normalized = wp_normalize_path($path);
+            if (file_exists($normalized)) {
+                return $normalized;
+            }
         }
 
-        $relative = ltrim(substr($url, strlen($uploads['baseurl'])), '/');
-        $path = trailingslashit($uploads['basedir']) . $relative;
+        // Fallback: URL con host/baseurl differente (es. cambio dominio www/non-www o migrazione)
+        $parsed = wp_parse_url($url);
+        $path_component = $parsed['path'] ?? '';
+        if (!empty($path_component)) {
+            $uploads_pos = strpos($path_component, '/uploads/');
+            if ($uploads_pos !== false) {
+                $relative = substr($path_component, $uploads_pos + strlen('/uploads/'));
+                $candidate = trailingslashit($uploads['basedir']) . ltrim($relative, '/');
+                $candidate = wp_normalize_path($candidate);
+                if (file_exists($candidate)) {
+                    return $candidate;
+                }
+            }
+        }
 
-        return wp_normalize_path($path);
+        // Ultimo fallback: cerca per basename nella directory documenti unici
+        $basename = basename($path_component ?: $url);
+        if (!empty($basename) && $basename !== '.' && $basename !== '..') {
+            $candidate = trailingslashit($uploads['basedir']) . 'wecoop-documenti-unici/' . $basename;
+            $candidate = wp_normalize_path($candidate);
+            if (file_exists($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
-    private static function stream_file_download($file_path, $download_name, $content_type, $delete_after = false) {
+    private static function stream_file_download($file_path, $download_name, $content_type, $delete_after = false, $disposition = 'attachment') {
         if (ob_get_level()) {
             ob_end_clean();
         }
@@ -4720,7 +4754,7 @@ class WECOOP_Servizi_Management {
         nocache_headers();
         header('Content-Description: File Transfer');
         header('Content-Type: ' . $content_type);
-        header('Content-Disposition: attachment; filename="' . sanitize_file_name($download_name) . '"');
+        header('Content-Disposition: ' . ($disposition === 'inline' ? 'inline' : 'attachment') . '; filename="' . sanitize_file_name($download_name) . '"');
         header('Content-Length: ' . filesize($file_path));
         header('Pragma: public');
         header('Expires: 0');
