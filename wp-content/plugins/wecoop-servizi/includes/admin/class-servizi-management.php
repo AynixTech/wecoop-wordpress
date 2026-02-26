@@ -18,6 +18,8 @@ class WECOOP_Servizi_Management {
     public static function init() {
         add_action('admin_menu', [__CLASS__, 'add_admin_menu']);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_admin_assets']);
+        add_action('admin_post_wecoop_download_signed_document', [__CLASS__, 'handle_download_signed_document']);
+        add_action('admin_post_wecoop_download_signed_documents_bulk', [__CLASS__, 'handle_download_signed_documents_bulk']);
         
         // AJAX handlers
         add_action('wp_ajax_edit_richiesta_servizio', [__CLASS__, 'ajax_edit_richiesta']);
@@ -102,6 +104,15 @@ class WECOOP_Servizi_Management {
             'manage_options',
             'wecoop-servizi-settings',
             [__CLASS__, 'render_settings']
+        );
+
+        add_submenu_page(
+            'wecoop-richieste-servizi',
+            'Documenti Firmati',
+            '✍️ Documenti Firmati',
+            'manage_options',
+            'wecoop-documenti-firmati',
+            [__CLASS__, 'render_signed_documents_page']
         );
         
         // Pagina nascosta per dettaglio utente
@@ -4436,5 +4447,290 @@ class WECOOP_Servizi_Management {
             error_log('❌ DELETE: Eccezione - ' . $e->getMessage());
             wp_send_json_error($e->getMessage());
         }
+    }
+
+    public static function render_signed_documents_page() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Permessi insufficienti');
+        }
+
+        global $wpdb;
+        $firme_table = $wpdb->prefix . 'wecoop_firme_digitali';
+        $otp_table = $wpdb->prefix . 'wecoop_firma_otp';
+
+        $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $firme_table));
+
+        $signed_documents = [];
+        if ($table_exists === $firme_table) {
+            $signed_documents = $wpdb->get_results(
+                "SELECT f.id, f.otp_id, f.richiesta_id, f.user_id, f.documento_hash, f.firma_timestamp, f.firma_hash, f.firma_tipo, f.firma_metadata,
+                        p.post_title,
+                        u.display_name, u.user_email,
+                        otp.telefono, otp.otp_verified_at
+                 FROM {$firme_table} f
+                 LEFT JOIN {$wpdb->posts} p ON p.ID = f.richiesta_id
+                 LEFT JOIN {$wpdb->users} u ON u.ID = f.user_id
+                 LEFT JOIN {$otp_table} otp ON otp.id = f.otp_id
+                 WHERE f.status = 'signed'
+                 ORDER BY f.firma_timestamp DESC"
+            );
+        }
+
+        $notice = sanitize_text_field($_GET['wecoop_notice'] ?? '');
+        ?>
+        <div class="wrap">
+            <h1>✍️ Documenti Firmati</h1>
+
+            <?php if ($notice === 'bulk_missing_zip'): ?>
+                <div class="notice notice-error"><p>ZipArchive non disponibile sul server. Impossibile creare il file ZIP.</p></div>
+            <?php elseif ($notice === 'bulk_no_files'): ?>
+                <div class="notice notice-warning"><p>Nessun PDF disponibile per il download.</p></div>
+            <?php elseif ($notice === 'single_not_found'): ?>
+                <div class="notice notice-error"><p>Documento non trovato o file non più disponibile.</p></div>
+            <?php endif; ?>
+
+            <p>Elenco completo dei documenti firmati con informazioni firma, utente, orari e metadati tecnici.</p>
+
+            <?php if ($table_exists !== $firme_table): ?>
+                <div class="notice notice-warning"><p>Tabella firme digitali non trovata.</p></div>
+            <?php else: ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <input type="hidden" name="action" value="wecoop_download_signed_documents_bulk">
+                    <?php wp_nonce_field('wecoop_download_signed_documents_bulk'); ?>
+
+                    <div style="margin: 12px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button type="submit" name="bulk_mode" value="selected" class="button button-primary">📦 Scarica selezionati (ZIP)</button>
+                        <button type="submit" name="bulk_mode" value="all" class="button">📥 Scarica tutti (ZIP)</button>
+                        <span style="color:#666;">Totale firmati: <strong><?php echo intval(count($signed_documents)); ?></strong></span>
+                    </div>
+
+                    <table class="widefat striped">
+                        <thead>
+                            <tr>
+                                <th style="width:32px;"><input type="checkbox" id="wecoop-select-all-firme"></th>
+                                <th>Firma ID</th>
+                                <th>Richiesta</th>
+                                <th>Utente</th>
+                                <th>Telefono</th>
+                                <th>Documento</th>
+                                <th>Firma</th>
+                                <th>Orari</th>
+                                <th>Metadata</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($signed_documents)): ?>
+                                <tr><td colspan="10">Nessun documento firmato trovato.</td></tr>
+                            <?php else: ?>
+                                <?php foreach ($signed_documents as $doc): ?>
+                                    <?php
+                                    $metadata = json_decode($doc->firma_metadata, true);
+                                    $doc_url = get_post_meta($doc->richiesta_id, 'documento_unico_url', true);
+                                    $doc_hash = get_post_meta($doc->richiesta_id, 'documento_unico_hash', true);
+                                    $generated_at = get_post_meta($doc->richiesta_id, 'documento_unico_generato_il', true);
+                                    $download_url = wp_nonce_url(
+                                        admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id)),
+                                        'wecoop_download_signed_document_' . intval($doc->id)
+                                    );
+                                    ?>
+                                    <tr>
+                                        <td><input type="checkbox" name="firma_ids[]" value="<?php echo intval($doc->id); ?>"></td>
+                                        <td>#<?php echo intval($doc->id); ?></td>
+                                        <td>
+                                            #<?php echo intval($doc->richiesta_id); ?><br>
+                                            <small><?php echo esc_html($doc->post_title ?: 'Richiesta senza titolo'); ?></small>
+                                        </td>
+                                        <td>
+                                            <?php echo esc_html($doc->display_name ?: 'Utente #' . intval($doc->user_id)); ?><br>
+                                            <small><?php echo esc_html($doc->user_email ?: ''); ?></small>
+                                        </td>
+                                        <td><?php echo esc_html($doc->telefono ?: '—'); ?></td>
+                                        <td>
+                                            <small><strong>Hash doc:</strong> <?php echo esc_html($doc_hash ?: $doc->documento_hash); ?></small>
+                                        </td>
+                                        <td>
+                                            <small><strong>Tipo:</strong> <?php echo esc_html($doc->firma_tipo); ?></small><br>
+                                            <small><strong>Hash firma:</strong> <?php echo esc_html($doc->firma_hash); ?></small>
+                                        </td>
+                                        <td>
+                                            <small><strong>OTP verificato:</strong> <?php echo esc_html($doc->otp_verified_at ?: '—'); ?></small><br>
+                                            <small><strong>Doc generato:</strong> <?php echo esc_html($generated_at ?: '—'); ?></small><br>
+                                            <small><strong>Firmato:</strong> <?php echo esc_html($doc->firma_timestamp ?: '—'); ?></small>
+                                        </td>
+                                        <td>
+                                            <small><strong>IP:</strong> <?php echo esc_html($metadata['ip_address'] ?? '—'); ?></small><br>
+                                            <small><strong>App:</strong> <?php echo esc_html($metadata['app_version'] ?? '—'); ?></small><br>
+                                            <small><strong>Device:</strong> <?php echo esc_html(is_array($metadata['device_info'] ?? null) ? wp_json_encode($metadata['device_info']) : ($metadata['device_info'] ?? '—')); ?></small>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($doc_url)): ?>
+                                                <a class="button button-small" target="_blank" href="<?php echo esc_url($doc_url); ?>">👁️ Apri</a>
+                                                <a class="button button-small" href="<?php echo esc_url($download_url); ?>">⬇️ Scarica</a>
+                                            <?php else: ?>
+                                                <span style="color:#999;">Nessun PDF</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </form>
+
+                <script>
+                (function(){
+                    var selectAll = document.getElementById('wecoop-select-all-firme');
+                    if (!selectAll) return;
+                    selectAll.addEventListener('change', function() {
+                        var checks = document.querySelectorAll('input[name="firma_ids[]"]');
+                        checks.forEach(function(chk){ chk.checked = selectAll.checked; });
+                    });
+                })();
+                </script>
+            <?php endif; ?>
+        </div>
+        <?php
+    }
+
+    public static function handle_download_signed_document() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Permessi insufficienti');
+        }
+
+        $firma_id = absint($_GET['firma_id'] ?? 0);
+        if (!$firma_id || !wp_verify_nonce($_GET['_wpnonce'] ?? '', 'wecoop_download_signed_document_' . $firma_id)) {
+            wp_die('Richiesta non valida');
+        }
+
+        global $wpdb;
+        $firme_table = $wpdb->prefix . 'wecoop_firme_digitali';
+        $row = $wpdb->get_row($wpdb->prepare("SELECT id, richiesta_id, firma_timestamp FROM {$firme_table} WHERE id = %d", $firma_id));
+
+        if (!$row) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found'));
+            exit;
+        }
+
+        $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
+        $file_path = self::get_local_file_path_from_upload_url($doc_url);
+
+        if (!$file_path || !file_exists($file_path)) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=single_not_found'));
+            exit;
+        }
+
+        $download_name = 'documento_firmato_richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
+        self::stream_file_download($file_path, $download_name, 'application/pdf');
+    }
+
+    public static function handle_download_signed_documents_bulk() {
+        if (!current_user_can('manage_options')) {
+            wp_die('Permessi insufficienti');
+        }
+
+        check_admin_referer('wecoop_download_signed_documents_bulk');
+
+        if (!class_exists('ZipArchive')) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=bulk_missing_zip'));
+            exit;
+        }
+
+        global $wpdb;
+        $firme_table = $wpdb->prefix . 'wecoop_firme_digitali';
+        $bulk_mode = sanitize_text_field($_POST['bulk_mode'] ?? 'selected');
+
+        if ($bulk_mode === 'all') {
+            $firme_rows = $wpdb->get_results("SELECT id, richiesta_id FROM {$firme_table} WHERE status = 'signed' ORDER BY firma_timestamp DESC");
+        } else {
+            $firma_ids = array_map('absint', (array) ($_POST['firma_ids'] ?? []));
+            $firma_ids = array_filter($firma_ids);
+            if (empty($firma_ids)) {
+                wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=bulk_no_files'));
+                exit;
+            }
+            $in_clause = implode(',', $firma_ids);
+            $firme_rows = $wpdb->get_results("SELECT id, richiesta_id FROM {$firme_table} WHERE id IN ({$in_clause})");
+        }
+
+        if (empty($firme_rows)) {
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=bulk_no_files'));
+            exit;
+        }
+
+        $tmp_zip = wp_tempnam('wecoop_documenti_firmati');
+        if (!$tmp_zip) {
+            wp_die('Impossibile creare file temporaneo ZIP');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($tmp_zip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            wp_die('Impossibile creare archivio ZIP');
+        }
+
+        $added = 0;
+        foreach ($firme_rows as $row) {
+            $doc_url = get_post_meta($row->richiesta_id, 'documento_unico_url', true);
+            $file_path = self::get_local_file_path_from_upload_url($doc_url);
+            if (!$file_path || !file_exists($file_path)) {
+                continue;
+            }
+            $entry_name = 'richiesta_' . intval($row->richiesta_id) . '_firma_' . intval($row->id) . '.pdf';
+            if ($zip->addFile($file_path, $entry_name)) {
+                $added++;
+            }
+        }
+        $zip->close();
+
+        if ($added === 0) {
+            @unlink($tmp_zip);
+            wp_safe_redirect(admin_url('admin.php?page=wecoop-documenti-firmati&wecoop_notice=bulk_no_files'));
+            exit;
+        }
+
+        $download_name = 'documenti_firmati_' . date('Ymd_His') . '.zip';
+        self::stream_file_download($tmp_zip, $download_name, 'application/zip', true);
+    }
+
+    private static function get_local_file_path_from_upload_url($url) {
+        if (empty($url)) {
+            return null;
+        }
+
+        $uploads = wp_get_upload_dir();
+        if (empty($uploads['baseurl']) || empty($uploads['basedir'])) {
+            return null;
+        }
+
+        if (strpos($url, $uploads['baseurl']) !== 0) {
+            return null;
+        }
+
+        $relative = ltrim(substr($url, strlen($uploads['baseurl'])), '/');
+        $path = trailingslashit($uploads['basedir']) . $relative;
+
+        return wp_normalize_path($path);
+    }
+
+    private static function stream_file_download($file_path, $download_name, $content_type, $delete_after = false) {
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        nocache_headers();
+        header('Content-Description: File Transfer');
+        header('Content-Type: ' . $content_type);
+        header('Content-Disposition: attachment; filename="' . sanitize_file_name($download_name) . '"');
+        header('Content-Length: ' . filesize($file_path));
+        header('Pragma: public');
+        header('Expires: 0');
+
+        readfile($file_path);
+
+        if ($delete_after) {
+            @unlink($file_path);
+        }
+
+        exit;
     }
 }
