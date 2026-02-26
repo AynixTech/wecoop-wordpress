@@ -1433,16 +1433,27 @@ class WECOOP_Servizi_Management {
                         </button>
                     <?php endif; ?>
                     <?php 
-                    // Verifica se il documento unico è stato già firmato
+                    // Verifica se il documento unico è stato già generato
+                    $doc_url = get_post_meta($post_id, 'documento_unico_url', true);
                     $doc_firmato = get_post_meta($post_id, 'documento_unico_firmato', true);
                     ?>
                     <br>
-                    <button class="button button-small button-primary send-documento-unico" 
-                            data-id="<?php echo $post_id; ?>"
-                            style="margin-top: 5px; background: #2196f3;"
-                            title="Invia documento unico da firmare">
-                        📝 <?php echo $doc_firmato === 'yes' ? 'Documento Firmato ✅' : 'Manda Documento Unico'; ?>
-                    </button>
+                    <?php if ($doc_url): ?>
+                        <a href="<?php echo esc_url($doc_url); ?>" 
+                           target="_blank" 
+                           class="button button-small"
+                           style="margin-top: 5px; background: #4caf50; color: white; text-decoration: none;"
+                           title="Apri documento unico PDF">
+                            📄 Visualizza Documento <?php echo $doc_firmato === 'yes' ? '✅' : ''; ?>
+                        </a>
+                    <?php else: ?>
+                        <button class="button button-small button-primary send-documento-unico" 
+                                data-id="<?php echo $post_id; ?>"
+                                style="margin-top: 5px; background: #2196f3;"
+                                title="Genera e invia documento unico da firmare">
+                            📝 Manda Documento Unico
+                        </button>
+                    <?php endif; ?>
                 <?php endif; ?>
                 <button class="button button-small button-link-delete delete-richiesta" 
                         data-id="<?php echo $post_id; ?>"
