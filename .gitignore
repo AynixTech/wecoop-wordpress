@@ -51,6 +51,7 @@ llms.txt
 # 🔐 Firma Digitale - Generated PDFs and configs
 wp-content/uploads/wecoop-documenti-unici/
 wp-content/uploads/wecoop-ricevute/
+wp-content/plugins/wecoop-servizi/temp_pdf/
 wp-content/plugins/wecoop-servizi/config-sms-*.php
 wp-content/plugins/wecoop-servizi/.env.local
 wp-content/plugins/wecoop-servizi/debug-*.log
