@@ -703,7 +703,14 @@ class WECOOP_Documento_Unico_PDF {
                 }
             }
 
-            $pdf->Output('F', $merged_path);
+            if (!method_exists($pdf, 'Output')) {
+                return [
+                    'success' => false,
+                    'message' => 'Metodo Output non disponibile nel motore PDF'
+                ];
+            }
+
+            call_user_func([$pdf, 'Output'], 'F', $merged_path);
 
             if (!file_exists($merged_path)) {
                 return [
