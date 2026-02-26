@@ -215,6 +215,7 @@ class WECOOP_Firma_Handler {
         update_post_meta($richiesta_id, 'data_firma', $firma_timestamp);
 
         $attestato_firma_url = '';
+        $documento_unico_merged_url = '';
         if (class_exists('WECOOP_Documento_Unico_PDF')) {
             $attestato_result = WECOOP_Documento_Unico_PDF::generate_attestato_firma_pdf($richiesta_id, [
                 'firma_id' => $firma_id,
@@ -233,6 +234,28 @@ class WECOOP_Firma_Handler {
                 update_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', $attestato_firma_url);
                 update_post_meta($richiesta_id, 'documento_unico_attestato_firma_hash', (string) ($attestato_result['hash_sha256'] ?? ''));
                 update_post_meta($richiesta_id, 'documento_unico_attestato_firma_generato_il', $firma_timestamp);
+
+                $documento_unico_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url', true));
+                if (!empty($documento_unico_url)) {
+                    $merge_result = WECOOP_Documento_Unico_PDF::merge_documento_unico_with_attestato(
+                        $richiesta_id,
+                        $documento_unico_url,
+                        $attestato_firma_url
+                    );
+
+                    if (!empty($merge_result['success']) && !empty($merge_result['url'])) {
+                        $documento_unico_merged_url = (string) $merge_result['url'];
+                        update_post_meta($richiesta_id, 'documento_unico_url_originale', $documento_unico_url);
+                        update_post_meta($richiesta_id, 'documento_unico_url', $documento_unico_merged_url);
+                        update_post_meta($richiesta_id, 'documento_unico_hash', (string) ($merge_result['hash_sha256'] ?? ''));
+                        update_post_meta($richiesta_id, 'documento_unico_merged_firma', 'yes');
+                        update_post_meta($richiesta_id, 'documento_unico_merged_firma_il', $firma_timestamp);
+                    } else {
+                        error_log('[WECOOP FIRMA] ⚠️ Merge documento+attestato non riuscito: ' . ($merge_result['message'] ?? 'errore sconosciuto'));
+                    }
+                } else {
+                    error_log('[WECOOP FIRMA] ⚠️ Merge saltato: documento_unico_url mancante');
+                }
             } else {
                 error_log('[WECOOP FIRMA] ⚠️ Attestato firma non generato: ' . ($attestato_result['message'] ?? 'errore sconosciuto'));
             }
@@ -247,7 +270,8 @@ class WECOOP_Firma_Handler {
             'firma_timestamp' => $firma_timestamp,
             'firma_hash' => $firma_hash,
             'firma_tipo' => 'FES',
-            'attestato_firma_url' => $attestato_firma_url
+            'attestato_firma_url' => $attestato_firma_url,
+            'documento_unico_merged_url' => $documento_unico_merged_url
         ];
     }
     
