@@ -228,6 +228,24 @@ class WECOOP_Documento_Unico_PDF {
             color: #666;
             text-align: center;
         }
+        .footer-logo {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .footer-logo img {
+            max-width: 80px;
+            height: auto;
+            display: inline-block;
+        }
+        .footer-info {
+            line-height: 1.6;
+            font-size: 10px;
+            color: #333;
+        }
+        .footer-info p {
+            margin: 3px 0;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
@@ -245,8 +263,19 @@ class WECOOP_Documento_Unico_PDF {
     </div>
     
     <div class="footer">
-        <p>Documento generato digitalmente - Firma valida tramite OTP</p>
-        <p>© <?php echo date('Y'); ?> WECOOP APS</p>
+        <!-- Logo WECOOP -->
+        <div class="footer-logo">
+            <img src="<?php echo WECOOP_SERVIZI_PLUGIN_DIR; ?>assets/img/wecooplogo.png" alt="WECOOP Logo" style="max-width: 60px; height: auto;">
+        </div>
+        
+        <!-- Informazioni organizzazione -->
+        <div class="footer-info">
+            <p><strong>WECOOP</strong></p>
+            <p>Associazione di Promozione Sociale</p>
+            <p>Via Benefattori dell'Ospedale, 3 – 20159 Milano (MI)</p>
+            <p>Mob. 334 1390175 – info@wecoop.org</p>
+            <p>CF 97977210158</p>
+        </div>
     </div>
 </body>
 </html>
