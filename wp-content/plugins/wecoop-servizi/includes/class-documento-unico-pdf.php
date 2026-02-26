@@ -157,7 +157,7 @@ class WECOOP_Documento_Unico_PDF {
      * Genera HTML documento formattato per PDF
      */
     private static function genera_html_documento($documento_testo, $richiesta_id) {
-        $timestamp = date('d/m/Y H:i');
+        $data_ora = date('d/m/Y H:i:s');
         
         // Formatta il testo in paragrafi HTML
         $html_content = self::formatta_testo_html($documento_testo);
@@ -168,131 +168,85 @@ class WECOOP_Documento_Unico_PDF {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Documento Unico WECOOP</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        html, body {
-            margin: 0;
-            padding: 0;
-        }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.5;
             color: #333;
-            padding: 0;
             margin: 0;
-            orphans: 2;
-            widows: 2;
-        }
-        .container {
-            padding: 15mm 20mm;
-            max-width: 210mm;
+            padding: 20px;
         }
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             border-bottom: 2px solid #4CAF50;
-            padding-bottom: 10px;
-            page-break-after: avoid;
+            padding-bottom: 15px;
         }
         .header h1 {
             font-size: 16px;
             font-weight: bold;
-            color: #333;
-            margin: 0 0 3px 0;
-            padding: 0;
+            margin: 0 0 5px 0;
         }
         .header .subtitle {
             font-size: 11px;
             color: #666;
-            margin: 0;
-            padding: 0;
         }
         .document-id {
-            background: #e8f5e9;
-            padding: 6px 10px;
-            border-radius: 3px;
+            background: #f0f8f0;
+            padding: 10px;
             margin-bottom: 15px;
-            font-size: 10px;
+            font-size: 11px;
             text-align: center;
-            page-break-after: avoid;
-        }
-        .document-id strong {
-            color: #2e7d32;
+            border: 1px solid #4CAF50;
         }
         .document-content {
-            font-size: 11px;
-            line-height: 1.4;
-            text-align: justify;
-        }
-        .document-content p {
-            margin: 0 0 8px 0;
-            text-align: left;
-            padding: 0;
-            page-break-inside: avoid;
+            line-height: 1.6;
         }
         .document-content h2 {
             font-size: 12px;
             font-weight: bold;
-            margin: 12px 0 6px 0;
-            padding: 0;
-            color: #333;
-            page-break-after: avoid;
+            margin: 15px 0 8px 0;
+        }
+        .document-content p {
+            margin: 0 0 10px 0;
+            text-align: left;
         }
         .document-content ul {
-            margin: 0 0 8px 18px;
+            margin: 0 0 10px 20px;
             padding: 0;
-            page-break-inside: avoid;
         }
         .document-content li {
-            margin: 3px 0;
-            padding: 0;
+            margin: 5px 0;
         }
         .footer {
-            margin-top: 20px;
-            padding-top: 10px;
+            margin-top: 30px;
+            padding-top: 15px;
             border-top: 1px solid #ddd;
             font-size: 10px;
-            color: #999;
+            color: #666;
             text-align: center;
-        }
-        .footer p {
-            margin: 5px 0;
-            padding: 0;
-        }
-        @page {
-            size: A4;
-            margin: 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📝 DOCUMENTO UNICO</h1>
-            <div class="subtitle">WECOOP APS - Adesione Socio e Mandato Generale</div>
-        </div>
-        
-        <div class="document-id">
-            <strong>ID Documento:</strong> <?php echo $richiesta_id; ?> | 
-            <strong>Generato:</strong> <?php echo $timestamp; ?>
-        </div>
-        
-        <div class="document-content">
-            <?php echo $html_content; ?>
-        </div>
-        
-        <div class="footer">
-            <p>Questo documento è stato generato digitalmente e sarà firmato tramite autenticazione OTP.</p>
-            <p>Firma: _________________________________ Data: _______________________</p>
-            <p style="margin-top: 10px;">© <?php echo date('Y'); ?> WECOOP APS | Documento privato</p>
-        </div>
+    <div class="header">
+        <h1>DOCUMENTO UNICO</h1>
+        <div class="subtitle">WECOOP APS - Adesione Socio e Mandato Generale</div>
+    </div>
+    
+    <div class="document-id">
+        <strong>ID Servizio:</strong> <?php echo $richiesta_id; ?> | <strong><?php echo $data_ora; ?></strong>
+    </div>
+    
+    <div class="document-content">
+        <?php echo $html_content; ?>
+    </div>
+    
+    <div class="footer">
+        <p>Documento generato digitalmente - Firma valida tramite OTP</p>
+        <p>© <?php echo date('Y'); ?> WECOOP APS</p>
     </div>
 </body>
 </html>
@@ -304,6 +258,8 @@ class WECOOP_Documento_Unico_PDF {
      * Formatta il testo in HTML pulito
      */
     private static function formatta_testo_html($testo) {
+        error_log("[WECOOP DOC PDF] formatta_testo_html - Input size: " . strlen($testo) . " bytes");
+        
         // Pulisci spazi eccedenti all'inizio e fine
         $testo = trim($testo);
         
@@ -313,16 +269,22 @@ class WECOOP_Documento_Unico_PDF {
         // Dividi per righe vuote (paragrafi)
         $paragrafi = preg_split('/\n\s*\n/', $testo);
         
+        error_log("[WECOOP DOC PDF] Numero paragrafi: " . count($paragrafi));
+        
         $html = '';
+        $para_count = 0;
         foreach ($paragrafi as $paragrafo) {
             $paragrafo = trim($paragrafo);
             if (empty($paragrafo)) {
                 continue;
             }
             
+            $para_count++;
+            
             // Controlla se è un heading (contiene numero all'inizio)
             if (preg_match('/^(\d+\)|\d+\.)\s+(.+)$/m', $paragrafo, $matches)) {
                 $html .= '<h2>' . esc_html($paragrafo) . '</h2>';
+                error_log("[WECOOP DOC PDF] Paragrafo $para_count: HEADING");
             }
             // Controlla se contiene bullet points
             elseif (strpos($paragrafo, '-') === 0 || strpos($paragrafo, '•') === 0 || strpos($paragrafo, '☐') === 0) {
@@ -335,6 +297,7 @@ class WECOOP_Documento_Unico_PDF {
                     }
                 }
                 $html .= '</ul>';
+                error_log("[WECOOP DOC PDF] Paragrafo $para_count: UL (" . count($linee) . " items)");
             }
             // Paragrafo normale
             else {
@@ -350,8 +313,11 @@ class WECOOP_Documento_Unico_PDF {
                 }
                 $html .= implode('<br>', $line_parts);
                 $html .= '</p>';
+                error_log("[WECOOP DOC PDF] Paragrafo $para_count: P (" . count($line_parts) . " righe)");
             }
         }
+        
+        error_log("[WECOOP DOC PDF] HTML generato - Output size: " . strlen($html) . " bytes");
         
         return $html;
     }
@@ -361,6 +327,8 @@ class WECOOP_Documento_Unico_PDF {
      */
     private static function html_to_pdf($html, $filename, $richiesta_id = null) {
         error_log("[WECOOP DOC PDF] html_to_pdf chiamato per: $filename (richiesta_id: " . ($richiesta_id ?? 'null') . ")");
+        error_log("[WECOOP DOC PDF] Lunghezza HTML: " . strlen($html) . " bytes");
+        error_log("[WECOOP DOC PDF] HTML Preview (primi 800 chars): " . substr($html, 0, 800));
         
         // Se è una richiesta, elimina i PDF vecchi
         if ($richiesta_id) {
