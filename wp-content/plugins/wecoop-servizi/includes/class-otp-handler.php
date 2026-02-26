@@ -229,6 +229,14 @@ class WECOOP_OTP_Handler {
      */
     public static function verify_otp($otp_id, $otp_code) {
         global $wpdb;
+
+        $normalized_input_code = self::normalize_otp_code($otp_code);
+        if ($normalized_input_code === null) {
+            return [
+                'success' => false,
+                'message' => 'Formato OTP non valido'
+            ];
+        }
         
         $otp_record = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM " . self::$table_name . " WHERE id = %d",
@@ -274,7 +282,7 @@ class WECOOP_OTP_Handler {
         }
         
         // Verifica codice
-        if ($otp_record->otp_code !== $otp_code) {
+        if (!hash_equals((string) $otp_record->otp_code, (string) $normalized_input_code)) {
             $new_attempts = $otp_record->otp_attempts + 1;
             $wpdb->update(
                 self::$table_name,
@@ -283,6 +291,8 @@ class WECOOP_OTP_Handler {
                 ['%d'],
                 ['%d']
             );
+
+            error_log('[WECOOP OTP] ⚠️ OTP non valido: otp_id=' . $otp_id . ', attempts=' . $new_attempts);
             
             return [
                 'success' => false,
@@ -533,6 +543,26 @@ class WECOOP_OTP_Handler {
 
         // default Italia
         return '+39' . $digits;
+    }
+
+    /**
+     * Normalizza codice OTP in formato a 6 cifre.
+     */
+    private static function normalize_otp_code($otp_code) {
+        if ($otp_code === null) {
+            return null;
+        }
+
+        $digits = preg_replace('/\D/', '', (string) $otp_code);
+        if ($digits === '') {
+            return null;
+        }
+
+        if (strlen($digits) > 6) {
+            return null;
+        }
+
+        return str_pad($digits, 6, '0', STR_PAD_LEFT);
     }
 
     /**
