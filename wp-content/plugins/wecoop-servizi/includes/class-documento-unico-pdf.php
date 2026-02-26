@@ -436,7 +436,7 @@ class WECOOP_Documento_Unico_PDF {
                 'filepath' => $file_path
             ];
             
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log('[WECOOP DOC PDF] ❌ Errore mPDF: ' . $e->getMessage());
             return [
                 'success' => false,
@@ -673,11 +673,13 @@ class WECOOP_Documento_Unico_PDF {
             require_once $autoload;
         }
 
-        if (!class_exists('setasign\\Fpdi\\Fpdi')) {
-            return [
-                'success' => false,
-                'message' => 'Libreria FPDI non disponibile per merge PDF'
-            ];
+        // Evita fatal su server dove FPDI è presente ma manca la dipendenza FPDF.
+        $fpdi_available = class_exists('setasign\\Fpdi\\Fpdi', false);
+        $fpdf_available = class_exists('FPDF', false);
+
+        if (!$fpdi_available || !$fpdf_available) {
+            error_log('[WECOOP DOC PDF] ⚠️ FPDI/FPDF non disponibili, uso fallback merge via mPDF');
+            return self::generate_merged_pdf_without_fpdi($richiesta_id);
         }
 
         $upload_dir = wp_upload_dir();
@@ -729,13 +731,128 @@ class WECOOP_Documento_Unico_PDF {
                 'hash_sha256' => $merged_hash,
                 'message' => 'Documento Unico e attestato firma uniti con successo'
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log('[WECOOP DOC PDF] ❌ Errore merge PDF: ' . $e->getMessage());
+            return self::generate_merged_pdf_without_fpdi($richiesta_id);
+        }
+    }
+
+    /**
+     * Fallback merge senza FPDI/FPDF: ricrea un unico PDF firmato via mPDF.
+     */
+    private static function generate_merged_pdf_without_fpdi($richiesta_id) {
+        if (!class_exists('WECOOP_Firma_Handler')) {
             return [
                 'success' => false,
-                'message' => 'Errore merge PDF: ' . $e->getMessage()
+                'message' => 'Modulo firma non disponibile per fallback merge'
             ];
         }
+
+        $firma = WECOOP_Firma_Handler::get_firma($richiesta_id);
+        if (!$firma) {
+            return [
+                'success' => false,
+                'message' => 'Firma non trovata per richiesta'
+            ];
+        }
+
+        $documento_contenuto = trim((string) ($firma->documento_contenuto ?? ''));
+        if ($documento_contenuto === '') {
+            return [
+                'success' => false,
+                'message' => 'Contenuto documento firmato non disponibile'
+            ];
+        }
+
+        $metadata = json_decode((string) ($firma->firma_metadata ?? ''), true) ?: [];
+        $user_id = intval($firma->user_id ?? 0);
+        $user = $user_id ? get_userdata($user_id) : null;
+        $dati_json = get_post_meta($richiesta_id, 'dati', true);
+        $dati = json_decode($dati_json, true) ?: [];
+        [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
+
+        $codice_fiscale = trim((string) ($dati['codice_fiscale'] ?? get_user_meta($user_id, 'codice_fiscale', true)));
+        $email = $user ? (string) $user->user_email : '';
+        $ip_address = (string) ($metadata['ip_address'] ?? '');
+        $app_version = (string) ($metadata['app_version'] ?? '');
+        $device_info = $metadata['device_info'] ?? '';
+        $device_info_text = is_array($device_info) ? wp_json_encode($device_info) : (string) $device_info;
+
+        $doc_html = self::formatta_testo_html($documento_contenuto);
+
+        ob_start();
+        ?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Documento Unico Firmato WECOOP</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 20px; }
+        h1 { font-size: 16px; margin: 0 0 6px 0; }
+        h2 { font-size: 13px; margin: 18px 0 8px 0; }
+        .muted { color: #666; font-size: 10px; }
+        .page-break { page-break-before: always; }
+        .box { border: 1px solid #d7d7d7; padding: 10px; margin: 10px 0; }
+        .row { margin: 4px 0; }
+        .label { font-weight: bold; display: inline-block; min-width: 170px; }
+        code { font-family: monospace; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <h1>DOCUMENTO UNICO</h1>
+    <div class="muted">WECOOP APS - Copia firmata</div>
+    <div><?php echo $doc_html; ?></div>
+
+    <div class="page-break"></div>
+
+    <h1>ATTESTATO FIRMA DIGITALE</h1>
+    <div class="muted">Allegato tecnico della firma</div>
+
+    <div class="box">
+        <div class="row"><span class="label">Richiesta (Case ID):</span> #<?php echo intval($richiesta_id); ?></div>
+        <div class="row"><span class="label">Firma ID:</span> #<?php echo intval($firma->id); ?></div>
+        <div class="row"><span class="label">Tipo firma:</span> <?php echo esc_html((string) ($firma->firma_tipo ?: 'FES')); ?></div>
+        <div class="row"><span class="label">Data e ora firma:</span> <?php echo esc_html((string) ($firma->firma_timestamp ?: '—')); ?></div>
+    </div>
+
+    <h2>Dati Firmatario</h2>
+    <div class="box">
+        <div class="row"><span class="label">Nome e Cognome:</span> <?php echo esc_html($nome_completo ?: trim($nome . ' ' . $cognome) ?: '—'); ?></div>
+        <div class="row"><span class="label">Codice Fiscale:</span> <?php echo esc_html($codice_fiscale ?: '—'); ?></div>
+        <div class="row"><span class="label">Email:</span> <?php echo esc_html($email ?: '—'); ?></div>
+    </div>
+
+    <h2>Tracciabilità Tecnica</h2>
+    <div class="box">
+        <div class="row"><span class="label">Hash Firma (SHA-256):</span> <code><?php echo esc_html((string) ($firma->firma_hash ?: '—')); ?></code></div>
+        <div class="row"><span class="label">Hash Documento (SHA-256):</span> <code><?php echo esc_html((string) ($firma->documento_hash ?: '—')); ?></code></div>
+        <div class="row"><span class="label">IP:</span> <?php echo esc_html($ip_address ?: '—'); ?></div>
+        <div class="row"><span class="label">App Version:</span> <?php echo esc_html($app_version ?: '—'); ?></div>
+        <div class="row"><span class="label">Device Info:</span> <?php echo esc_html($device_info_text ?: '—'); ?></div>
+    </div>
+</body>
+</html>
+        <?php
+
+        $html = ob_get_clean();
+        $pdf_result = self::html_to_pdf($html, 'Documento_Unico_Firmato_' . intval($richiesta_id));
+        if (empty($pdf_result['success'])) {
+            return $pdf_result;
+        }
+
+        $file_hash = '';
+        if (!empty($pdf_result['filepath']) && file_exists($pdf_result['filepath'])) {
+            $file_hash = hash_file('sha256', $pdf_result['filepath']);
+        }
+
+        return [
+            'success' => true,
+            'url' => $pdf_result['url'],
+            'filepath' => $pdf_result['filepath'],
+            'hash_sha256' => $file_hash,
+            'message' => 'PDF unico firmato generato con fallback mPDF'
+        ];
     }
 
     /**
@@ -752,6 +869,7 @@ class WECOOP_Documento_Unico_PDF {
         }
 
         $relative = ltrim(substr($url, strlen($baseurl)), '/');
+        $relative = rawurldecode($relative);
         return $basedir . '/' . $relative;
     }
 
