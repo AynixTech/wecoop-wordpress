@@ -33,6 +33,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_get_prezzo_listino', [__CLASS__, 'ajax_get_prezzo_listino']);
         add_action('wp_ajax_generate_receipt', [__CLASS__, 'ajax_generate_receipt']);
         add_action('wp_ajax_send_documento_unico', [__CLASS__, 'ajax_send_documento_unico']);
+        add_action('wp_ajax_save_debug_logs', [__CLASS__, 'ajax_save_debug_logs']);
         
         // Row actions
         add_filter('post_row_actions', [__CLASS__, 'add_row_actions'], 10, 2);
@@ -2093,7 +2094,96 @@ class WECOOP_Servizi_Management {
                 });
             });
             
-            // 🔐 GESTORE: Manda Documento Unico (Firma Digitale)
+            // � SISTEMA DI LOGGING - Cattura tutti i logs e li salva in localStorage/server
+            const firmaLogger = {
+                logs: [],
+                richiestaId: null,
+                
+                init: function(richiestaId) {
+                    this.richiestaId = richiestaId;
+                    this.logs = [];
+                    
+                    // Carica logs precedenti da localStorage se esistono
+                    const stored = localStorage.getItem('firma_debug_' + richiestaId);
+                    if (stored) {
+                        try {
+                            this.logs = JSON.parse(stored);
+                        } catch (e) {
+                            this.logs = [];
+                        }
+                    }
+                    
+                    // Intercetta console.log
+                    const originalLog = console.log;
+                    const originalError = console.error;
+                    
+                    console.log = (...args) => {
+                        originalLog.apply(console, args);
+                        this.add('log', args);
+                    };
+                    
+                    console.error = (...args) => {
+                        originalError.apply(console, args);
+                        this.add('error', args);
+                    };
+                },
+                
+                add: function(level, args) {
+                    const message = args.map(arg => {
+                        if (typeof arg === 'object') {
+                            try {
+                                return JSON.stringify(arg, null, 2);
+                            } catch (e) {
+                                return String(arg);
+                            }
+                        }
+                        return String(arg);
+                    }).join(' ');
+                    
+                    const entry = {
+                        timestamp: new Date().toISOString(),
+                        level: level.toUpperCase(),
+                        message: message,
+                        data: args && args[0]?.constructor?.name === 'Object' ? args[0] : null
+                    };
+                    
+                    this.logs.push(entry);
+                    
+                    // Salva in localStorage (limitato a ultimi 100 logs)
+                    if (this.logs.length > 100) {
+                        this.logs.shift();
+                    }
+                    localStorage.setItem('firma_debug_' + this.richiestaId, JSON.stringify(this.logs));
+                },
+                
+                save: function() {
+                    if (!this.richiestaId || this.logs.length === 0) {
+                        console.log('❌ LOGGER: Niente da salvare');
+                        return Promise.resolve();
+                    }
+                    
+                    return $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'save_debug_logs',
+                            richiesta_id: this.richiestaId,
+                            logs: JSON.stringify(this.logs)
+                        }
+                    }).done((response) => {
+                        if (response.success) {
+                            console.log('💾 LOGGER: Logs salvati nel server', {
+                                file: response.data.file_name,
+                                url: response.data.file_url
+                            });
+                        }
+                    }).fail((error) => {
+                        console.error('❌ LOGGER: Errore salvataggio server', error);
+                    });
+                }
+            };
+            
+            // �🔐 GESTORE: Manda Documento Unico (Firma Digitale)
             $(document).on('click', '.send-documento-unico', function(e) {
                 e.preventDefault();
                 
@@ -2101,6 +2191,9 @@ class WECOOP_Servizi_Management {
                 const $button = $(this);
                 const originalText = $button.text();
                 const originalStyle = $button.attr('style');
+                
+                // 📝 Inizializza logger
+                firmaLogger.init(richiestaId);
                 
                 console.log('🔐 FIRMA: Click su send-documento-unico', {
                     richiestaId: richiestaId,
@@ -2110,6 +2203,8 @@ class WECOOP_Servizi_Management {
                 // Conferma dell'utente
                 if (!confirm('Vuoi mandare il documento unico per la firma digitale?\n\nIl cliente riceverà una notifica con il link al documento.')) {
                     console.log('❌ FIRMA: Annullato dall\'utente');
+                    // 💾 Salva logs anche se annullato
+                    firmaLogger.save();
                     return;
                 }
                 
@@ -2172,12 +2267,19 @@ class WECOOP_Servizi_Management {
                                 console.log('📄 FIRMA: Link al PDF:', url);
                             }
                             
-                            // Ricarica la pagina dopo 2 secondi
-                            setTimeout(function() {
-                                location.reload();
-                            }, 2000);
+                            // 💾 Salva logs prima del reload
+                            console.log('💾 FIRMA: Salvataggio logs in corso...');
+                            firmaLogger.save().always(function() {
+                                // Ricarica la pagina dopo 2 secondi
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 2000);
+                            });
                         } else {
                             console.error('❌ FIRMA: Errore nella risposta', response.data);
+                            
+                            // 💾 Salva logs anche in caso di errore
+                            firmaLogger.save();
                             
                             $button.prop('disabled', false)
                                    .text(originalText)
@@ -2218,7 +2320,11 @@ class WECOOP_Servizi_Management {
                             errorMsg = 'Endpoint non trovato';
                         }
                         
-                        alert('❌ ' + errorMsg + '\n\nApri la console (F12) per dettagli completi');
+                        // 💾 Salva logs in caso di errore
+                        console.error('❌ FIRMA: Errore AJAX - Salvataggio logs...');
+                        firmaLogger.save().always(function() {
+                            alert('❌ ' + errorMsg + '\n\nApri la console (F12) per dettagli completi\n\n📝 I log sono stati salvati per il debug.');
+                        });
                     }
                 });
             });
@@ -4115,6 +4221,65 @@ class WECOOP_Servizi_Management {
             error_log('❌ FIRMA: Stack trace: ' . $e->getTraceAsString());
             
             wp_send_json_error('Errore interno: ' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * AJAX: Salva logs di debug da client-side
+     */
+    public static function ajax_save_debug_logs() {
+        // Non verifico nonce per questo endpoint - è solo per debug
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+        
+        $logs = isset($_POST['logs']) ? json_decode(stripslashes($_POST['logs']), true) : [];
+        $richiesta_id = intval($_POST['richiesta_id'] ?? 0);
+        
+        if (empty($logs)) {
+            wp_send_json_error('Nessun log da salvare');
+        }
+        
+        // Crea directory logs se non esiste
+        $logs_dir = WECOOP_SERVIZI_PLUGIN_DIR . 'logs';
+        if (!is_dir($logs_dir)) {
+            mkdir($logs_dir, 0755, true);
+        }
+        
+        // File log con timestamp
+        $timestamp = date('Y-m-d_His');
+        $file_name = "documento_unico_{$richiesta_id}_{$timestamp}.log";
+        $file_path = $logs_dir . '/' . $file_name;
+        
+        // Formatta i logs
+        $log_content = "=== DEBUG LOG: Documento Unico #{$richiesta_id} ===\n";
+        $log_content .= "Timestamp: " . date('Y-m-d H:i:s') . "\n";
+        $log_content .= "User: " . wp_get_current_user()->user_login . "\n";
+        $log_content .= "================================\n\n";
+        
+        foreach ($logs as $log) {
+            $log_content .= "[" . $log['timestamp'] . "] " . $log['level'] . ": " . $log['message'];
+            if (!empty($log['data'])) {
+                $log_content .= "\n  Data: " . json_encode($log['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            }
+            $log_content .= "\n";
+        }
+        
+        // Salva il file
+        if (file_put_contents($file_path, $log_content)) {
+            error_log("✅ DEBUG LOG SALVATO: $file_path");
+            
+            // Ritorna URL per download
+            $file_url = str_replace(WECOOP_SERVIZI_PLUGIN_DIR, WECOOP_SERVIZI_PLUGIN_URL, $file_path);
+            
+            wp_send_json_success([
+                'message' => 'Log salvato con successo',
+                'file_url' => $file_url,
+                'file_name' => $file_name
+            ]);
+        } else {
+            error_log("❌ ERRORE: Non riesco a salvare il log in $file_path");
+            wp_send_json_error('Errore nel salvataggio del log');
         }
     }
 }
