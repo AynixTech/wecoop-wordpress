@@ -991,6 +991,7 @@ class WECOOP_Servizi_Endpoint {
         $richiesta_id = intval($request['richiesta_id']);
         $current_user_id = get_current_user_id();
         $documento_url = self::resolve_documento_unico_url($richiesta_id);
+        $attestato_firma_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', true));
         
         // Verifica ownership
         $richiesta_user_id = get_post_meta($richiesta_id, 'user_id', true);
@@ -1023,6 +1024,7 @@ class WECOOP_Servizi_Endpoint {
             'documento_hash_sha256' => $firma->documento_hash,
             'documento_url' => $documento_url,
             'documento_download_url' => $documento_url,
+            'attestato_firma_url' => $attestato_firma_url,
             'metadata' => json_decode($firma->firma_metadata, true),
             'richiesta_id' => $richiesta_id
         ], 200);

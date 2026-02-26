@@ -134,11 +134,13 @@ class WECOOP_Firma_Handler {
             ];
         }
         
+        $firma_timestamp = current_time('mysql');
+
         // Crea hash del documento
         $documento_hash = hash('sha256', $documento_contenuto);
         
         // Crea firma hash (concatenazione di hash documento + timestamp + user_id + OTP_id)
-        $firma_base_string = $documento_hash . '|' . current_time('mysql') . '|' . $otp_record->user_id . '|' . $otp_id;
+        $firma_base_string = $documento_hash . '|' . $firma_timestamp . '|' . $otp_record->user_id . '|' . $otp_id;
         $firma_hash = hash('sha256', $firma_base_string);
         
         // Prepara metadata firma
@@ -147,14 +149,14 @@ class WECOOP_Firma_Handler {
             'app_version' => $firma_data['app_version'] ?? null,
             'ip_address' => $firma_data['ip_address'] ?? self::get_client_ip(),
             'user_agent' => $firma_data['user_agent'] ?? $_SERVER['HTTP_USER_AGENT'] ?? null,
-            'timestamp_firma' => current_time('mysql'),
+            'timestamp_firma' => $firma_timestamp,
             'otp_verificato_alle' => $otp_record->otp_verified_at
         ];
         
         // Firma base64 (simulazione di certificato - in produzione usare certificato vero)
         $firma_signature = base64_encode(json_encode([
             'hash' => $firma_hash,
-            'timestamp' => current_time('mysql'),
+            'timestamp' => $firma_timestamp,
             'user_id' => $otp_record->user_id,
             'otp_id' => $otp_id,
             'algo' => 'SHA256-OTP-FES'
@@ -170,13 +172,13 @@ class WECOOP_Firma_Handler {
                 'documento_id' => 'documento_unico',
                 'documento_hash' => $documento_hash,
                 'documento_contenuto' => $documento_contenuto,
-                'firma_timestamp' => current_time('mysql'),
+                'firma_timestamp' => $firma_timestamp,
                 'firma_hash' => $firma_hash,
                 'firma_signature_base64' => $firma_signature,
                 'firma_metadata' => json_encode($firma_metadata),
                 'status' => 'signed',
-                'created_at' => current_time('mysql'),
-                'updated_at' => current_time('mysql')
+                'created_at' => $firma_timestamp,
+                'updated_at' => $firma_timestamp
             ],
             ['%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
         );
@@ -199,8 +201,8 @@ class WECOOP_Firma_Handler {
             [
                 'status' => 'signed',
                 'firma_hash' => $firma_hash,
-                'firma_timestamp' => current_time('mysql'),
-                'updated_at' => current_time('mysql')
+                'firma_timestamp' => $firma_timestamp,
+                'updated_at' => $firma_timestamp
             ],
             ['id' => $otp_id],
             ['%s', '%s', '%s', '%s'],
@@ -210,7 +212,31 @@ class WECOOP_Firma_Handler {
         // Aggiorna post meta richiesta
         update_post_meta($richiesta_id, 'documento_unico_firmato', 'yes');
         update_post_meta($richiesta_id, 'firma_id', $firma_id);
-        update_post_meta($richiesta_id, 'data_firma', current_time('mysql'));
+        update_post_meta($richiesta_id, 'data_firma', $firma_timestamp);
+
+        $attestato_firma_url = '';
+        if (class_exists('WECOOP_Documento_Unico_PDF')) {
+            $attestato_result = WECOOP_Documento_Unico_PDF::generate_attestato_firma_pdf($richiesta_id, [
+                'firma_id' => $firma_id,
+                'otp_id' => $otp_id,
+                'firma_timestamp' => $firma_timestamp,
+                'firma_hash' => $firma_hash,
+                'documento_hash' => $documento_hash,
+                'firma_tipo' => 'FES',
+                'user_id' => intval($otp_record->user_id),
+                'otp_verified_at' => $otp_record->otp_verified_at,
+                'metadata' => $firma_metadata
+            ]);
+
+            if (!empty($attestato_result['success']) && !empty($attestato_result['url'])) {
+                $attestato_firma_url = (string) $attestato_result['url'];
+                update_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', $attestato_firma_url);
+                update_post_meta($richiesta_id, 'documento_unico_attestato_firma_hash', (string) ($attestato_result['hash_sha256'] ?? ''));
+                update_post_meta($richiesta_id, 'documento_unico_attestato_firma_generato_il', $firma_timestamp);
+            } else {
+                error_log('[WECOOP FIRMA] ⚠️ Attestato firma non generato: ' . ($attestato_result['message'] ?? 'errore sconosciuto'));
+            }
+        }
         
         error_log("[WECOOP FIRMA] ✅ Documento firmato: richiesta #{$richiesta_id}, firma_id #{$firma_id}");
         
@@ -218,9 +244,10 @@ class WECOOP_Firma_Handler {
             'success' => true,
             'message' => 'Documento firmato correttamente',
             'firma_id' => $firma_id,
-            'firma_timestamp' => current_time('mysql'),
+            'firma_timestamp' => $firma_timestamp,
             'firma_hash' => $firma_hash,
-            'firma_tipo' => 'FES'
+            'firma_tipo' => 'FES',
+            'attestato_firma_url' => $attestato_firma_url
         ];
     }
     

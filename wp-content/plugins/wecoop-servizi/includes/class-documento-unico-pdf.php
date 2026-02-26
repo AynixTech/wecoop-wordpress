@@ -68,8 +68,7 @@ class WECOOP_Documento_Unico_PDF {
                 'telefono' => $telefono,
                 'case_id' => $richiesta_id,
                 'data' => date('d/m/Y'),
-                'timestamp' => current_time('mysql'),
-                'timestamp_firma' => current_time('mysql')
+                'timestamp' => current_time('mysql')
             ]
         );
         
@@ -530,6 +529,243 @@ class WECOOP_Documento_Unico_PDF {
     }
 
     /**
+     * Genera un PDF separato con i dati di firma digitale (post-firma).
+     */
+    public static function generate_attestato_firma_pdf($richiesta_id, array $firma_info) {
+        $firma_id = intval($firma_info['firma_id'] ?? 0);
+        $user_id = intval($firma_info['user_id'] ?? 0);
+        $otp_id = intval($firma_info['otp_id'] ?? 0);
+        $firma_timestamp = (string) ($firma_info['firma_timestamp'] ?? current_time('mysql'));
+        $firma_hash = (string) ($firma_info['firma_hash'] ?? '');
+        $documento_hash = (string) ($firma_info['documento_hash'] ?? '');
+        $firma_tipo = (string) ($firma_info['firma_tipo'] ?? 'FES');
+        $otp_verified_at = (string) ($firma_info['otp_verified_at'] ?? '');
+        $metadata = (array) ($firma_info['metadata'] ?? []);
+
+        if (!$richiesta_id || !$firma_id) {
+            return [
+                'success' => false,
+                'message' => 'Dati attestato firma non validi'
+            ];
+        }
+
+        $user = $user_id ? get_userdata($user_id) : null;
+        $dati_json = get_post_meta($richiesta_id, 'dati', true);
+        $dati = json_decode($dati_json, true) ?: [];
+        [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
+
+        $codice_fiscale = trim((string) ($dati['codice_fiscale'] ?? get_user_meta($user_id, 'codice_fiscale', true)));
+        $email = $user ? (string) $user->user_email : '';
+
+        $ip_address = (string) ($metadata['ip_address'] ?? '');
+        $app_version = (string) ($metadata['app_version'] ?? '');
+        $device_info = $metadata['device_info'] ?? '';
+        $device_info_text = is_array($device_info) ? wp_json_encode($device_info) : (string) $device_info;
+
+        $firma_hash_short = $firma_hash ? substr($firma_hash, 0, 20) . '...' : '—';
+        $doc_hash_short = $documento_hash ? substr($documento_hash, 0, 20) . '...' : '—';
+
+        ob_start();
+        ?>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Attestato Firma Digitale WECOOP</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #222; margin: 20px; }
+        h1 { font-size: 18px; margin: 0 0 6px 0; }
+        h2 { font-size: 13px; margin: 18px 0 8px 0; }
+        .muted { color: #666; font-size: 10px; }
+        .box { border: 1px solid #d7d7d7; padding: 10px; margin: 10px 0; }
+        .row { margin: 4px 0; }
+        .label { font-weight: bold; display: inline-block; min-width: 170px; }
+        code { font-family: monospace; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <h1>ATTESTATO FIRMA DIGITALE</h1>
+    <div class="muted">WECOOP APS — Allegato di attestazione firma</div>
+
+    <div class="box">
+        <div class="row"><span class="label">Richiesta (Case ID):</span> #<?php echo intval($richiesta_id); ?></div>
+        <div class="row"><span class="label">Firma ID:</span> #<?php echo intval($firma_id); ?></div>
+        <div class="row"><span class="label">Tipo firma:</span> <?php echo esc_html($firma_tipo); ?></div>
+        <div class="row"><span class="label">Data e ora firma:</span> <?php echo esc_html($firma_timestamp ?: '—'); ?></div>
+        <div class="row"><span class="label">OTP ID:</span> <?php echo $otp_id ? ('#' . intval($otp_id)) : '—'; ?></div>
+        <div class="row"><span class="label">OTP verificato alle:</span> <?php echo esc_html($otp_verified_at ?: '—'); ?></div>
+    </div>
+
+    <h2>Dati Firmatario</h2>
+    <div class="box">
+        <div class="row"><span class="label">Nome e Cognome:</span> <?php echo esc_html($nome_completo ?: trim($nome . ' ' . $cognome) ?: '—'); ?></div>
+        <div class="row"><span class="label">Codice Fiscale:</span> <?php echo esc_html($codice_fiscale ?: '—'); ?></div>
+        <div class="row"><span class="label">Email:</span> <?php echo esc_html($email ?: '—'); ?></div>
+    </div>
+
+    <h2>Tracciabilità Tecnica</h2>
+    <div class="box">
+        <div class="row"><span class="label">Hash Firma (SHA-256):</span> <code><?php echo esc_html($firma_hash_short); ?></code></div>
+        <div class="row"><span class="label">Hash Documento (SHA-256):</span> <code><?php echo esc_html($doc_hash_short); ?></code></div>
+        <div class="row"><span class="label">IP:</span> <?php echo esc_html($ip_address ?: '—'); ?></div>
+        <div class="row"><span class="label">App Version:</span> <?php echo esc_html($app_version ?: '—'); ?></div>
+        <div class="row"><span class="label">Device Info:</span> <?php echo esc_html($device_info_text ?: '—'); ?></div>
+    </div>
+
+    <p class="muted">Documento generato automaticamente in data <?php echo esc_html(wp_date('d/m/Y H:i:s')); ?>.</p>
+</body>
+</html>
+        <?php
+
+        $html = ob_get_clean();
+        $pdf_result = self::html_to_pdf($html, 'Attestato_Firma_' . $richiesta_id . '_' . $firma_id);
+        if (!$pdf_result['success']) {
+            return $pdf_result;
+        }
+
+        $file_hash = '';
+        if (!empty($pdf_result['filepath']) && file_exists($pdf_result['filepath'])) {
+            $file_hash = hash_file('sha256', $pdf_result['filepath']);
+        }
+
+        return [
+            'success' => true,
+            'url' => $pdf_result['url'],
+            'filepath' => $pdf_result['filepath'],
+            'hash_sha256' => $file_hash,
+            'message' => 'Attestato firma PDF generato'
+        ];
+    }
+
+    /**
+     * Unisce il Documento Unico con l'Attestato Firma in un unico PDF finale.
+     */
+    public static function merge_documento_unico_with_attestato($richiesta_id, $documento_url, $attestato_url) {
+        $documento_url = trim((string) $documento_url);
+        $attestato_url = trim((string) $attestato_url);
+
+        if (empty($documento_url) || empty($attestato_url)) {
+            return [
+                'success' => false,
+                'message' => 'URL documento o attestato mancanti'
+            ];
+        }
+
+        $documento_path = self::upload_url_to_path($documento_url);
+        $attestato_path = self::upload_url_to_path($attestato_url);
+
+        if (!$documento_path || !file_exists($documento_path)) {
+            return [
+                'success' => false,
+                'message' => 'PDF Documento Unico non trovato su disco'
+            ];
+        }
+
+        if (!$attestato_path || !file_exists($attestato_path)) {
+            return [
+                'success' => false,
+                'message' => 'PDF attestato firma non trovato su disco'
+            ];
+        }
+
+        $autoload = WECOOP_SERVIZI_PLUGIN_DIR . 'vendor/autoload.php';
+        if (file_exists($autoload)) {
+            require_once $autoload;
+        }
+
+        if (!class_exists('setasign\\Fpdi\\Fpdi')) {
+            return [
+                'success' => false,
+                'message' => 'Libreria FPDI non disponibile per merge PDF'
+            ];
+        }
+
+        $upload_dir = wp_upload_dir();
+        $output_dir = trailingslashit($upload_dir['basedir']) . 'wecoop-documenti-unici/';
+        if (!is_dir($output_dir)) {
+            wp_mkdir_p($output_dir);
+        }
+
+        $merged_path = $output_dir . 'Documento_Unico_Firmato_' . intval($richiesta_id) . '_' . time() . '.pdf';
+
+        try {
+            $pdf = new \setasign\Fpdi\Fpdi();
+            $sources = [$documento_path, $attestato_path];
+
+            foreach ($sources as $source_path) {
+                $page_count = $pdf->setSourceFile($source_path);
+                for ($page_no = 1; $page_no <= $page_count; $page_no++) {
+                    $template_id = $pdf->importPage($page_no);
+                    $size = $pdf->getTemplateSize($template_id);
+                    $orientation = ($size['width'] > $size['height']) ? 'L' : 'P';
+                    $pdf->AddPage($orientation, [$size['width'], $size['height']]);
+                    $pdf->useTemplate($template_id);
+                }
+            }
+
+            $pdf->Output('F', $merged_path);
+
+            if (!file_exists($merged_path)) {
+                return [
+                    'success' => false,
+                    'message' => 'File PDF merged non creato'
+                ];
+            }
+
+            $merged_url = self::path_to_upload_url($merged_path);
+            $merged_hash = hash_file('sha256', $merged_path);
+
+            return [
+                'success' => true,
+                'url' => $merged_url,
+                'filepath' => $merged_path,
+                'hash_sha256' => $merged_hash,
+                'message' => 'Documento Unico e attestato firma uniti con successo'
+            ];
+        } catch (\Exception $e) {
+            error_log('[WECOOP DOC PDF] ❌ Errore merge PDF: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'Errore merge PDF: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Converte URL upload in path locale.
+     */
+    private static function upload_url_to_path($url) {
+        $upload_dir = wp_upload_dir();
+        $baseurl = rtrim((string) $upload_dir['baseurl'], '/');
+        $basedir = rtrim((string) $upload_dir['basedir'], '/');
+        $url = trim((string) $url);
+
+        if ($url === '' || strpos($url, $baseurl) !== 0) {
+            return '';
+        }
+
+        $relative = ltrim(substr($url, strlen($baseurl)), '/');
+        return $basedir . '/' . $relative;
+    }
+
+    /**
+     * Converte path locale upload in URL pubblico.
+     */
+    private static function path_to_upload_url($path) {
+        $upload_dir = wp_upload_dir();
+        $baseurl = rtrim((string) $upload_dir['baseurl'], '/');
+        $basedir = rtrim((string) $upload_dir['basedir'], '/');
+        $path = trim((string) $path);
+
+        if ($path === '' || strpos($path, $basedir) !== 0) {
+            return '';
+        }
+
+        $relative = ltrim(substr($path, strlen($basedir)), '/');
+        return $baseurl . '/' . $relative;
+    }
+
+    /**
      * Risolve nome/cognome con fallback robusto:
      * 1) dati richiesta
      * 2) nome completo nei dati
@@ -646,8 +882,7 @@ Il/La sottoscritto/a dichiara:
 FIRMA DIGITALE
 Il presente documento viene firmato una sola volta tramite firma digitale con OTP via SMS ed è valido per adesione a socio WECOOP APS e conferimento del mandato generale per i servizi futuri.
 
-Firma digitale (OTP): _______________________
-Data e ora firma: {{timestamp_firma}}
+I dettagli della firma digitale (OTP, data/ora firma e tracciabilità tecnica) vengono allegati nelle pagine finali di questo stesso PDF dopo la firma.
 EOT;
     }
 }

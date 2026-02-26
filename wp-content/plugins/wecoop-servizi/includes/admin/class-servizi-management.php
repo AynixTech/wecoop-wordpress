@@ -1448,6 +1448,7 @@ class WECOOP_Servizi_Management {
                     // Verifica se il documento unico è stato già generato
                     $doc_url = self::get_resolved_document_url($post_id, get_post_meta($post_id, 'documento_unico_url', true));
                     $doc_firmato = get_post_meta($post_id, 'documento_unico_firmato', true);
+                    $attestato_firma_url = trim((string) get_post_meta($post_id, 'documento_unico_attestato_firma_url', true));
                     ?>
                     <br>
                     <?php if ($doc_url): ?>
@@ -1465,6 +1466,14 @@ class WECOOP_Servizi_Management {
                                     title="Reinvia documento unico da firmare">
                                 🔄 Reinvia per Firma
                             </button>
+                        <?php elseif (!empty($attestato_firma_url)): ?>
+                            <a href="<?php echo esc_url($attestato_firma_url); ?>" 
+                               target="_blank" 
+                               class="button button-small"
+                               style="margin-top: 5px; margin-left: 5px; background: #673ab7; color: white; text-decoration: none;"
+                               title="Apri attestato firma digitale">
+                                📜 Attestato Firma
+                            </a>
                         <?php endif; ?>
                         <button class="button button-small delete-documento-unico" 
                                 data-id="<?php echo $post_id; ?>"
@@ -4599,6 +4608,7 @@ class WECOOP_Servizi_Management {
                                         admin_url('admin-post.php?action=wecoop_download_signed_document&firma_id=' . intval($doc->id) . '&inline=1'),
                                         'wecoop_download_signed_document_' . intval($doc->id)
                                     );
+                                    $attestato_firma_url = trim((string) get_post_meta($doc->richiesta_id, 'documento_unico_attestato_firma_url', true));
                                     ?>
                                     <tr>
                                         <td><input type="checkbox" name="firma_ids[]" value="<?php echo intval($doc->id); ?>"></td>
@@ -4641,6 +4651,9 @@ class WECOOP_Servizi_Management {
                                             <?php if (!empty($doc_url)): ?>
                                                 <a class="button button-small" target="_blank" href="<?php echo esc_url($open_url); ?>">👁️ Apri</a>
                                                 <a class="button button-small" href="<?php echo esc_url($download_url); ?>">⬇️ Scarica</a>
+                                                <?php if (!empty($attestato_firma_url)): ?>
+                                                    <a class="button button-small" target="_blank" href="<?php echo esc_url($attestato_firma_url); ?>">📜 Attestato</a>
+                                                <?php endif; ?>
                                                 <?php if (!$file_exists): ?>
                                                     <br><small style="color:#d97706;">⚠️ fallback URL</small>
                                                 <?php endif; ?>
