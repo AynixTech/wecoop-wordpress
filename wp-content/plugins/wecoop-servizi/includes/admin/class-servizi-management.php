@@ -11,6 +11,80 @@
 if (!defined('ABSPATH')) exit;
 
 class WECOOP_Servizi_Management {
+
+    /**
+     * Converte un numero in formato compatibile WhatsApp (E.164 semplificato)
+     */
+    private static function normalize_whatsapp_phone($phone) {
+        $phone = trim((string) $phone);
+        if ($phone === '') {
+            return '';
+        }
+
+        $phone = preg_replace('/[^\d\+]/', '', $phone);
+        if ($phone === '') {
+            return '';
+        }
+
+        if (strpos($phone, '00') === 0) {
+            $phone = '+' . substr($phone, 2);
+        }
+
+        if ($phone[0] !== '+') {
+            // Fallback Italia se non c'e' prefisso internazionale
+            if (preg_match('/^\d{9,10}$/', $phone)) {
+                $phone = '+39' . $phone;
+            } elseif (preg_match('/^\d{11,15}$/', $phone)) {
+                $phone = '+' . $phone;
+            } else {
+                return '';
+            }
+        }
+
+        $digits = preg_replace('/\D/', '', $phone);
+        if (strlen($digits) < 9 || strlen($digits) > 15) {
+            return '';
+        }
+
+        return '+' . $digits;
+    }
+
+    /**
+     * Cerca il telefono migliore per avviare una chat WhatsApp
+     */
+    private static function extract_whatsapp_phone($user_id, $dati = []) {
+        $candidates = [];
+
+        if ($user_id) {
+            $candidates[] = get_user_meta($user_id, 'telefono', true);
+            $candidates[] = get_user_meta($user_id, 'telefono_completo', true);
+            $candidates[] = get_user_meta($user_id, 'billing_phone', true);
+        }
+
+        $dati_keys = [
+            'telefono',
+            'telefono_completo',
+            'cellulare',
+            'mobile',
+            'phone',
+            'telefono_cellulare'
+        ];
+
+        foreach ($dati_keys as $key) {
+            if (!empty($dati[$key])) {
+                $candidates[] = $dati[$key];
+            }
+        }
+
+        foreach ($candidates as $candidate) {
+            $normalized = self::normalize_whatsapp_phone($candidate);
+            if ($normalized !== '') {
+                return $normalized;
+            }
+        }
+
+        return '';
+    }
     
     /**
      * Inizializza
@@ -1969,11 +2043,14 @@ class WECOOP_Servizi_Management {
                             
                             // Link utente WordPress
                             if (data.user_id && data.user_edit_link) {
-                                $('#user-link-container').html(
-                                    '<a href="' + data.user_edit_link + '" target="_blank" class="button button-small">' +
-                                    '👤 Apri profilo utente' +
-                                    '</a>'
-                                );
+                                let userLinksHtml = '<a href="' + data.user_edit_link + '" target="_blank" class="button button-small">👤 Apri profilo utente</a>';
+
+                                if (data.whatsapp_url) {
+                                    const waTitle = data.whatsapp_phone ? ('Apri chat WhatsApp (' + data.whatsapp_phone + ')') : 'Apri chat WhatsApp';
+                                    userLinksHtml += '<a href="' + data.whatsapp_url + '" target="_blank" rel="noopener noreferrer" class="button button-small wecoop-whatsapp-btn" title="' + waTitle + '">💬 WhatsApp</a>';
+                                }
+
+                                $('#user-link-container').html(userLinksHtml);
                             } else {
                                 $('#user-link-container').html('<em>Nessun utente associato</em>');
                             }
@@ -2590,6 +2667,12 @@ class WECOOP_Servizi_Management {
         // Aggiungi link all'utente se esiste
         if ($user_id) {
             $response['user_edit_link'] = get_edit_user_link($user_id);
+        }
+
+        $whatsapp_phone = self::extract_whatsapp_phone($user_id, $dati);
+        if ($whatsapp_phone !== '') {
+            $response['whatsapp_phone'] = $whatsapp_phone;
+            $response['whatsapp_url'] = 'https://wa.me/' . preg_replace('/\D/', '', $whatsapp_phone);
         }
         
         // ⭐ Aggiungi documenti allegati
