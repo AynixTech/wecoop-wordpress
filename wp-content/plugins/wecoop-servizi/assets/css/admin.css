@@ -259,38 +259,18 @@
     border-color: #b32d2e;
 }
 
-/* Pill cliccabili per telefono/email nella tabella richieste */
-.wecoop-contact-pill {
+/* Icone cliccabili per telefono/email nella tabella richieste */
+.wecoop-contact-icon {
     display: inline-block;
-    padding: 3px 9px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 18px;
+    line-height: 1;
     text-decoration: none;
-    white-space: nowrap;
-    transition: opacity .15s;
+    transition: transform .15s, opacity .15s;
 }
-.wecoop-contact-pill:hover {
-    opacity: .82;
+.wecoop-contact-icon:hover {
+    opacity: .75;
+    transform: scale(1.2);
     text-decoration: none;
-}
-.wecoop-wa-pill {
-    background: #e8faf0;
-    color: #1a7a40;
-    border: 1px solid #b2dfcc;
-}
-.wecoop-wa-pill:hover {
-    background: #d0f5e3;
-    color: #145f32;
-}
-.wecoop-email-pill {
-    background: #e8f0fe;
-    color: #1a56b0;
-    border: 1px solid #b2c9f5;
-}
-.wecoop-email-pill:hover {
-    background: #d0e1fd;
-    color: #123e88;
 }
 
 /* Wrapping per azioni multiple */

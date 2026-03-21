@@ -1326,8 +1326,8 @@ class WECOOP_Servizi_Management {
                         <th>Servizio</th>
                         <th>Categoria</th>
                         <th>Richiedente</th>
-                        <th>📞 Telefono</th>
-                        <th>✉️ Email</th>
+                        <th style="width:50px;text-align:center;">📞</th>
+                        <th style="width:50px;text-align:center;">✉️</th>
                         <th>Importo</th>
                         <th>Data</th>
                         <th>Stato</th>
@@ -1469,27 +1469,27 @@ class WECOOP_Servizi_Management {
                     <?php echo esc_html($nome_richiedente ?: '—'); ?>
                 <?php endif; ?>
             </td>
-            <td style="white-space:nowrap;">
+            <td style="text-align:center;">
                 <?php if ($row_wa_phone) : ?>
                     <a href="https://wa.me/<?php echo esc_attr(preg_replace('/\D/', '', $row_wa_phone)); ?>"
                        target="_blank" rel="noopener noreferrer"
-                       class="wecoop-contact-pill wecoop-wa-pill"
-                       title="Apri chat WhatsApp: <?php echo esc_attr($row_wa_phone); ?>">
-                        💬 <?php echo esc_html($row_wa_phone); ?>
+                       class="wecoop-contact-icon wecoop-wa-icon"
+                       title="WhatsApp: <?php echo esc_attr($row_wa_phone); ?>">
+                        💬
                     </a>
                 <?php else : ?>
-                    <span style="color:#bbb;">—</span>
+                    <span style="color:#ccc;" title="Telefono non disponibile">—</span>
                 <?php endif; ?>
             </td>
-            <td style="white-space:nowrap;">
+            <td style="text-align:center;">
                 <?php if ($row_email) : ?>
                     <a href="mailto:<?php echo esc_attr($row_email); ?>"
-                       class="wecoop-contact-pill wecoop-email-pill"
-                       title="Invia email a <?php echo esc_attr($row_email); ?>">
-                        ✉️ <?php echo esc_html($row_email); ?>
+                       class="wecoop-contact-icon wecoop-email-icon"
+                       title="Email: <?php echo esc_attr($row_email); ?>">
+                        ✉️
                     </a>
                 <?php else : ?>
-                    <span style="color:#bbb;">—</span>
+                    <span style="color:#ccc;" title="Email non disponibile">—</span>
                 <?php endif; ?>
             </td>
             <td>
