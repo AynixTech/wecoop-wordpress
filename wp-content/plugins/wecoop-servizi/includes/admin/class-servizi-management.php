@@ -1326,6 +1326,8 @@ class WECOOP_Servizi_Management {
                         <th>Servizio</th>
                         <th>Categoria</th>
                         <th>Richiedente</th>
+                        <th>📞 Telefono</th>
+                        <th>✉️ Email</th>
                         <th>Importo</th>
                         <th>Data</th>
                         <th>Stato</th>
@@ -1339,7 +1341,7 @@ class WECOOP_Servizi_Management {
                         <?php endwhile; ?>
                     <?php else : ?>
                         <tr>
-                            <td colspan="9">Nessuna richiesta trovata.</td>
+                            <td colspan="11">Nessuna richiesta trovata.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>
@@ -1404,9 +1406,9 @@ class WECOOP_Servizi_Management {
         
         // Ottieni nome richiedente dai dati
         $nome_richiedente = $dati['nome_completo'] ?? '';
-        if (!$nome_richiedente && $user_id) {
-            $user = get_userdata($user_id);
-            $nome_richiedente = $user ? $user->display_name : 'N/A';
+        $row_user = $user_id ? get_userdata($user_id) : null;
+        if (!$nome_richiedente) {
+            $nome_richiedente = $row_user ? $row_user->display_name : '';
         }
         
         // Link all'utente
@@ -1414,6 +1416,12 @@ class WECOOP_Servizi_Management {
         if ($user_id) {
             $user_link = get_edit_user_link($user_id);
         }
+
+        // Telefono per WhatsApp
+        $row_wa_phone = self::extract_whatsapp_phone($user_id, $dati);
+
+        // Email
+        $row_email = $row_user ? $row_user->user_email : ($dati['email'] ?? '');
         
         $stato_labels = [
             'pending' => '⏳ In Attesa',
@@ -1458,7 +1466,30 @@ class WECOOP_Servizi_Management {
                         👤 <?php echo esc_html($nome_richiedente); ?>
                     </a>
                 <?php else : ?>
-                    <?php echo esc_html($nome_richiedente); ?>
+                    <?php echo esc_html($nome_richiedente ?: '—'); ?>
+                <?php endif; ?>
+            </td>
+            <td style="white-space:nowrap;">
+                <?php if ($row_wa_phone) : ?>
+                    <a href="https://wa.me/<?php echo esc_attr(preg_replace('/\D/', '', $row_wa_phone)); ?>"
+                       target="_blank" rel="noopener noreferrer"
+                       class="wecoop-contact-pill wecoop-wa-pill"
+                       title="Apri chat WhatsApp: <?php echo esc_attr($row_wa_phone); ?>">
+                        💬 <?php echo esc_html($row_wa_phone); ?>
+                    </a>
+                <?php else : ?>
+                    <span style="color:#bbb;">—</span>
+                <?php endif; ?>
+            </td>
+            <td style="white-space:nowrap;">
+                <?php if ($row_email) : ?>
+                    <a href="mailto:<?php echo esc_attr($row_email); ?>"
+                       class="wecoop-contact-pill wecoop-email-pill"
+                       title="Invia email a <?php echo esc_attr($row_email); ?>">
+                        ✉️ <?php echo esc_html($row_email); ?>
+                    </a>
+                <?php else : ?>
+                    <span style="color:#bbb;">—</span>
                 <?php endif; ?>
             </td>
             <td>
