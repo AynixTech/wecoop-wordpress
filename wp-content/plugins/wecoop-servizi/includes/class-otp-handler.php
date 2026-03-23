@@ -350,9 +350,7 @@ class WECOOP_OTP_Handler {
     
     /**
      * Invia OTP via SMS.
-     * Supporta due modalità:
-     * - Twilio (provider: twilio)
-     * - Webhook custom (provider: webhook)
+     * Canale SMS via Twilio (Verify o SMS classico).
      */
     private static function send_otp_via_sms($telefono, $otp_code, $richiesta_id = null, $user_id = null) {
         if (!$telefono) {
@@ -366,22 +364,13 @@ class WECOOP_OTP_Handler {
             return false;
         }
 
-        $provider = strtolower((string) self::get_otp_setting('WECOOP_SMS_PROVIDER', 'webhook'));
         $message = "Codice OTP WECOOP: {$otp_code}. Valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.";
 
-        if ($provider === 'twilio') {
-            if (self::is_twilio_verify_enabled()) {
-                return self::send_sms_via_twilio_verify($normalized_phone);
-            }
-            return self::send_sms_via_twilio($normalized_phone, $message);
+        if (self::is_twilio_verify_enabled()) {
+            return self::send_sms_via_twilio_verify($normalized_phone);
         }
 
-        if ($provider === 'webhook') {
-            return self::send_sms_via_webhook($normalized_phone, $message, $otp_code, $richiesta_id, $user_id);
-        }
-
-        error_log("[WECOOP OTP] ❌ Provider SMS non supportato: {$provider}");
-        return false;
+        return self::send_sms_via_twilio($normalized_phone, $message);
     }
 
     /**
@@ -576,69 +565,11 @@ class WECOOP_OTP_Handler {
      * Verifica se Twilio Verify e' configurato e attivo.
      */
     private static function is_twilio_verify_enabled() {
-        $provider = strtolower((string) self::get_otp_setting('WECOOP_SMS_PROVIDER', 'webhook'));
-        if ($provider !== 'twilio') {
-            return false;
-        }
-
         $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
         $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
         $verify_service_sid = self::get_otp_setting('WECOOP_TWILIO_VERIFY_SERVICE_SID');
 
         return !empty($sid) && !empty($token) && !empty($verify_service_sid);
-    }
-
-    /**
-     * Invio SMS via webhook custom.
-     */
-    private static function send_sms_via_webhook($to, $message, $otp_code, $richiesta_id = null, $user_id = null) {
-        $endpoint = self::get_otp_setting('WECOOP_SMS_WEBHOOK_URL');
-        $token = self::get_otp_setting('WECOOP_SMS_WEBHOOK_TOKEN');
-        $sender = self::get_otp_setting('WECOOP_SMS_SENDER', 'WECOOP');
-
-        if (!$endpoint) {
-            error_log('[WECOOP OTP] ❌ WECOOP_SMS_WEBHOOK_URL non configurato');
-            return false;
-        }
-
-        $headers = [
-            'Content-Type' => 'application/json'
-        ];
-
-        if ($token) {
-            $headers['Authorization'] = 'Bearer ' . $token;
-        }
-
-        $payload = [
-            'to' => $to,
-            'message' => $message,
-            'sender' => $sender,
-            'otp_code' => $otp_code,
-            'richiesta_id' => $richiesta_id,
-            'user_id' => $user_id
-        ];
-
-        $response = wp_remote_post($endpoint, [
-            'timeout' => self::SMS_HTTP_TIMEOUT,
-            'headers' => $headers,
-            'body' => wp_json_encode($payload)
-        ]);
-
-        if (is_wp_error($response)) {
-            error_log('[WECOOP OTP] ❌ SMS webhook error: ' . $response->get_error_message());
-            return false;
-        }
-
-        $status_code = wp_remote_retrieve_response_code($response);
-        $body = wp_remote_retrieve_body($response);
-
-        if ($status_code < 200 || $status_code >= 300) {
-            error_log("[WECOOP OTP] ❌ SMS webhook HTTP {$status_code}: " . substr($body, 0, 500));
-            return false;
-        }
-
-        error_log('[WECOOP OTP] ✅ SMS inviato via webhook a ' . self::mask_phone($to));
-        return true;
     }
     
     /**

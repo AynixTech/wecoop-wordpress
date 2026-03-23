@@ -180,7 +180,7 @@ class WECOOP_Servizi_Management {
             [__CLASS__, 'render_settings']
         );
 
-        // Configurazione OTP SMS (Twilio/Webhook)
+        // Configurazione OTP SMS (Twilio)
         add_submenu_page(
             'wecoop-richieste-servizi',
             'OTP SMS',
@@ -4335,39 +4335,25 @@ class WECOOP_Servizi_Management {
         if (isset($_POST['wecoop_save_otp_settings'])) {
             check_admin_referer('wecoop_otp_settings_nonce');
 
-            $provider = isset($_POST['wecoop_sms_provider']) ? sanitize_text_field($_POST['wecoop_sms_provider']) : 'webhook';
-            if (!in_array($provider, ['twilio', 'webhook'], true)) {
-                $provider = 'webhook';
-            }
-
-            update_option('wecoop_sms_provider', $provider);
+            update_option('wecoop_sms_provider', 'twilio');
             update_option('wecoop_twilio_account_sid', sanitize_text_field($_POST['wecoop_twilio_account_sid'] ?? ''));
             update_option('wecoop_twilio_auth_token', sanitize_text_field($_POST['wecoop_twilio_auth_token'] ?? ''));
             update_option('wecoop_twilio_from', sanitize_text_field($_POST['wecoop_twilio_from'] ?? ''));
             update_option('wecoop_twilio_verify_service_sid', sanitize_text_field($_POST['wecoop_twilio_verify_service_sid'] ?? ''));
             update_option('wecoop_twilio_messaging_service_sid', sanitize_text_field($_POST['wecoop_twilio_messaging_service_sid'] ?? ''));
 
-            update_option('wecoop_sms_webhook_url', esc_url_raw($_POST['wecoop_sms_webhook_url'] ?? ''));
-            update_option('wecoop_sms_webhook_token', sanitize_text_field($_POST['wecoop_sms_webhook_token'] ?? ''));
-            update_option('wecoop_sms_sender', sanitize_text_field($_POST['wecoop_sms_sender'] ?? 'WECOOP'));
-
             echo '<div class="notice notice-success"><p>✅ Impostazioni OTP SMS salvate con successo.</p></div>';
         }
 
-        $sms_provider = get_option('wecoop_sms_provider', 'webhook');
         $twilio_sid = get_option('wecoop_twilio_account_sid', '');
         $twilio_token = get_option('wecoop_twilio_auth_token', '');
         $twilio_from = get_option('wecoop_twilio_from', '');
         $twilio_verify_service_sid = get_option('wecoop_twilio_verify_service_sid', '');
         $twilio_messaging_service_sid = get_option('wecoop_twilio_messaging_service_sid', '');
-
-        $webhook_url = get_option('wecoop_sms_webhook_url', '');
-        $webhook_token = get_option('wecoop_sms_webhook_token', '');
-        $webhook_sender = get_option('wecoop_sms_sender', 'WECOOP');
         ?>
         <div class="wrap">
             <h1>🔐 Impostazioni OTP SMS</h1>
-            <p>Gli OTP vengono inviati <strong>sia via SMS che via email</strong> nello stesso flusso. Qui configuri solo il canale SMS (Twilio o Webhook custom). Per Twilio puoi usare <strong>Verify Service SID (VA...)</strong> oppure SMS classico con <strong>numero mittente</strong>/<strong>Messaging Service SID</strong>.</p>
+            <p>Gli OTP vengono inviati <strong>sia via SMS che via email</strong> nello stesso flusso. Il canale SMS usa <strong>solo Twilio</strong>. Puoi usare <strong>Verify Service SID (VA...)</strong> oppure SMS classico con <strong>numero mittente</strong>/<strong>Messaging Service SID</strong>.</p>
 
             <div class="notice notice-info" style="margin: 15px 0;">
                 <p><strong>Invio OTP:</strong> SMS + Email contemporaneamente. Se l'SMS fallisce ma l'email viene inviata, l'OTP resta valido.</p>
@@ -4375,21 +4361,6 @@ class WECOOP_Servizi_Management {
 
             <form method="post" action="">
                 <?php wp_nonce_field('wecoop_otp_settings_nonce'); ?>
-
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="wecoop_sms_provider">Provider SMS (solo canale SMS)</label>
-                        </th>
-                        <td>
-                            <select name="wecoop_sms_provider" id="wecoop_sms_provider">
-                                <option value="webhook" <?php selected($sms_provider, 'webhook'); ?>>Webhook custom</option>
-                                <option value="twilio" <?php selected($sms_provider, 'twilio'); ?>>Twilio</option>
-                            </select>
-                            <p class="description">L'email OTP viene sempre inviata in parallelo; qui scegli solo come inviare l'SMS.</p>
-                        </td>
-                    </tr>
-                </table>
 
                 <h2>Twilio</h2>
                 <table class="form-table">
@@ -4460,48 +4431,6 @@ class WECOOP_Servizi_Management {
                                    class="regular-text"
                                    placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
                             <p class="description">Usato per SMS Twilio classico (non Verify). Se impostato, sostituisce il campo From.</p>
-                        </td>
-                    </tr>
-                </table>
-
-                <h2>Webhook custom (opzionale)</h2>
-                <table class="form-table">
-                    <tr>
-                        <th scope="row">
-                            <label for="wecoop_sms_webhook_url">Webhook URL</label>
-                        </th>
-                        <td>
-                            <input type="url"
-                                   name="wecoop_sms_webhook_url"
-                                   id="wecoop_sms_webhook_url"
-                                   value="<?php echo esc_attr($webhook_url); ?>"
-                                   class="regular-text code"
-                                   placeholder="https://...">
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wecoop_sms_webhook_token">Webhook Token</label>
-                        </th>
-                        <td>
-                            <input type="text"
-                                   name="wecoop_sms_webhook_token"
-                                   id="wecoop_sms_webhook_token"
-                                   value="<?php echo esc_attr($webhook_token); ?>"
-                                   class="regular-text">
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row">
-                            <label for="wecoop_sms_sender">Sender</label>
-                        </th>
-                        <td>
-                            <input type="text"
-                                   name="wecoop_sms_sender"
-                                   id="wecoop_sms_sender"
-                                   value="<?php echo esc_attr($webhook_sender); ?>"
-                                   class="regular-text"
-                                   placeholder="WECOOP">
                         </td>
                     </tr>
                 </table>
