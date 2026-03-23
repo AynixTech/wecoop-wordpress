@@ -50,12 +50,12 @@ class WeCoop_Email_Template_Unified {
             background-color: #ffffff;
         }
         .header {
-            background-color: #2c3e50;
-            padding: 30px 20px;
+            background-color: transparent;
+            padding: 18px 20px 10px;
             text-align: center;
         }
         .header img {
-            max-width: 200px;
+            max-width: 120px;
             height: auto;
         }
         .content {
