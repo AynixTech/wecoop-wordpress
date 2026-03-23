@@ -173,7 +173,7 @@ class WeCoop_Email_Template {
                 <p>
                     <strong><?php echo esc_html($site_name); ?></strong><br>
                    Associazione di Promozione Sociale<br>
-                   Via Pupulonia 8, Milano (MI)<br>
+                   Via Benefattori dell'Ospedale, 3 - 20159 Milano (MI)<br>
                     Email: <a href="mailto:info@wecoop.org" style="color: #3498db;">info@wecoop.org</a>
                 </p>
                 
