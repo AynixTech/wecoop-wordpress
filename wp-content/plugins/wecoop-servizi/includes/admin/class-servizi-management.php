@@ -4365,7 +4365,11 @@ class WECOOP_Servizi_Management {
         ?>
         <div class="wrap">
             <h1>🔐 Impostazioni OTP SMS</h1>
-            <p>Configura il provider per l'invio OTP (Twilio o Webhook custom). Per Twilio servono almeno <strong>Account SID</strong>, <strong>Auth Token</strong> e <strong>numero mittente</strong> oppure <strong>Messaging Service SID</strong>.</p>
+            <p>Gli OTP vengono inviati <strong>sia via SMS che via email</strong> nello stesso flusso. Qui configuri solo il canale SMS (Twilio o Webhook custom). Per Twilio servono almeno <strong>Account SID</strong>, <strong>Auth Token</strong> e <strong>numero mittente</strong> oppure <strong>Messaging Service SID</strong>.</p>
+
+            <div class="notice notice-info" style="margin: 15px 0;">
+                <p><strong>Invio OTP:</strong> SMS + Email contemporaneamente. Se l'SMS fallisce ma l'email viene inviata, l'OTP resta valido.</p>
+            </div>
 
             <form method="post" action="">
                 <?php wp_nonce_field('wecoop_otp_settings_nonce'); ?>
@@ -4373,14 +4377,14 @@ class WECOOP_Servizi_Management {
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <label for="wecoop_sms_provider">Provider SMS</label>
+                            <label for="wecoop_sms_provider">Provider SMS (solo canale SMS)</label>
                         </th>
                         <td>
                             <select name="wecoop_sms_provider" id="wecoop_sms_provider">
                                 <option value="webhook" <?php selected($sms_provider, 'webhook'); ?>>Webhook custom</option>
                                 <option value="twilio" <?php selected($sms_provider, 'twilio'); ?>>Twilio</option>
                             </select>
-                            <p class="description">Seleziona <strong>Twilio</strong> per usare la tua configurazione Twilio.</p>
+                            <p class="description">L'email OTP viene sempre inviata in parallelo; qui scegli solo come inviare l'SMS.</p>
                         </td>
                     </tr>
                 </table>
