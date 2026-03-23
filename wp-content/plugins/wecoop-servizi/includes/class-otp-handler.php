@@ -383,23 +383,49 @@ class WECOOP_OTP_Handler {
         }
 
         $subject = '🔐 Codice OTP Firma Documento WECOOP';
-        $message = "Ciao,\n\n";
+        $expiry_minutes = intval(self::OTP_EXPIRY_TIME / 60);
 
         if ($include_code) {
-            $message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n\n";
-            $message .= "Il codice è valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+            $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP</h1>';
+            $content .= '<p style="margin:0 0 14px;">Usa questo codice per completare la firma digitale:</p>';
+            $content .= '<div style="margin:18px 0; text-align:center;">';
+            $content .= '<span style="display:inline-block; font-size:40px; letter-spacing:8px; font-weight:700; color:#1f2d3d; background:#f4f7fb; border:1px solid #d8e1ee; border-radius:10px; padding:14px 24px;">' . esc_html($otp_code) . '</span>';
+            $content .= '</div>';
+            $content .= '<p style="margin:0 0 8px;">Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
         } else {
-            $message .= "Il tuo codice OTP per la firma digitale è stato inviato via SMS.\n\n";
-            $message .= "Inserisci il codice ricevuto via SMS entro " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+            $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP Inviato via SMS</h1>';
+            $content .= '<p style="margin:0 0 8px;">Ti abbiamo inviato il codice OTP via SMS.</p>';
+            $content .= '<p style="margin:0 0 8px;">Inserisci il codice ricevuto entro <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
         }
 
         if ($richiesta_id) {
-            $message .= "ID richiesta: {$richiesta_id}\n";
+            $content .= '<p style="margin:10px 0 0; color:#666; font-size:14px;">ID richiesta: <strong>' . intval($richiesta_id) . '</strong></p>';
         }
-        $message .= "\nSe non hai richiesto tu questo codice, ignora questa email.\n\n";
-        $message .= "Team WECOOP";
 
-        $sent = wp_mail($email, $subject, $message);
+        $content .= '<p style="margin-top:16px; color:#666; font-size:14px;">Se non hai richiesto questo codice, ignora questa email.</p>';
+
+        if (class_exists('WeCoop_Email_Template_Unified')) {
+            $sent = WeCoop_Email_Template_Unified::send($email, $subject, $content, [
+                'preheader' => 'Codice OTP per completare la firma digitale',
+                'button_text' => '',
+                'button_url' => ''
+            ]);
+        } else {
+            $fallback_message = "Ciao,\n\n";
+            if ($include_code) {
+                $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
+                $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
+            } else {
+                $fallback_message .= "Il tuo codice OTP è stato inviato via SMS.\n";
+                $fallback_message .= "Inseriscilo entro {$expiry_minutes} minuti.\n";
+            }
+            if ($richiesta_id) {
+                $fallback_message .= "ID richiesta: {$richiesta_id}\n";
+            }
+            $fallback_message .= "\nTeam WECOOP";
+            $sent = wp_mail($email, $subject, $fallback_message);
+        }
+
         if (!$sent) {
             error_log("[WECOOP OTP] ❌ Invio email OTP fallito per {$email}");
             return false;
