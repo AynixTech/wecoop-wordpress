@@ -1742,6 +1742,16 @@ class WECOOP_Servizi_Management {
         
         <script>
         jQuery(document).ready(function($) {
+            // Auto-refresh lista richieste ogni 5 minuti
+            const WECOOP_AUTO_REFRESH_MS = 5 * 60 * 1000;
+            setInterval(function() {
+                // Evita refresh mentre stai lavorando in un modal
+                if ($('#edit-richiesta-modal:visible').length || $('#payment-request-modal:visible').length) {
+                    return;
+                }
+                location.reload();
+            }, WECOOP_AUTO_REFRESH_MS);
+
             // Invia richiesta di pagamento
             $(document).on('click', '.send-payment-request, .send-payment-link', function(e) {
                 e.preventDefault();
