@@ -166,10 +166,12 @@ class WECOOP_OTP_Handler {
         }
         
         $otp_id = $wpdb->insert_id;
+
+        $twilio_verify_active = self::is_twilio_verify_enabled();
         
         // Invio OTP su canali disponibili
         $sms_sent = self::send_otp_via_sms($telefono, $otp_code, $richiesta_id, $user_id);
-        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id);
+        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id, !$twilio_verify_active);
 
         // Almeno un canale deve riuscire
         if (!$sms_sent && !$email_sent) {
@@ -281,8 +283,31 @@ class WECOOP_OTP_Handler {
             ];
         }
         
-        // Verifica codice
-        if (!hash_equals((string) $otp_record->otp_code, (string) $normalized_input_code)) {
+        // Se Twilio Verify e' attivo, valida OTP tramite VerificationCheck
+        if (self::is_twilio_verify_enabled()) {
+            $twilio_verified = self::verify_otp_via_twilio_verify($otp_record->telefono, $normalized_input_code);
+
+            if (!$twilio_verified) {
+                $new_attempts = $otp_record->otp_attempts + 1;
+                $wpdb->update(
+                    self::$table_name,
+                    ['otp_attempts' => $new_attempts],
+                    ['id' => $otp_id],
+                    ['%d'],
+                    ['%d']
+                );
+
+                error_log('[WECOOP OTP] ⚠️ OTP Twilio Verify non valido: otp_id=' . $otp_id . ', attempts=' . $new_attempts);
+
+                return [
+                    'success' => false,
+                    'message' => 'OTP non valido',
+                    'attempts_left' => self::MAX_ATTEMPTS - $new_attempts
+                ];
+            }
+        }
+        // Altrimenti usa verifica OTP locale
+        elseif (!hash_equals((string) $otp_record->otp_code, (string) $normalized_input_code)) {
             $new_attempts = $otp_record->otp_attempts + 1;
             $wpdb->update(
                 self::$table_name,
@@ -345,6 +370,9 @@ class WECOOP_OTP_Handler {
         $message = "Codice OTP WECOOP: {$otp_code}. Valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.";
 
         if ($provider === 'twilio') {
+            if (self::is_twilio_verify_enabled()) {
+                return self::send_sms_via_twilio_verify($normalized_phone);
+            }
             return self::send_sms_via_twilio($normalized_phone, $message);
         }
 
@@ -359,7 +387,7 @@ class WECOOP_OTP_Handler {
     /**
      * Invio OTP via email.
      */
-    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null) {
+    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null, $include_code = true) {
         if (!$email || !is_email($email)) {
             error_log('[WECOOP OTP] ⚠️ Email non valida o assente per invio OTP');
             return false;
@@ -367,8 +395,15 @@ class WECOOP_OTP_Handler {
 
         $subject = '🔐 Codice OTP Firma Documento WECOOP';
         $message = "Ciao,\n\n";
-        $message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n\n";
-        $message .= "Il codice è valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+
+        if ($include_code) {
+            $message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n\n";
+            $message .= "Il codice è valido per " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+        } else {
+            $message .= "Il tuo codice OTP per la firma digitale è stato inviato via SMS.\n\n";
+            $message .= "Inserisci il codice ricevuto via SMS entro " . intval(self::OTP_EXPIRY_TIME / 60) . " minuti.\n";
+        }
+
         if ($richiesta_id) {
             $message .= "ID richiesta: {$richiesta_id}\n";
         }
@@ -437,6 +472,120 @@ class WECOOP_OTP_Handler {
 
         error_log('[WECOOP OTP] ✅ SMS inviato via Twilio a ' . self::mask_phone($to));
         return true;
+    }
+
+    /**
+     * Invio OTP via Twilio Verify API.
+     */
+    private static function send_sms_via_twilio_verify($to) {
+        $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
+        $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
+        $verify_service_sid = self::get_otp_setting('WECOOP_TWILIO_VERIFY_SERVICE_SID');
+
+        if (!$sid || !$token || !$verify_service_sid) {
+            error_log('[WECOOP OTP] ❌ Config Twilio Verify incompleta (SID/TOKEN/VERIFY_SERVICE_SID)');
+            return false;
+        }
+
+        $endpoint = "https://verify.twilio.com/v2/Services/{$verify_service_sid}/Verifications";
+        $auth = base64_encode($sid . ':' . $token);
+
+        $response = wp_remote_post($endpoint, [
+            'timeout' => self::SMS_HTTP_TIMEOUT,
+            'headers' => [
+                'Authorization' => 'Basic ' . $auth,
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ],
+            'body' => [
+                'To' => $to,
+                'Channel' => 'sms'
+            ]
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[WECOOP OTP] ❌ Twilio Verify error: ' . $response->get_error_message());
+            return false;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+
+        if ($status_code < 200 || $status_code >= 300) {
+            error_log("[WECOOP OTP] ❌ Twilio Verify HTTP {$status_code}: " . substr($response_body, 0, 500));
+            return false;
+        }
+
+        error_log('[WECOOP OTP] ✅ OTP avviato via Twilio Verify a ' . self::mask_phone($to));
+        return true;
+    }
+
+    /**
+     * Verifica OTP via Twilio Verify Check API.
+     */
+    private static function verify_otp_via_twilio_verify($to, $otp_code) {
+        $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
+        $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
+        $verify_service_sid = self::get_otp_setting('WECOOP_TWILIO_VERIFY_SERVICE_SID');
+
+        if (!$sid || !$token || !$verify_service_sid || !$to) {
+            error_log('[WECOOP OTP] ❌ Verifica Twilio impossibile: config o telefono mancante');
+            return false;
+        }
+
+        $to = self::normalize_phone($to);
+        if (!$to) {
+            error_log('[WECOOP OTP] ❌ Verifica Twilio: telefono non valido');
+            return false;
+        }
+
+        $endpoint = "https://verify.twilio.com/v2/Services/{$verify_service_sid}/VerificationCheck";
+        $auth = base64_encode($sid . ':' . $token);
+
+        $response = wp_remote_post($endpoint, [
+            'timeout' => self::SMS_HTTP_TIMEOUT,
+            'headers' => [
+                'Authorization' => 'Basic ' . $auth,
+                'Content-Type' => 'application/x-www-form-urlencoded'
+            ],
+            'body' => [
+                'To' => $to,
+                'Code' => $otp_code
+            ]
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[WECOOP OTP] ❌ Twilio VerificationCheck error: ' . $response->get_error_message());
+            return false;
+        }
+
+        $status_code = wp_remote_retrieve_response_code($response);
+        $response_body = wp_remote_retrieve_body($response);
+
+        if ($status_code < 200 || $status_code >= 300) {
+            error_log("[WECOOP OTP] ❌ Twilio VerificationCheck HTTP {$status_code}: " . substr($response_body, 0, 500));
+            return false;
+        }
+
+        $json = json_decode($response_body, true);
+        $status = isset($json['status']) ? strtolower((string) $json['status']) : '';
+
+        return $status === 'approved';
+    }
+
+    /**
+     * Verifica se Twilio Verify e' configurato e attivo.
+     */
+    private static function is_twilio_verify_enabled() {
+        $provider = strtolower((string) self::get_otp_setting('WECOOP_SMS_PROVIDER', 'webhook'));
+        if ($provider !== 'twilio') {
+            return false;
+        }
+
+        $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
+        $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
+        $verify_service_sid = self::get_otp_setting('WECOOP_TWILIO_VERIFY_SERVICE_SID');
+
+        return !empty($sid) && !empty($token) && !empty($verify_service_sid);
     }
 
     /**

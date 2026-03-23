@@ -4344,6 +4344,7 @@ class WECOOP_Servizi_Management {
             update_option('wecoop_twilio_account_sid', sanitize_text_field($_POST['wecoop_twilio_account_sid'] ?? ''));
             update_option('wecoop_twilio_auth_token', sanitize_text_field($_POST['wecoop_twilio_auth_token'] ?? ''));
             update_option('wecoop_twilio_from', sanitize_text_field($_POST['wecoop_twilio_from'] ?? ''));
+            update_option('wecoop_twilio_verify_service_sid', sanitize_text_field($_POST['wecoop_twilio_verify_service_sid'] ?? ''));
             update_option('wecoop_twilio_messaging_service_sid', sanitize_text_field($_POST['wecoop_twilio_messaging_service_sid'] ?? ''));
 
             update_option('wecoop_sms_webhook_url', esc_url_raw($_POST['wecoop_sms_webhook_url'] ?? ''));
@@ -4357,6 +4358,7 @@ class WECOOP_Servizi_Management {
         $twilio_sid = get_option('wecoop_twilio_account_sid', '');
         $twilio_token = get_option('wecoop_twilio_auth_token', '');
         $twilio_from = get_option('wecoop_twilio_from', '');
+        $twilio_verify_service_sid = get_option('wecoop_twilio_verify_service_sid', '');
         $twilio_messaging_service_sid = get_option('wecoop_twilio_messaging_service_sid', '');
 
         $webhook_url = get_option('wecoop_sms_webhook_url', '');
@@ -4365,7 +4367,7 @@ class WECOOP_Servizi_Management {
         ?>
         <div class="wrap">
             <h1>🔐 Impostazioni OTP SMS</h1>
-            <p>Gli OTP vengono inviati <strong>sia via SMS che via email</strong> nello stesso flusso. Qui configuri solo il canale SMS (Twilio o Webhook custom). Per Twilio servono almeno <strong>Account SID</strong>, <strong>Auth Token</strong> e <strong>numero mittente</strong> oppure <strong>Messaging Service SID</strong>.</p>
+            <p>Gli OTP vengono inviati <strong>sia via SMS che via email</strong> nello stesso flusso. Qui configuri solo il canale SMS (Twilio o Webhook custom). Per Twilio puoi usare <strong>Verify Service SID (VA...)</strong> oppure SMS classico con <strong>numero mittente</strong>/<strong>Messaging Service SID</strong>.</p>
 
             <div class="notice notice-info" style="margin: 15px 0;">
                 <p><strong>Invio OTP:</strong> SMS + Email contemporaneamente. Se l'SMS fallisce ma l'email viene inviata, l'OTP resta valido.</p>
@@ -4420,6 +4422,20 @@ class WECOOP_Servizi_Management {
                     </tr>
                     <tr>
                         <th scope="row">
+                            <label for="wecoop_twilio_verify_service_sid">Verify Service SID (consigliato)</label>
+                        </th>
+                        <td>
+                            <input type="text"
+                                   name="wecoop_twilio_verify_service_sid"
+                                   id="wecoop_twilio_verify_service_sid"
+                                   value="<?php echo esc_attr($twilio_verify_service_sid); ?>"
+                                   class="regular-text"
+                                   placeholder="VAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            <p class="description">Se impostato, viene usata l'API Twilio Verify (<code>/v2/Services/VA.../Verifications</code>) per invio e verifica OTP via SMS.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">
                             <label for="wecoop_twilio_from">Numero Mittente (From)</label>
                         </th>
                         <td>
@@ -4429,7 +4445,7 @@ class WECOOP_Servizi_Management {
                                    value="<?php echo esc_attr($twilio_from); ?>"
                                    class="regular-text"
                                    placeholder="+1XXXXXXXXXX">
-                            <p class="description">Numero Twilio abilitato SMS, in formato internazionale.</p>
+                            <p class="description">Usato per SMS Twilio classico (non Verify). Formato internazionale.</p>
                         </td>
                     </tr>
                     <tr>
@@ -4443,7 +4459,7 @@ class WECOOP_Servizi_Management {
                                    value="<?php echo esc_attr($twilio_messaging_service_sid); ?>"
                                    class="regular-text"
                                    placeholder="MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                            <p class="description">Se impostato, viene usato al posto del campo From.</p>
+                            <p class="description">Usato per SMS Twilio classico (non Verify). Se impostato, sostituisce il campo From.</p>
                         </td>
                     </tr>
                 </table>
