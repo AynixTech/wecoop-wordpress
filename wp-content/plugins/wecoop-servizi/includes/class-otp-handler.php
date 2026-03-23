@@ -392,14 +392,26 @@ class WECOOP_OTP_Handler {
         $sid = self::get_otp_setting('WECOOP_TWILIO_ACCOUNT_SID');
         $token = self::get_otp_setting('WECOOP_TWILIO_AUTH_TOKEN');
         $from = self::get_otp_setting('WECOOP_TWILIO_FROM');
+        $messaging_service_sid = self::get_otp_setting('WECOOP_TWILIO_MESSAGING_SERVICE_SID');
 
-        if (!$sid || !$token || !$from) {
-            error_log('[WECOOP OTP] ❌ Config Twilio incompleta (SID/TOKEN/FROM)');
+        if (!$sid || !$token || (!$from && !$messaging_service_sid)) {
+            error_log('[WECOOP OTP] ❌ Config Twilio incompleta (SID/TOKEN e FROM oppure MESSAGING_SERVICE_SID)');
             return false;
         }
 
         $endpoint = "https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json";
         $auth = base64_encode($sid . ':' . $token);
+
+        $body = [
+            'To' => $to,
+            'Body' => $message
+        ];
+
+        if ($messaging_service_sid) {
+            $body['MessagingServiceSid'] = $messaging_service_sid;
+        } else {
+            $body['From'] = $from;
+        }
 
         $response = wp_remote_post($endpoint, [
             'timeout' => self::SMS_HTTP_TIMEOUT,
@@ -407,11 +419,7 @@ class WECOOP_OTP_Handler {
                 'Authorization' => 'Basic ' . $auth,
                 'Content-Type' => 'application/x-www-form-urlencoded'
             ],
-            'body' => [
-                'To' => $to,
-                'From' => $from,
-                'Body' => $message
-            ]
+            'body' => $body
         ]);
 
         if (is_wp_error($response)) {
