@@ -196,7 +196,10 @@ class WECOOP_Soci_Endpoint {
         register_rest_route('wecoop/v1', '/soci/(?P<id>\d+)/documenti', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'get_documenti_socio'],
-            'permission_callback' => [__CLASS__, 'check_admin_permission']
+            'permission_callback' => [__CLASS__, 'check_admin_permission'],
+            'args' => [
+                'soggetto' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field']
+            ]
         ]);
         
         // 15. CREATE: Upload documento
@@ -241,7 +244,10 @@ class WECOOP_Soci_Endpoint {
         register_rest_route('wecoop/v1', '/soci/me/documenti', [
             'methods' => 'GET',
             'callback' => [__CLASS__, 'get_miei_documenti'],
-            'permission_callback' => [__CLASS__, 'check_jwt_auth']
+            'permission_callback' => [__CLASS__, 'check_jwt_auth'],
+            'args' => [
+                'soggetto' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field']
+            ]
         ]);
         
         // 18. CHECK: Verifica se username esiste (pubblico per debug app)
@@ -942,9 +948,14 @@ class WECOOP_Soci_Endpoint {
         $documenti_caricati = get_user_meta($user_id, 'documenti_caricati', true);
         if (!empty($documenti_caricati) && is_array($documenti_caricati)) {
             $data['documenti'] = array_map(function($doc) {
+                $tipo_documento = $doc['tipo_documento'] ?? ($doc['tipo'] ?? null);
+                $soggetto = $doc['soggetto'] ?? 'richiedente';
+
                 return [
                     'id' => $doc['id'],
-                    'tipo' => $doc['tipo'],
+                    'tipo_documento' => $tipo_documento,
+                    'tipo' => $tipo_documento,
+                    'soggetto' => $soggetto,
                     'data' => $doc['data'],
                     'url' => wp_get_attachment_url($doc['id']),
                     'filename' => basename(get_attached_file($doc['id']))
@@ -1163,6 +1174,15 @@ class WECOOP_Soci_Endpoint {
      */
     public static function get_documenti_socio($request) {
         $user_id = $request['id'];
+        $requested_soggetto = null;
+        $raw_soggetto = $request->get_param('soggetto');
+
+        if ($raw_soggetto !== null && $raw_soggetto !== '') {
+            $requested_soggetto = self::resolve_soggetto_or_error($raw_soggetto);
+            if (is_wp_error($requested_soggetto)) {
+                return $requested_soggetto;
+            }
+        }
         
         $documenti = get_posts([
             'post_type' => 'attachment',
@@ -1176,12 +1196,21 @@ class WECOOP_Soci_Endpoint {
         
         $result = [];
         foreach ($documenti as $doc) {
+            $tipo_documento = get_post_meta($doc->ID, 'tipo_documento', true);
+            $soggetto = get_post_meta($doc->ID, 'soggetto', true) ?: 'richiedente';
+
+            if ($requested_soggetto !== null && $soggetto !== $requested_soggetto) {
+                continue;
+            }
+
             $result[] = [
                 'id' => $doc->ID,
                 'title' => $doc->post_title,
                 'filename' => basename(get_attached_file($doc->ID)),
                 'url' => wp_get_attachment_url($doc->ID),
-                'tipo' => get_post_meta($doc->ID, 'tipo_documento', true),
+                'tipo_documento' => $tipo_documento,
+                'tipo' => $tipo_documento,
+                'soggetto' => $soggetto,
                 'data_upload' => get_the_date('c', $doc)
             ];
         }
@@ -1197,6 +1226,11 @@ class WECOOP_Soci_Endpoint {
      */
     public static function upload_documento($request) {
         $user_id = $request['id'];
+        $soggetto = self::resolve_soggetto_or_error($request->get_param('soggetto'));
+
+        if (is_wp_error($soggetto)) {
+            return $soggetto;
+        }
         
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
@@ -1218,13 +1252,15 @@ class WECOOP_Soci_Endpoint {
         update_post_meta($attachment_id, 'documento_socio', 'yes');
         update_post_meta($attachment_id, 'socio_id', $user_id);
         update_post_meta($attachment_id, 'tipo_documento', $request['tipo_documento'] ?? 'altro');
+        update_post_meta($attachment_id, 'soggetto', $soggetto);
         
         return rest_ensure_response([
             'success' => true,
             'message' => 'Documento caricato',
             'data' => [
                 'id' => $attachment_id,
-                'url' => wp_get_attachment_url($attachment_id)
+                'url' => wp_get_attachment_url($attachment_id),
+                'soggetto' => $soggetto
             ]
         ]);
     }
@@ -1234,6 +1270,35 @@ class WECOOP_Soci_Endpoint {
      */
     public static function check_admin_permission() {
         return current_user_can('manage_options');
+    }
+
+    /**
+     * Valori ammessi per il soggetto documento
+     */
+    private static function get_allowed_soggetti() {
+        return ['richiedente', 'familiare'];
+    }
+
+    /**
+     * Ritorna soggetto valido o WP_Error
+     */
+    private static function resolve_soggetto_or_error($raw_soggetto = null) {
+        $soggetto = strtolower(trim((string) ($raw_soggetto ?? '')));
+
+        // Fallback legacy: client senza soggetto -> richiedente
+        if ($soggetto === '') {
+            return 'richiedente';
+        }
+
+        if (!in_array($soggetto, self::get_allowed_soggetti(), true)) {
+            return new WP_Error(
+                'invalid_soggetto',
+                'Valore soggetto non valido. Valori ammessi: richiedente, familiare',
+                ['status' => 400]
+            );
+        }
+
+        return $soggetto;
     }
     
     /**
@@ -1404,7 +1469,13 @@ class WECOOP_Soci_Endpoint {
         
         // Tipo documento (carta_identita, codice_fiscale, altro)
         $tipo_documento = $request->get_param('tipo_documento') ?? 'carta_identita';
-        error_log("[WECOOP UPLOAD] 📎 Tipo documento: {$tipo_documento}, File: {$files['file']['name']}, Size: " . round($files['file']['size'] / 1024, 2) . " KB");
+        $soggetto = self::resolve_soggetto_or_error($request->get_param('soggetto'));
+
+        if (is_wp_error($soggetto)) {
+            return $soggetto;
+        }
+
+        error_log("[WECOOP UPLOAD] 📎 Tipo documento: {$tipo_documento}, Soggetto: {$soggetto}, File: {$files['file']['name']}, Size: " . round($files['file']['size'] / 1024, 2) . " KB");
         
         // Upload file
         $attachment_id = media_handle_upload('file', 0);
@@ -1420,15 +1491,18 @@ class WECOOP_Soci_Endpoint {
         update_post_meta($attachment_id, 'documento_socio', 'yes');
         update_post_meta($attachment_id, 'socio_id', $user_id);
         update_post_meta($attachment_id, 'tipo_documento', $tipo_documento);
+        update_post_meta($attachment_id, 'soggetto', $soggetto);
         update_post_meta($attachment_id, 'data_upload', current_time('mysql'));
         
-        error_log("[WECOOP UPLOAD] 💾 Meta salvati: documento_socio=yes, socio_id={$user_id}, tipo_documento={$tipo_documento}");
+        error_log("[WECOOP UPLOAD] 💾 Meta salvati: documento_socio=yes, socio_id={$user_id}, tipo_documento={$tipo_documento}, soggetto={$soggetto}");
         
         // Segna che l'utente ha caricato documenti
         $documenti_caricati = get_user_meta($user_id, 'documenti_caricati', true) ?: [];
         $documenti_caricati[] = [
             'id' => $attachment_id,
             'tipo' => $tipo_documento,
+            'tipo_documento' => $tipo_documento,
+            'soggetto' => $soggetto,
             'data' => current_time('Y-m-d H:i:s')
         ];
         update_user_meta($user_id, 'documenti_caricati', $documenti_caricati);
@@ -1442,7 +1516,9 @@ class WECOOP_Soci_Endpoint {
             'data' => [
                 'id' => $attachment_id,
                 'url' => $file_url,
+                'tipo_documento' => $tipo_documento,
                 'tipo' => $tipo_documento,
+                'soggetto' => $soggetto,
                 'filename' => basename(get_attached_file($attachment_id))
             ]
         ]);
@@ -1454,6 +1530,15 @@ class WECOOP_Soci_Endpoint {
     public static function get_miei_documenti($request) {
         $current_user = wp_get_current_user();
         $user_id = $current_user->ID;
+        $requested_soggetto = null;
+        $raw_soggetto = $request->get_param('soggetto');
+
+        if ($raw_soggetto !== null && $raw_soggetto !== '') {
+            $requested_soggetto = self::resolve_soggetto_or_error($raw_soggetto);
+            if (is_wp_error($requested_soggetto)) {
+                return $requested_soggetto;
+            }
+        }
         
         error_log("[WECOOP DOCUMENTI] 🔍 Richiesta lista documenti per user_id: {$user_id}");
         
@@ -1478,16 +1563,24 @@ class WECOOP_Soci_Endpoint {
         $result = [];
         foreach ($documenti as $doc) {
             $tipo = get_post_meta($doc->ID, 'tipo_documento', true);
+            $soggetto = get_post_meta($doc->ID, 'soggetto', true) ?: 'richiedente';
+
+            if ($requested_soggetto !== null && $soggetto !== $requested_soggetto) {
+                continue;
+            }
+
             $result[] = [
                 'id' => $doc->ID,
                 'title' => $doc->post_title,
                 'filename' => basename(get_attached_file($doc->ID)),
                 'url' => wp_get_attachment_url($doc->ID),
+                'tipo_documento' => $tipo,
                 'tipo' => $tipo,
+                'soggetto' => $soggetto,
                 'data_upload' => get_the_date('c', $doc),
                 'data_scadenza' => get_post_meta($doc->ID, 'data_scadenza', true)
             ];
-            error_log("[WECOOP DOCUMENTI] 📄 ID: {$doc->ID}, Tipo: {$tipo}, File: {$doc->post_title}");
+            error_log("[WECOOP DOCUMENTI] 📄 ID: {$doc->ID}, Tipo: {$tipo}, Soggetto: {$soggetto}, File: {$doc->post_title}");
         }
         
         error_log("[WECOOP DOCUMENTI] ✅ Response inviata con " . count($result) . " documenti");
