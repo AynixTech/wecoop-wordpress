@@ -281,7 +281,7 @@ class WECOOP_OTP_Handler {
             ];
         }
         
-        // Se Twilio Verify e' attivo, valida OTP tramite VerificationCheck
+        // Se Twilio Verify e' attivo, valida esclusivamente il codice SMS Verify.
         if (self::is_twilio_verify_enabled()) {
             $twilio_verified = self::verify_otp_via_twilio_verify($otp_record->telefono, $normalized_input_code);
 
@@ -368,7 +368,9 @@ class WECOOP_OTP_Handler {
             return self::send_sms_via_twilio_verify($normalized_phone);
         }
 
-        return self::send_sms_via_twilio($normalized_phone, $message);
+        error_log('[WECOOP OTP] ❌ Twilio Verify non configurato: invio SMS OTP disabilitato (policy: solo Verify)');
+
+        return false;
     }
 
     /**
@@ -391,12 +393,29 @@ class WECOOP_OTP_Handler {
             ? WeCoop_Multilingual_Email::get_translation('otp_email_subject', $lang)
             : '🔐 Codice OTP Firma Documento WECOOP';
 
+        if ($lang === 'en') {
+            $email_intro_fallback = 'For security reasons, the OTP code is sent only by SMS to your verified phone number.';
+        } elseif ($lang === 'es') {
+            $email_intro_fallback = 'Por motivos de seguridad, el código OTP se envía solo por SMS a tu número verificado.';
+        } elseif ($lang === 'fr') {
+            $email_intro_fallback = 'Pour des raisons de sécurité, le code OTP est envoyé uniquement par SMS à votre numéro vérifié.';
+        } else {
+            $email_intro_fallback = 'Per motivi di sicurezza, il codice OTP viene inviato solo via SMS al tuo numero verificato.';
+        }
+
+        $email_intro = $email_intro_fallback;
+
         $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">' . esc_html(class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_title', $lang) : 'Codice OTP') . '</h1>';
-        $content .= '<p style="margin:0 0 14px;">' . (class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_intro', $lang) : 'Usa questo codice per completare la firma digitale. Lo stesso codice viene inviato anche via SMS.') . '</p>';
-        $content .= '<div style="margin:18px 0; text-align:center;">';
-        $content .= '<span style="display:inline-block; font-size:40px; letter-spacing:8px; font-weight:700; color:#1f2d3d; background:#f4f7fb; border:1px solid #d8e1ee; border-radius:10px; padding:14px 24px;">' . esc_html($otp_code) . '</span>';
-        $content .= '</div>';
-        $content .= '<p style="margin:0 0 8px;">' . (class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_expiry', $lang, ['minutes' => $expiry_minutes]) : ('Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.')) . '</p>';
+        $content .= '<p style="margin:0 0 14px;">' . $email_intro . '</p>';
+        if ($lang === 'en') {
+            $content .= '<p style="margin:0 0 8px;">The OTP is valid for <strong>' . $expiry_minutes . ' minutes</strong>.</p>';
+        } elseif ($lang === 'es') {
+            $content .= '<p style="margin:0 0 8px;">El OTP es válido durante <strong>' . $expiry_minutes . ' minutos</strong>.</p>';
+        } elseif ($lang === 'fr') {
+            $content .= '<p style="margin:0 0 8px;">Le code OTP est valable pendant <strong>' . $expiry_minutes . ' minutes</strong>.</p>';
+        } else {
+            $content .= '<p style="margin:0 0 8px;">Il codice OTP e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
+        }
 
         if ($richiesta_id) {
             $request_label = class_exists('WeCoop_Multilingual_Email')
@@ -417,24 +436,20 @@ class WECOOP_OTP_Handler {
         } else {
             if ($lang === 'en') {
                 $fallback_message = "Hello,\n\n";
-                $fallback_message .= "Your OTP code for the digital signature is: {$otp_code}\n";
-                $fallback_message .= "The same code is also sent by SMS.\n";
-                $fallback_message .= "Valid for {$expiry_minutes} minutes.\n";
+                $fallback_message .= "For security reasons, the OTP code is sent only by SMS to your verified phone number.\n";
+                $fallback_message .= "The OTP is valid for {$expiry_minutes} minutes.\n";
             } elseif ($lang === 'es') {
                 $fallback_message = "Hola,\n\n";
-                $fallback_message .= "Tu código OTP para la firma digital es: {$otp_code}\n";
-                $fallback_message .= "El mismo código también se envía por SMS.\n";
-                $fallback_message .= "Válido durante {$expiry_minutes} minutos.\n";
+                $fallback_message .= "Por motivos de seguridad, el código OTP se envía solo por SMS a tu número verificado.\n";
+                $fallback_message .= "El OTP es válido durante {$expiry_minutes} minutos.\n";
             } elseif ($lang === 'fr') {
                 $fallback_message = "Bonjour,\n\n";
-                $fallback_message .= "Votre code OTP pour la signature numérique est: {$otp_code}\n";
-                $fallback_message .= "Le même code est également envoyé par SMS.\n";
-                $fallback_message .= "Valable pendant {$expiry_minutes} minutes.\n";
+                $fallback_message .= "Pour des raisons de sécurité, le code OTP est envoyé uniquement par SMS à votre numéro vérifié.\n";
+                $fallback_message .= "Le code OTP est valable pendant {$expiry_minutes} minutes.\n";
             } else {
                 $fallback_message = "Ciao,\n\n";
-                $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
-                $fallback_message .= "Lo stesso codice viene inviato anche via SMS.\n";
-                $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
+                $fallback_message .= "Per motivi di sicurezza, il codice OTP viene inviato solo via SMS al tuo numero verificato.\n";
+                $fallback_message .= "Il codice OTP è valido per {$expiry_minutes} minuti.\n";
             }
             if ($richiesta_id) {
                 $fallback_message .= "ID richiesta: {$richiesta_id}\n";
@@ -614,7 +629,7 @@ class WECOOP_OTP_Handler {
 
         return !empty($sid) && !empty($token) && !empty($verify_service_sid);
     }
-    
+
     /**
      * Maschera numero telefonico
      */
