@@ -167,11 +167,9 @@ class WECOOP_OTP_Handler {
         
         $otp_id = $wpdb->insert_id;
 
-        $twilio_verify_active = self::is_twilio_verify_enabled();
-        
         // Invio OTP su canali disponibili
         $sms_sent = self::send_otp_via_sms($telefono, $otp_code, $richiesta_id, $user_id);
-        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id, !$twilio_verify_active);
+        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id);
 
         // Almeno un canale deve riuscire
         if (!$sms_sent && !$email_sent) {
@@ -376,7 +374,7 @@ class WECOOP_OTP_Handler {
     /**
      * Invio OTP via email.
      */
-    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null, $include_code = true) {
+    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null) {
         if (!$email || !is_email($email)) {
             error_log('[WECOOP OTP] ⚠️ Email non valida o assente per invio OTP');
             return false;
@@ -385,18 +383,12 @@ class WECOOP_OTP_Handler {
         $subject = '🔐 Codice OTP Firma Documento WECOOP';
         $expiry_minutes = intval(self::OTP_EXPIRY_TIME / 60);
 
-        if ($include_code) {
-            $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP</h1>';
-            $content .= '<p style="margin:0 0 14px;">Usa questo codice per completare la firma digitale:</p>';
-            $content .= '<div style="margin:18px 0; text-align:center;">';
-            $content .= '<span style="display:inline-block; font-size:40px; letter-spacing:8px; font-weight:700; color:#1f2d3d; background:#f4f7fb; border:1px solid #d8e1ee; border-radius:10px; padding:14px 24px;">' . esc_html($otp_code) . '</span>';
-            $content .= '</div>';
-            $content .= '<p style="margin:0 0 8px;">Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
-        } else {
-            $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP Inviato via SMS</h1>';
-            $content .= '<p style="margin:0 0 8px;">Ti abbiamo inviato il codice OTP via SMS.</p>';
-            $content .= '<p style="margin:0 0 8px;">Inserisci il codice ricevuto entro <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
-        }
+        $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP</h1>';
+        $content .= '<p style="margin:0 0 14px;">Usa questo codice per completare la firma digitale. Lo stesso codice viene inviato anche via SMS.</p>';
+        $content .= '<div style="margin:18px 0; text-align:center;">';
+        $content .= '<span style="display:inline-block; font-size:40px; letter-spacing:8px; font-weight:700; color:#1f2d3d; background:#f4f7fb; border:1px solid #d8e1ee; border-radius:10px; padding:14px 24px;">' . esc_html($otp_code) . '</span>';
+        $content .= '</div>';
+        $content .= '<p style="margin:0 0 8px;">Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
 
         if ($richiesta_id) {
             $content .= '<p style="margin:10px 0 0; color:#666; font-size:14px;">ID richiesta: <strong>' . intval($richiesta_id) . '</strong></p>';
@@ -412,13 +404,9 @@ class WECOOP_OTP_Handler {
             ]);
         } else {
             $fallback_message = "Ciao,\n\n";
-            if ($include_code) {
-                $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
-                $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
-            } else {
-                $fallback_message .= "Il tuo codice OTP è stato inviato via SMS.\n";
-                $fallback_message .= "Inseriscilo entro {$expiry_minutes} minuti.\n";
-            }
+            $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
+            $fallback_message .= "Lo stesso codice viene inviato anche via SMS.\n";
+            $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
             if ($richiesta_id) {
                 $fallback_message .= "ID richiesta: {$richiesta_id}\n";
             }
