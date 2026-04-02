@@ -687,6 +687,8 @@ class WECOOP_Servizi_Endpoint {
                     'pending' => 'In attesa',
                     'awaiting_payment' => 'In attesa di pagamento',
                     'pending_payment' => 'In attesa di pagamento',
+                    'paid' => 'Pagato',
+                    'awaiting_signature' => 'Da firmare',
                     'processing' => 'In lavorazione',
                     'completed' => 'Completata',
                     'cancelled' => 'Annullata'
@@ -902,6 +904,13 @@ class WECOOP_Servizi_Endpoint {
         
         if (!$result['success']) {
             return new WP_Error('pdf_generation_failed', $result['message'], ['status' => 500]);
+        }
+        
+        // Cambia stato da "paid" a "awaiting_signature"
+        $current_stato = get_post_meta($richiesta_id, 'stato', true);
+        if ($current_stato === 'paid' || $current_stato === 'awaiting_payment') {
+            update_post_meta($richiesta_id, 'stato', 'awaiting_signature');
+            error_log("[WECOOP API] 🔄 Stato richiesta #{$richiesta_id} cambiato da '$current_stato' a 'awaiting_signature'");
         }
         
         error_log("[WECOOP API] ✅ Documento unico PDF inviato per richiesta #{$richiesta_id}");

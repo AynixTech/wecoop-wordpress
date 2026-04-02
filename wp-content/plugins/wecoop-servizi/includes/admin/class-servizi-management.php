@@ -4596,6 +4596,13 @@ class WECOOP_Servizi_Management {
             update_post_meta($richiesta_id, 'documento_unico_hash', $hash);
             update_post_meta($richiesta_id, 'documento_unico_generato_il', current_time('mysql'));
             
+            // Cambia stato da "paid" o "awaiting_payment" a "awaiting_signature"
+            $current_stato = get_post_meta($richiesta_id, 'stato', true);
+            if ($current_stato === 'paid' || $current_stato === 'awaiting_payment') {
+                update_post_meta($richiesta_id, 'stato', 'awaiting_signature');
+                error_log("[WECOOP API] 🔄 Stato richiesta #{$richiesta_id} cambiatoda '$current_stato' a 'awaiting_signature'");
+            }
+            
             error_log('✅ FIRMA: Metadata salvati');
             
             // Risposta di successo
