@@ -1307,6 +1307,7 @@ class WECOOP_Servizi_Management {
                     <option value="pending" <?php selected($stato_filter, 'pending'); ?>>In Attesa</option>
                     <option value="awaiting_payment" <?php selected($stato_filter, 'awaiting_payment'); ?>>Da Pagare</option>
                     <option value="paid" <?php selected($stato_filter, 'paid'); ?>>✅ Pagato</option>
+                    <option value="awaiting_signature" <?php selected($stato_filter, 'awaiting_signature'); ?>>Da Firmare</option>
                     <option value="processing" <?php selected($stato_filter, 'processing'); ?>>In Lavorazione</option>
                     <option value="completed" <?php selected($stato_filter, 'completed'); ?>>Completata</option>
                     <option value="cancelled" <?php selected($stato_filter, 'cancelled'); ?>>Annullata</option>
@@ -1436,19 +1437,21 @@ class WECOOP_Servizi_Management {
         $stato_labels = [
             'pending' => '⏳ In Attesa',
             'awaiting_payment' => '💳 Da Pagare',
+            'paid' => '✅ Pagato',
+            'awaiting_signature' => '✍️ Da Firmare',
             'processing' => '🔄 In Lavorazione',
             'completed' => '✅ Completata',
-            'cancelled' => '❌ Annullata',
-            'paid' => '✅ Pagato'
+            'cancelled' => '❌ Annullata'
         ];
         
         $stato_colors = [
             'pending' => '#ff9800',
             'awaiting_payment' => '#9c27b0',
+            'paid' => '#673ab7',
+            'awaiting_signature' => '#ff6f00',
             'processing' => '#2196f3',
             'completed' => '#4caf50',
-            'cancelled' => '#f44336',
-            'paid' => '#4caf50'
+            'cancelled' => '#f44336'
         ];
         ?>
         <tr>
