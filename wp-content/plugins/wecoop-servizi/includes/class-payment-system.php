@@ -282,7 +282,11 @@ class WECOOP_Servizi_Payment_System {
         if ($stato === 'completed' || $stato === 'paid') {
             $payment = self::get_payment($payment_id);
             if ($payment) {
+                $old_stato = get_post_meta($payment->richiesta_id, 'stato', true);
                 update_post_meta($payment->richiesta_id, 'stato', 'paid');
+                if ($old_stato !== '' && $old_stato !== 'paid') {
+                    do_action('wecoop_richiesta_servizio_status_changed', intval($payment->richiesta_id), $old_stato, 'paid');
+                }
                 update_post_meta($payment->richiesta_id, 'payment_status', 'paid');
             }
         }

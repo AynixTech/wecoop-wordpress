@@ -910,6 +910,7 @@ class WECOOP_Servizi_Endpoint {
         $current_stato = get_post_meta($richiesta_id, 'stato', true);
         if ($current_stato === 'paid' || $current_stato === 'awaiting_payment') {
             update_post_meta($richiesta_id, 'stato', 'awaiting_signature');
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $current_stato, 'awaiting_signature');
             error_log("[WECOOP API] 🔄 Stato richiesta #{$richiesta_id} cambiato da '$current_stato' a 'awaiting_signature'");
         }
         

@@ -2760,8 +2760,13 @@ class WECOOP_Servizi_Management {
         
         $richiesta_id = absint($_POST['richiesta_id']);
         $stato = sanitize_text_field($_POST['stato']);
-        
+        $old_stato = get_post_meta($richiesta_id, 'stato', true);
+
         update_post_meta($richiesta_id, 'stato', $stato);
+
+        if ($old_stato !== '' && $old_stato !== $stato) {
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $old_stato, $stato);
+        }
         
         wp_send_json_success('Modifiche salvate con successo');
     }
@@ -2797,8 +2802,13 @@ class WECOOP_Servizi_Management {
         
         $richiesta_id = absint($_POST['richiesta_id']);
         $stato = sanitize_text_field($_POST['stato']);
-        
+        $old_stato = get_post_meta($richiesta_id, 'stato', true);
+
         update_post_meta($richiesta_id, 'stato', $stato);
+
+        if ($old_stato !== '' && $old_stato !== $stato) {
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $old_stato, $stato);
+        }
         
         wp_send_json_success('Stato aggiornato');
     }
@@ -2899,7 +2909,11 @@ class WECOOP_Servizi_Management {
             // Cambia stato se richiesto
             if ($update_stato) {
                 error_log('📝 PAYMENT: Aggiornamento stato a awaiting_payment');
+                $old_stato = get_post_meta($richiesta_id, 'stato', true);
                 update_post_meta($richiesta_id, 'stato', 'awaiting_payment');
+                if ($old_stato !== '' && $old_stato !== 'awaiting_payment') {
+                    do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $old_stato, 'awaiting_payment');
+                }
             }
             
             // Assicurati che user_id e importo siano nei post_meta
@@ -4603,6 +4617,7 @@ class WECOOP_Servizi_Management {
             $current_stato = get_post_meta($richiesta_id, 'stato', true);
             if ($current_stato === 'paid' || $current_stato === 'awaiting_payment') {
                 update_post_meta($richiesta_id, 'stato', 'awaiting_signature');
+                do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $current_stato, 'awaiting_signature');
                 error_log("[WECOOP API] 🔄 Stato richiesta #{$richiesta_id} cambiatoda '$current_stato' a 'awaiting_signature'");
             }
             

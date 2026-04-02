@@ -268,6 +268,7 @@ class WECOOP_Firma_Handler {
         $current_stato = get_post_meta($richiesta_id, 'stato', true);
         if ($current_stato === 'awaiting_signature') {
             update_post_meta($richiesta_id, 'stato', 'processing');
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $current_stato, 'processing');
             error_log('[WECOOP FIRMA] 🔄 Stato richiesta #' . $richiesta_id . ' cambiato da \'awaiting_signature\' a \'processing\'');
         }
         

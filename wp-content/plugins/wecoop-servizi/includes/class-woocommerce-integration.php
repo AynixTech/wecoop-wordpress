@@ -606,17 +606,25 @@ class WECOOP_Servizi_WooCommerce_Integration {
             case 'completed':
             case 'processing':
                 // Pagamento ricevuto
+                $old_stato = get_post_meta($richiesta_id, 'stato', true);
                 update_post_meta($richiesta_id, 'payment_status', 'paid');
                 update_post_meta($richiesta_id, 'payment_paid_at', current_time('mysql'));
                 update_post_meta($richiesta_id, 'stato', 'processing');
+                if ($old_stato !== '' && $old_stato !== 'processing') {
+                    do_action('wecoop_richiesta_servizio_status_changed', intval($richiesta_id), $old_stato, 'processing');
+                }
                 
                 error_log("[WECOOP SERVIZI] Pagamento ricevuto per richiesta #{$richiesta_id}");
                 break;
                 
             case 'failed':
             case 'cancelled':
+                $old_stato = get_post_meta($richiesta_id, 'stato', true);
                 update_post_meta($richiesta_id, 'payment_status', 'failed');
                 update_post_meta($richiesta_id, 'stato', 'pending');
+                if ($old_stato !== '' && $old_stato !== 'pending') {
+                    do_action('wecoop_richiesta_servizio_status_changed', intval($richiesta_id), $old_stato, 'pending');
+                }
                 
                 error_log("[WECOOP SERVIZI] Pagamento fallito per richiesta #{$richiesta_id}");
                 break;
