@@ -10,6 +10,41 @@
 if (!defined('ABSPATH')) exit;
 
 class WeCoop_Email_Template_Unified {
+    private static $template_translations = [
+        'it' => [
+            'social_follow' => 'Seguici sui social:',
+            'organization_type' => 'Associazione di Promozione Sociale',
+            'registered_notice' => 'Questa email è stata inviata a te perché sei registrato sulla nostra piattaforma.',
+            'error_notice' => 'Se ritieni di aver ricevuto questa email per errore, ti preghiamo di contattarci.',
+            'rights_reserved' => 'Tutti i diritti riservati.',
+            'terms_conditions' => 'Termini e Condizioni',
+        ],
+        'en' => [
+            'social_follow' => 'Follow us on social media:',
+            'organization_type' => 'Social Promotion Association',
+            'registered_notice' => 'You are receiving this email because you are registered on our platform.',
+            'error_notice' => 'If you believe you received this email by mistake, please contact us.',
+            'rights_reserved' => 'All rights reserved.',
+            'terms_conditions' => 'Terms and Conditions',
+        ],
+        'es' => [
+            'social_follow' => 'Síguenos en las redes sociales:',
+            'organization_type' => 'Asociación de Promoción Social',
+            'registered_notice' => 'Has recibido este correo porque estás registrado en nuestra plataforma.',
+            'error_notice' => 'Si crees que has recibido este correo por error, por favor contáctanos.',
+            'rights_reserved' => 'Todos los derechos reservados.',
+            'terms_conditions' => 'Términos y Condiciones',
+        ],
+        'fr' => [
+            'social_follow' => 'Suivez-nous sur les réseaux sociaux :',
+            'organization_type' => 'Association de Promotion Sociale',
+            'registered_notice' => 'Vous recevez cet e-mail parce que vous êtes inscrit sur notre plateforme.',
+            'error_notice' => 'Si vous pensez avoir reçu cet e-mail par erreur, veuillez nous contacter.',
+            'rights_reserved' => 'Tous droits réservés.',
+            'terms_conditions' => 'Conditions Générales',
+        ],
+    ];
+
     
     /**
      * Genera email HTML con template WeCoop
@@ -23,6 +58,8 @@ class WeCoop_Email_Template_Unified {
         $preheader = $args['preheader'] ?? '';
         $button_text = $args['button_text'] ?? '';
         $button_url = $args['button_url'] ?? '';
+        $lang = self::resolve_lang($args);
+        $t = self::$template_translations[$lang] ?? self::$template_translations['it'];
         
         $logo_url = get_site_url() . '/wp-content/uploads/2025/05/wecooplogo2.png';
         $site_url = get_site_url();
@@ -31,7 +68,7 @@ class WeCoop_Email_Template_Unified {
         ob_start();
         ?>
 <!DOCTYPE html>
-<html lang="it">
+<html lang="<?php echo esc_attr($lang); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,7 +193,7 @@ class WeCoop_Email_Template_Unified {
         <!-- Footer con Social e Disclaimer -->
         <div class="footer">
             <div class="social-links">
-                <strong>Seguici sui social:</strong><br><br>
+                <strong><?php echo esc_html($t['social_follow']); ?></strong><br><br>
                 
                 <a href="https://www.facebook.com/profile.php?id=61568241435990" target="_blank" style="color: #ffffff;">
                     <i class="fab fa-facebook" style="color: #1877f2;"></i> Facebook
@@ -172,20 +209,20 @@ class WeCoop_Email_Template_Unified {
             <div class="disclaimer">
                 <p>
                     <strong><?php echo esc_html($site_name); ?></strong><br>
-                   Associazione di Promozione Sociale<br>
+                   <?php echo esc_html($t['organization_type']); ?><br>
                     Via Benefattori dell'Ospedale, 3 - 20159 Milano (MI)<br>
                     Email: <a href="mailto:info@wecoop.org" style="color: #3498db;">info@wecoop.org</a>
                 </p>
                 
                 <p>
-                    Questa email è stata inviata a te perché sei registrato sulla nostra piattaforma.
-                    Se ritieni di aver ricevuto questa email per errore, ti preghiamo di contattarci.
+                    <?php echo esc_html($t['registered_notice']); ?>
+                    <?php echo esc_html($t['error_notice']); ?>
                 </p>
                 
                 <p>
-                    &copy; <?php echo date('Y'); ?> WeCoop. Tutti i diritti riservati.<br>
+                    &copy; <?php echo date('Y'); ?> WeCoop. <?php echo esc_html($t['rights_reserved']); ?><br>
                     <a href="<?php echo esc_url($site_url . '/privacy-policy'); ?>" style="color: #3498db;">Privacy Policy</a> | 
-                    <a href="<?php echo esc_url($site_url . '/termini-e-condizioni'); ?>" style="color: #3498db;">Termini e Condizioni</a>
+                    <a href="<?php echo esc_url($site_url . '/termini-e-condizioni'); ?>" style="color: #3498db;"><?php echo esc_html($t['terms_conditions']); ?></a>
                 </p>
             </div>
         </div>
@@ -214,6 +251,22 @@ class WeCoop_Email_Template_Unified {
         ];
         
         return wp_mail($to, $subject, $html, $headers);
+    }
+
+    private static function resolve_lang($args = []) {
+        $lang = strtolower((string) ($args['lang'] ?? ''));
+        if (isset(self::$template_translations[$lang])) {
+            return $lang;
+        }
+
+        if (!empty($args['user_id']) && class_exists('WeCoop_Multilingual_Email')) {
+            $resolved = WeCoop_Multilingual_Email::get_user_language(intval($args['user_id']));
+            if (isset(self::$template_translations[$resolved])) {
+                return $resolved;
+            }
+        }
+
+        return 'it';
     }
     
     /**
@@ -246,49 +299,154 @@ class WeCoop_Email_Template_Unified {
             );
         }
         
-        error_log("WECOOP Email: Sistema multilingua NON disponibile, uso fallback italiano");
-        
-        // Fallback italiano
+        $lang = in_array($lang, ['it', 'en', 'es', 'fr'], true) ? $lang : 'it';
+        error_log("WECOOP Email: Sistema multilingua NON disponibile, uso fallback {$lang}");
+
         $username_display = $username ?: $email;
+        $texts = [
+            'it' => [
+                'subject' => '🎉 Benvenuto in WECOOP - Credenziali di Accesso',
+                'title' => 'Benvenuto in WECOOP, ' . $nome . '! 🎉',
+                'approved' => 'La tua richiesta di adesione è stata <strong>approvata</strong>!',
+                'access' => '📋 I tuoi dati di accesso:',
+                'username' => 'Username:',
+                'email' => 'Email:',
+                'password' => 'Password temporanea:',
+                'card_number' => 'Numero tessera:',
+                'card_title' => '🎫 La tua Tessera Digitale',
+                'card_text' => 'Visualizza e scarica la tua tessera digitale con QR Code:',
+                'card_button' => '📱 Visualizza Tessera',
+                'steps_title' => '✅ Primi passi:',
+                'steps' => [
+                    'Accedi alla piattaforma usando le credenziali sopra',
+                    'Cambia la password temporanea per sicurezza',
+                    'Completa il tuo profilo con tutti i dati',
+                    'Salva il link della tessera digitale tra i preferiti',
+                    'Esplora i servizi disponibili per i soci',
+                ],
+                'warning' => '<strong>⚠️ Importante:</strong> Conserva con cura le tue credenziali di accesso. Ti consigliamo di cambiare la password al primo accesso.',
+                'footer' => 'Siamo felici di averti nella nostra cooperativa! Per qualsiasi domanda, non esitare a contattarci.',
+                'preheader' => 'La tua richiesta è stata approvata - Ecco le tue credenziali',
+                'button' => '🔐 Accedi Subito alla Piattaforma',
+            ],
+            'en' => [
+                'subject' => '🎉 Welcome to WECOOP - Access Credentials',
+                'title' => 'Welcome to WECOOP, ' . $nome . '! 🎉',
+                'approved' => 'Your membership request has been <strong>approved</strong>!',
+                'access' => '📋 Your login credentials:',
+                'username' => 'Username:',
+                'email' => 'Email:',
+                'password' => 'Temporary password:',
+                'card_number' => 'Membership card number:',
+                'card_title' => '🎫 Your Digital Membership Card',
+                'card_text' => 'View and download your digital membership card with QR code:',
+                'card_button' => '📱 View Card',
+                'steps_title' => '✅ First steps:',
+                'steps' => [
+                    'Log in using the credentials above',
+                    'Change the temporary password for security',
+                    'Complete your profile with all your details',
+                    'Save the digital card link to your favorites',
+                    'Explore the services available for members',
+                ],
+                'warning' => '<strong>⚠️ Important:</strong> Keep your credentials safe. We recommend changing your password at first login.',
+                'footer' => 'We are happy to have you in our cooperative! If you have any questions, feel free to contact us.',
+                'preheader' => 'Your request has been approved - Here are your credentials',
+                'button' => '🔐 Access the Platform Now',
+            ],
+            'es' => [
+                'subject' => '🎉 Bienvenido a WECOOP - Credenciales de Acceso',
+                'title' => '¡Bienvenido a WECOOP, ' . $nome . '! 🎉',
+                'approved' => '¡Tu solicitud de adhesión ha sido <strong>aprobada</strong>!',
+                'access' => '📋 Tus datos de acceso:',
+                'username' => 'Usuario:',
+                'email' => 'Email:',
+                'password' => 'Contraseña temporal:',
+                'card_number' => 'Número de tarjeta:',
+                'card_title' => '🎫 Tu Tarjeta Digital',
+                'card_text' => 'Visualiza y descarga tu tarjeta digital con código QR:',
+                'card_button' => '📱 Ver Tarjeta',
+                'steps_title' => '✅ Primeros pasos:',
+                'steps' => [
+                    'Inicia sesión usando las credenciales anteriores',
+                    'Cambia la contraseña temporal por seguridad',
+                    'Completa tu perfil con todos tus datos',
+                    'Guarda el enlace de la tarjeta digital en favoritos',
+                    'Explora los servicios disponibles para los socios',
+                ],
+                'warning' => '<strong>⚠️ Importante:</strong> Guarda tus credenciales con cuidado. Te recomendamos cambiar la contraseña en el primer acceso.',
+                'footer' => '¡Estamos felices de tenerte en nuestra cooperativa! Si tienes preguntas, no dudes en contactarnos.',
+                'preheader' => 'Tu solicitud ha sido aprobada - Aquí están tus credenciales',
+                'button' => '🔐 Accede a la Plataforma',
+            ],
+            'fr' => [
+                'subject' => '🎉 Bienvenue chez WECOOP - Identifiants d\'accès',
+                'title' => 'Bienvenue chez WECOOP, ' . $nome . '! 🎉',
+                'approved' => 'Votre demande d\'adhésion a été <strong>approuvée</strong>!',
+                'access' => '📋 Vos identifiants de connexion:',
+                'username' => 'Nom d\'utilisateur:',
+                'email' => 'Email:',
+                'password' => 'Mot de passe temporaire:',
+                'card_number' => 'Numéro de carte:',
+                'card_title' => '🎫 Votre Carte Numérique',
+                'card_text' => 'Consultez et téléchargez votre carte numérique avec QR code:',
+                'card_button' => '📱 Voir la Carte',
+                'steps_title' => '✅ Premiers pas:',
+                'steps' => [
+                    'Connectez-vous avec les identifiants ci-dessus',
+                    'Changez le mot de passe temporaire pour plus de sécurité',
+                    'Complétez votre profil avec toutes vos données',
+                    'Ajoutez le lien de la carte numérique à vos favoris',
+                    'Découvrez les services disponibles pour les membres',
+                ],
+                'warning' => '<strong>⚠️ Important:</strong> Conservez vos identifiants avec soin. Nous vous recommandons de changer le mot de passe à la première connexion.',
+                'footer' => 'Nous sommes heureux de vous compter parmi notre coopérative! Pour toute question, n\'hésitez pas à nous contacter.',
+                'preheader' => 'Votre demande a été approuvée - Voici vos identifiants',
+                'button' => '🔐 Accéder à la Plateforme',
+            ],
+        ][$lang];
+
+        $steps_html = '';
+        foreach ($texts['steps'] as $step) {
+            $steps_html .= '<li>' . $step . '</li>';
+        }
+
         $content = "
-            <h1>Benvenuto in WECOOP, {$nome}! 🎉</h1>
-            <p>La tua richiesta di adesione è stata <strong>approvata</strong>!</p>
+            <h1>{$texts['title']}</h1>
+            <p>{$texts['approved']}</p>
             
-            <h2>📋 I tuoi dati di accesso:</h2>
+            <h2>{$texts['access']}</h2>
             <div style='background: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; border-radius: 5px; margin: 20px 0;'>
-                <p style='margin: 5px 0;'><strong>Username:</strong> {$username_display}</p>
-                <p style='margin: 5px 0;'><strong>Email:</strong> {$email}</p>
-                <p style='margin: 5px 0;'><strong>Password temporanea:</strong> <span style='font-family: monospace; background: #e9ecef; padding: 5px 10px; border-radius: 3px;'>{$password}</span></p>
-                <p style='margin: 5px 0;'><strong>Numero tessera:</strong> {$numero_tessera}</p>
+                <p style='margin: 5px 0;'><strong>{$texts['username']}</strong> {$username_display}</p>
+                <p style='margin: 5px 0;'><strong>{$texts['email']}</strong> {$email}</p>
+                <p style='margin: 5px 0;'><strong>{$texts['password']}</strong> <span style='font-family: monospace; background: #e9ecef; padding: 5px 10px; border-radius: 3px;'>{$password}</span></p>
+                <p style='margin: 5px 0;'><strong>{$texts['card_number']}</strong> {$numero_tessera}</p>
             </div>
             
-            <h2>🎫 La tua Tessera Digitale</h2>
-            <p>Visualizza e scarica la tua tessera digitale con QR Code:</p>
+            <h2>{$texts['card_title']}</h2>
+            <p>{$texts['card_text']}</p>
             <p style='text-align: center; margin: 20px 0;'>
                 <a href='{$tessera_url}' style='display: inline-block; padding: 12px 30px; background: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;'>
-                    📱 Visualizza Tessera
+                    {$texts['card_button']}
                 </a>
             </p>
             
-            <h2>✅ Primi passi:</h2>
+            <h2>{$texts['steps_title']}</h2>
             <ul style='line-height: 1.8;'>
-                <li>Accedi alla piattaforma usando le credenziali sopra</li>
-                <li>Cambia la password temporanea per sicurezza</li>
-                <li>Completa il tuo profilo con tutti i dati</li>
-                <li>Salva il link della tessera digitale tra i preferiti</li>
-                <li>Esplora i servizi disponibili per i soci</li>
+                {$steps_html}
             </ul>
             
             <p style='background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;'>
-                <strong>⚠️ Importante:</strong> Conserva con cura le tue credenziali di accesso. Ti consigliamo di cambiare la password al primo accesso.
+                {$texts['warning']}
             </p>
             
-            <p style='margin-top: 30px;'>Siamo felici di averti nella nostra cooperativa! Per qualsiasi domanda, non esitare a contattarci.</p>
+            <p style='margin-top: 30px;'>{$texts['footer']}</p>
         ";
         
-        return self::send($email, '🎉 Benvenuto in WECOOP - Credenziali di Accesso', $content, [
-            'preheader' => 'La tua richiesta è stata approvata - Ecco le tue credenziali',
-            'button_text' => '🔐 Accedi Subito alla Piattaforma',
+        return self::send($email, $texts['subject'], $content, [
+            'lang' => $lang,
+            'preheader' => $texts['preheader'],
+            'button_text' => $texts['button'],
             'button_url' => wp_login_url()
         ]);
     }
@@ -297,6 +455,21 @@ class WeCoop_Email_Template_Unified {
      * Template: Reset password
      */
     public static function send_password_reset($to, $user_name, $reset_url) {
+        if (class_exists('WeCoop_Multilingual_Email')) {
+            $user = get_user_by('email', $to);
+            $user_id = $user ? intval($user->ID) : null;
+
+            return WeCoop_Multilingual_Email::send(
+                $to,
+                'password_reset',
+                [
+                    'nome' => $user_name,
+                    'button_url' => $reset_url
+                ],
+                $user_id
+            );
+        }
+
         $content = "
             <h1>Ciao {$user_name},</h1>
             <p>Hai richiesto di reimpostare la tua password. Clicca sul pulsante qui sotto per procedere:</p>

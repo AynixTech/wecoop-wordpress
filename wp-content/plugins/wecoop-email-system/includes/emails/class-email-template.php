@@ -15,10 +15,10 @@ class WECOOP_Email_Template {
         $message = "
             <h2>" . WECOOP_Email_i18n::translate('hello', $lang) . " $nome!</h2>
             <p>" . WECOOP_Email_i18n::translate('welcome', $lang) . " WECOOP.</p>
-            <p><strong>Username:</strong> " . ($username ?: $email) . "</p>
-            <p><strong>Password:</strong> $password</p>
-            <p><strong>Tessera:</strong> $numero_tessera</p>
-            <p><a href='$tessera_url'>Visualizza Tessera</a></p>
+            <p><strong>" . WECOOP_Email_i18n::translate('username', $lang) . ":</strong> " . ($username ?: $email) . "</p>
+            <p><strong>" . WECOOP_Email_i18n::translate('password', $lang) . ":</strong> $password</p>
+            <p><strong>" . WECOOP_Email_i18n::translate('membership_card', $lang) . ":</strong> $numero_tessera</p>
+            <p><a href='$tessera_url'>" . WECOOP_Email_i18n::translate('view_card', $lang) . "</a></p>
         ";
         
         return wp_mail($email, $subject, $message, ['Content-Type: text/html; charset=UTF-8']);

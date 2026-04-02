@@ -49,6 +49,7 @@ class WeCoop_Multilingual_Email {
             'service_created_status_pending' => 'In attesa di elaborazione',
             'service_created_next_steps' => 'Ti contatteremo presto per confermare e fissare i dettagli.',
             'service_created_button_text' => 'Vedi le Tue Richieste',
+            'service_created_preheader' => 'Abbiamo ricevuto la tua richiesta di servizio',
             
             // Richiesta servizio approvata
             'service_approved_subject' => '✅ Richiesta Servizio Approvata',
@@ -56,6 +57,8 @@ class WeCoop_Multilingual_Email {
             'service_approved_intro' => 'La tua richiesta per il servizio <strong>{servizio}</strong> è stata approvata!',
             'service_approved_details' => 'Dettagli del servizio:',
             'service_approved_next' => 'Verrai contattato a breve per definire i dettagli dell\'appuntamento.',
+            'service_approved_button_text' => 'Vedi le Tue Richieste',
+            'service_approved_preheader' => 'La tua richiesta di servizio è stata approvata',
             
             // Richiesta servizio rifiutata
             'service_rejected_subject' => '❌ Richiesta Servizio Non Approvata',
@@ -63,6 +66,8 @@ class WeCoop_Multilingual_Email {
             'service_rejected_intro' => 'Ci dispiace informarti che la tua richiesta per <strong>{servizio}</strong> non può essere accettata al momento.',
             'service_rejected_reason' => 'Motivo:',
             'service_rejected_footer' => 'Per maggiori informazioni, contattaci direttamente.',
+            'service_rejected_button_text' => 'Contatta WECOOP',
+            'service_rejected_preheader' => 'Aggiornamento sulla tua richiesta di servizio',
             
             // Iscrizione evento
             'event_registered_subject' => '🎉 Iscrizione Evento Confermata',
@@ -86,6 +91,7 @@ class WeCoop_Multilingual_Email {
             'password_reset_warning' => '<strong>Importante:</strong> Se non hai richiesto tu questa operazione, ignora questa email.',
             'password_reset_expiry' => 'Il link scadrà tra 24 ore.',
             'password_reset_button_text' => 'Reimposta Password',
+            'password_reset_preheader' => 'Reimposta la tua password WeCoop',
             
             // Pagamento servizio richiesto
             'service_payment_required_subject' => '💳 Pagamento Richiesto - Pratica {numero_pratica}',
@@ -99,6 +105,19 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_button_text' => '💳 Paga Ora',
             'service_payment_required_footer' => 'Una volta completato il pagamento, inizieremo immediatamente a lavorare sulla tua richiesta.',
             'service_payment_required_note' => '<strong>Nota:</strong> Il link di pagamento è sicuro e protetto. Accettiamo tutte le principali carte di credito.',
+            'service_payment_required_preheader' => 'Completa il pagamento della tua pratica',
+            'service_payment_required_methods_title' => '💳 Metodi di pagamento accettati',
+            'service_payment_required_methods_text' => 'Carte di credito/debito • Bonifico bancario • PayPal',
+            'service_payment_required_help_title' => 'Hai bisogno di aiuto?',
+
+            // OTP firma digitale
+            'otp_email_subject' => '🔐 Codice OTP Firma Documento WECOOP',
+            'otp_email_title' => 'Codice OTP',
+            'otp_email_intro' => 'Usa questo codice per completare la firma digitale. Lo stesso codice viene inviato anche via SMS.',
+            'otp_email_expiry' => 'Il codice è valido per <strong>{minutes} minuti</strong>.',
+            'otp_email_request_id' => 'ID richiesta: <strong>{richiesta_id}</strong>',
+            'otp_email_warning' => 'Se non hai richiesto questo codice, ignora questa email.',
+            'otp_email_preheader' => 'Codice OTP per completare la firma digitale',
         ],
         
         'en' => [
@@ -135,6 +154,7 @@ class WeCoop_Multilingual_Email {
             'service_created_status_pending' => 'Pending',
             'service_created_next_steps' => 'We will contact you soon to confirm and arrange details.',
             'service_created_button_text' => 'View Your Requests',
+            'service_created_preheader' => 'We have received your service request',
             
             // Service approved
             'service_approved_subject' => '✅ Service Request Approved',
@@ -142,6 +162,8 @@ class WeCoop_Multilingual_Email {
             'service_approved_intro' => 'Your request for the service <strong>{servizio}</strong> has been approved!',
             'service_approved_details' => 'Service details:',
             'service_approved_next' => 'You will be contacted shortly to arrange the appointment details.',
+            'service_approved_button_text' => 'View Your Requests',
+            'service_approved_preheader' => 'Your service request has been approved',
             
             // Service rejected
             'service_rejected_subject' => '❌ Service Request Not Approved',
@@ -149,6 +171,8 @@ class WeCoop_Multilingual_Email {
             'service_rejected_intro' => 'We regret to inform you that your request for <strong>{servizio}</strong> cannot be accepted at this time.',
             'service_rejected_reason' => 'Reason:',
             'service_rejected_footer' => 'For more information, please contact us directly.',
+            'service_rejected_button_text' => 'Contact WECOOP',
+            'service_rejected_preheader' => 'Update on your service request',
             
             // Event registration
             'event_registered_subject' => '🎉 Event Registration Confirmed',
@@ -172,6 +196,7 @@ class WeCoop_Multilingual_Email {
             'password_reset_warning' => '<strong>Important:</strong> If you didn\'t request this, please ignore this email.',
             'password_reset_expiry' => 'The link will expire in 24 hours.',
             'password_reset_button_text' => 'Reset Password',
+            'password_reset_preheader' => 'Reset your WeCoop password',
             
             // Service payment required
             'service_payment_required_subject' => '💳 Payment Required - Case {numero_pratica}',
@@ -185,6 +210,19 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_button_text' => '💳 Pay Now',
             'service_payment_required_footer' => 'Once payment is completed, we will immediately start working on your request.',
             'service_payment_required_note' => '<strong>Note:</strong> The payment link is secure and protected. We accept all major credit cards.',
+            'service_payment_required_preheader' => 'Complete the payment for your case',
+            'service_payment_required_methods_title' => '💳 Accepted payment methods',
+            'service_payment_required_methods_text' => 'Credit/debit cards • Bank transfer • PayPal',
+            'service_payment_required_help_title' => 'Need help?',
+
+            // OTP digital signature
+            'otp_email_subject' => '🔐 WECOOP Document Signature OTP Code',
+            'otp_email_title' => 'OTP Code',
+            'otp_email_intro' => 'Use this code to complete the digital signature. The same code is also sent by SMS.',
+            'otp_email_expiry' => 'The code is valid for <strong>{minutes} minutes</strong>.',
+            'otp_email_request_id' => 'Request ID: <strong>{richiesta_id}</strong>',
+            'otp_email_warning' => 'If you did not request this code, ignore this email.',
+            'otp_email_preheader' => 'OTP code to complete the digital signature',
         ],
         
         'fr' => [
@@ -209,6 +247,72 @@ class WeCoop_Multilingual_Email {
             'member_approved_footer' => 'Nous sommes heureux de vous accueillir dans notre coopérative! Pour toute question, n\'hésitez pas à nous contacter.',
             'member_approved_button_text' => '🔐 Connectez-vous Maintenant',
             'member_approved_preheader' => 'Votre demande a été approuvée - Voici vos identifiants',
+
+            // Demande de service créée
+            'service_created_subject' => '✅ Demande de Service Reçue',
+            'service_created_title' => 'Bonjour {nome}, votre demande a été reçue!',
+            'service_created_intro' => 'Nous avons reçu votre demande pour le service <strong>{servizio}</strong>.',
+            'service_created_details' => 'Détails de la demande:',
+            'service_created_service_label' => 'Service:',
+            'service_created_date_label' => 'Date de la demande:',
+            'service_created_status_label' => 'Statut:',
+            'service_created_status_pending' => 'En attente de traitement',
+            'service_created_next_steps' => 'Nous vous contacterons bientôt pour confirmer et organiser les détails.',
+            'service_created_button_text' => 'Voir Vos Demandes',
+            'service_created_preheader' => 'Nous avons reçu votre demande de service',
+
+            // Demande de service approuvée
+            'service_approved_subject' => '✅ Demande de Service Approuvée',
+            'service_approved_title' => 'Excellente nouvelle, {nome}! 🎉',
+            'service_approved_intro' => 'Votre demande pour le service <strong>{servizio}</strong> a été approuvée!',
+            'service_approved_details' => 'Détails du service:',
+            'service_approved_next' => 'Vous serez contacté sous peu pour définir les détails du rendez-vous.',
+            'service_approved_button_text' => 'Voir Vos Demandes',
+            'service_approved_preheader' => 'Votre demande de service a été approuvée',
+
+            // Demande de service refusée
+            'service_rejected_subject' => '❌ Demande de Service Non Approuvée',
+            'service_rejected_title' => 'Bonjour {nome}',
+            'service_rejected_intro' => 'Nous regrettons de vous informer que votre demande pour <strong>{servizio}</strong> ne peut pas être acceptée pour le moment.',
+            'service_rejected_reason' => 'Motif:',
+            'service_rejected_footer' => 'Pour plus d\'informations, contactez-nous directement.',
+            'service_rejected_button_text' => 'Contacter WECOOP',
+            'service_rejected_preheader' => 'Mise à jour sur votre demande de service',
+
+            // Réinitialisation du mot de passe
+            'password_reset_subject' => '🔐 Réinitialisez votre mot de passe',
+            'password_reset_title' => 'Bonjour {nome},',
+            'password_reset_intro' => 'Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous pour continuer:',
+            'password_reset_warning' => '<strong>Important:</strong> Si vous n\'avez pas demandé cette opération, ignorez cet e-mail.',
+            'password_reset_expiry' => 'Le lien expirera dans 24 heures.',
+            'password_reset_button_text' => 'Réinitialiser le Mot de Passe',
+            'password_reset_preheader' => 'Réinitialisez votre mot de passe WeCoop',
+
+            // Paiement requis
+            'service_payment_required_subject' => '💳 Paiement Requis - Dossier {numero_pratica}',
+            'service_payment_required_title' => 'Bonjour {nome}, finalisez le paiement',
+            'service_payment_required_intro' => 'Votre demande pour le service <strong>{servizio}</strong> a été prise en charge!',
+            'service_payment_required_details' => 'Détails du service:',
+            'service_payment_required_service_label' => 'Service:',
+            'service_payment_required_practice_label' => 'Numéro de dossier:',
+            'service_payment_required_amount_label' => 'Montant à payer:',
+            'service_payment_required_action' => 'Pour continuer, complétez le paiement en cliquant sur le bouton ci-dessous:',
+            'service_payment_required_button_text' => '💳 Payer Maintenant',
+            'service_payment_required_footer' => 'Une fois le paiement effectué, nous commencerons immédiatement à traiter votre demande.',
+            'service_payment_required_note' => '<strong>Remarque:</strong> Le lien de paiement est sécurisé et protégé. Nous acceptons toutes les principales cartes de crédit.',
+            'service_payment_required_preheader' => 'Finalisez le paiement de votre dossier',
+            'service_payment_required_methods_title' => '💳 Moyens de paiement acceptés',
+            'service_payment_required_methods_text' => 'Cartes de crédit/débit • Virement bancaire • PayPal',
+            'service_payment_required_help_title' => 'Besoin d\'aide?',
+
+            // OTP signature numérique
+            'otp_email_subject' => '🔐 Code OTP Signature du Document WECOOP',
+            'otp_email_title' => 'Code OTP',
+            'otp_email_intro' => 'Utilisez ce code pour compléter la signature numérique. Le même code est également envoyé par SMS.',
+            'otp_email_expiry' => 'Le code est valable pendant <strong>{minutes} minutes</strong>.',
+            'otp_email_request_id' => 'ID de la demande: <strong>{richiesta_id}</strong>',
+            'otp_email_warning' => 'Si vous n\'avez pas demandé ce code, ignorez cet e-mail.',
+            'otp_email_preheader' => 'Code OTP pour compléter la signature numérique',
         ],
         
         'es' => [
@@ -233,6 +337,72 @@ class WeCoop_Multilingual_Email {
             'member_approved_footer' => '¡Estamos felices de tenerte en nuestra cooperativa! Para cualquier pregunta, no dudes en contactarnos.',
             'member_approved_button_text' => '🔐 Iniciar Sesión Ahora',
             'member_approved_preheader' => 'Tu solicitud ha sido aprobada - Aquí están tus credenciales',
+
+            // Solicitud de servicio recibida
+            'service_created_subject' => '✅ Solicitud de Servicio Recibida',
+            'service_created_title' => 'Hola {nome}, ¡tu solicitud ha sido recibida!',
+            'service_created_intro' => 'Hemos recibido tu solicitud para el servicio <strong>{servizio}</strong>.',
+            'service_created_details' => 'Detalles de la solicitud:',
+            'service_created_service_label' => 'Servicio:',
+            'service_created_date_label' => 'Fecha de solicitud:',
+            'service_created_status_label' => 'Estado:',
+            'service_created_status_pending' => 'Pendiente de gestión',
+            'service_created_next_steps' => 'Te contactaremos pronto para confirmar y definir los detalles.',
+            'service_created_button_text' => 'Ver Tus Solicitudes',
+            'service_created_preheader' => 'Hemos recibido tu solicitud de servicio',
+
+            // Solicitud aprobada
+            'service_approved_subject' => '✅ Solicitud de Servicio Aprobada',
+            'service_approved_title' => '¡Buenas noticias, {nome}! 🎉',
+            'service_approved_intro' => '¡Tu solicitud para el servicio <strong>{servizio}</strong> ha sido aprobada!',
+            'service_approved_details' => 'Detalles del servicio:',
+            'service_approved_next' => 'Te contactaremos en breve para definir los detalles de la cita.',
+            'service_approved_button_text' => 'Ver Tus Solicitudes',
+            'service_approved_preheader' => 'Tu solicitud de servicio ha sido aprobada',
+
+            // Solicitud rechazada
+            'service_rejected_subject' => '❌ Solicitud de Servicio No Aprobada',
+            'service_rejected_title' => 'Hola {nome}',
+            'service_rejected_intro' => 'Lamentamos informarte que tu solicitud para <strong>{servizio}</strong> no puede ser aceptada en este momento.',
+            'service_rejected_reason' => 'Motivo:',
+            'service_rejected_footer' => 'Para más información, contáctanos directamente.',
+            'service_rejected_button_text' => 'Contactar con WECOOP',
+            'service_rejected_preheader' => 'Actualización sobre tu solicitud de servicio',
+
+            // Restablecer contraseña
+            'password_reset_subject' => '🔐 Restablece tu Contraseña',
+            'password_reset_title' => 'Hola {nome},',
+            'password_reset_intro' => 'Has solicitado restablecer tu contraseña. Haz clic en el botón de abajo para continuar:',
+            'password_reset_warning' => '<strong>Importante:</strong> Si no solicitaste esta operación, ignora este correo.',
+            'password_reset_expiry' => 'El enlace caducará en 24 horas.',
+            'password_reset_button_text' => 'Restablecer Contraseña',
+            'password_reset_preheader' => 'Restablece tu contraseña de WeCoop',
+
+            // Pago requerido
+            'service_payment_required_subject' => '💳 Pago Requerido - Expediente {numero_pratica}',
+            'service_payment_required_title' => 'Hola {nome}, completa el pago',
+            'service_payment_required_intro' => '¡Tu solicitud para el servicio <strong>{servizio}</strong> ha sido aceptada!',
+            'service_payment_required_details' => 'Detalles del servicio:',
+            'service_payment_required_service_label' => 'Servicio:',
+            'service_payment_required_practice_label' => 'Número de expediente:',
+            'service_payment_required_amount_label' => 'Importe a pagar:',
+            'service_payment_required_action' => 'Para continuar, completa el pago haciendo clic en el botón de abajo:',
+            'service_payment_required_button_text' => '💳 Pagar Ahora',
+            'service_payment_required_footer' => 'Una vez completado el pago, comenzaremos inmediatamente a trabajar en tu solicitud.',
+            'service_payment_required_note' => '<strong>Nota:</strong> El enlace de pago es seguro y protegido. Aceptamos las principales tarjetas de crédito.',
+            'service_payment_required_preheader' => 'Completa el pago de tu expediente',
+            'service_payment_required_methods_title' => '💳 Métodos de pago aceptados',
+            'service_payment_required_methods_text' => 'Tarjetas de crédito/débito • Transferencia bancaria • PayPal',
+            'service_payment_required_help_title' => '¿Necesitas ayuda?',
+
+            // OTP firma digital
+            'otp_email_subject' => '🔐 Código OTP Firma del Documento WECOOP',
+            'otp_email_title' => 'Código OTP',
+            'otp_email_intro' => 'Usa este código para completar la firma digital. El mismo código también se envía por SMS.',
+            'otp_email_expiry' => 'El código es válido durante <strong>{minutes} minutos</strong>.',
+            'otp_email_request_id' => 'ID de solicitud: <strong>{richiesta_id}</strong>',
+            'otp_email_warning' => 'Si no solicitaste este código, ignora este correo.',
+            'otp_email_preheader' => 'Código OTP para completar la firma digital',
         ],
     ];
     
@@ -339,6 +509,7 @@ class WeCoop_Multilingual_Email {
             $preheader = self::get_translation($template_key . '_preheader', $lang, $data);
             
             return WeCoop_Email_Template_Unified::send($to, $subject, $content, [
+                'lang' => $lang,
                 'preheader' => $preheader,
                 'button_text' => $button_text,
                 'button_url' => $data['button_url'] ?? wp_login_url()
@@ -543,8 +714,8 @@ class WeCoop_Multilingual_Email {
             
             <table style='width: 100%; max-width: 600px; background: #e8f5e9; border-left: 4px solid #27ae60; border-radius: 5px; margin: 20px 0;' cellpadding='15' cellspacing='0'>
                 <tr><td>
-                    <p style='margin: 0; font-size: 15px;'><strong style='color: #2c3e50;'>💳 Metodi di pagamento accettati</strong></p>
-                    <p style='margin: 8px 0 0 0; font-size: 14px; color: #555;'>Carte di credito/debito • Bonifico bancario • PayPal</p>
+                    <p style='margin: 0; font-size: 15px;'><strong style='color: #2c3e50;'>{$t('service_payment_required_methods_title')}</strong></p>
+                    <p style='margin: 8px 0 0 0; font-size: 14px; color: #555;'>{$t('service_payment_required_methods_text')}</p>
                 </td></tr>
             </table>
             
@@ -557,7 +728,7 @@ class WeCoop_Multilingual_Email {
             <p style='margin-top: 30px; font-size: 15px; line-height: 1.6;'>{$t('service_payment_required_footer')}</p>
             
             <p style='font-size: 13px; color: #666; margin-top: 20px; line-height: 1.5;'>
-                <strong>Hai bisogno di aiuto?</strong><br>
+                <strong>{$t('service_payment_required_help_title')}</strong><br>
                 Contattaci a <a href='mailto:info@wecoop.org' style='color: #3498db; text-decoration: none;'>info@wecoop.org</a>
             </p>
         ";

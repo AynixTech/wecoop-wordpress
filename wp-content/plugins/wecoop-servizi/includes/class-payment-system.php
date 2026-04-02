@@ -155,14 +155,59 @@ class WECOOP_Servizi_Payment_System {
             error_log("[WECOOP PAYMENT] Email multilingua inviata a {$user->user_email} - Deep link: {$deep_link_pagamento}");
         } else {
             // Fallback: email semplice se il sistema multilingua non è disponibile
-            $subject = '💳 Richiesta di Pagamento - WeCoop';
-            $message = "Ciao {$user->display_name},\n\n";
-            $message .= "È richiesto un pagamento per il servizio: {$servizio}\n";
-            $message .= "Pratica: {$numero_pratica}\n";
-            $message .= "Importo: €" . number_format($importo, 2) . "\n\n";
-            $message .= "Apri nell'app:\n{$redirect_pagamento}\n\n";
-            $message .= "O paga sul web:\n{$web_payment_url}\n\n";
-            $message .= "Grazie,\nIl team WeCoop";
+            $lang = get_user_meta($user_id, 'preferred_language', true);
+            $lang = in_array($lang, ['it', 'en', 'es', 'fr'], true) ? $lang : 'it';
+            $copy = [
+                'it' => [
+                    'subject' => '💳 Richiesta di Pagamento - WeCoop',
+                    'hello' => 'Ciao %s',
+                    'service' => 'È richiesto un pagamento per il servizio: %s',
+                    'case' => 'Pratica: %s',
+                    'amount' => 'Importo: €%s',
+                    'app' => "Apri nell'app:",
+                    'web' => 'O paga sul web:',
+                    'thanks' => "Grazie,\nIl team WeCoop",
+                ],
+                'en' => [
+                    'subject' => '💳 Payment Request - WeCoop',
+                    'hello' => 'Hello %s',
+                    'service' => 'A payment is required for the service: %s',
+                    'case' => 'Case: %s',
+                    'amount' => 'Amount: €%s',
+                    'app' => 'Open in the app:',
+                    'web' => 'Or pay on the web:',
+                    'thanks' => "Thank you,\nThe WeCoop team",
+                ],
+                'es' => [
+                    'subject' => '💳 Solicitud de Pago - WeCoop',
+                    'hello' => 'Hola %s',
+                    'service' => 'Se requiere un pago para el servicio: %s',
+                    'case' => 'Expediente: %s',
+                    'amount' => 'Importe: €%s',
+                    'app' => 'Abrir en la app:',
+                    'web' => 'O pagar en la web:',
+                    'thanks' => "Gracias,\nEl equipo de WeCoop",
+                ],
+                'fr' => [
+                    'subject' => '💳 Demande de Paiement - WeCoop',
+                    'hello' => 'Bonjour %s',
+                    'service' => 'Un paiement est requis pour le service : %s',
+                    'case' => 'Dossier : %s',
+                    'amount' => 'Montant : €%s',
+                    'app' => "Ouvrir dans l'app :",
+                    'web' => 'Ou payer sur le web :',
+                    'thanks' => "Merci,\nL'équipe WeCoop",
+                ],
+            ][$lang];
+
+            $subject = $copy['subject'];
+            $message = sprintf($copy['hello'], $user->display_name) . "\n\n";
+            $message .= sprintf($copy['service'], $servizio) . "\n";
+            $message .= sprintf($copy['case'], $numero_pratica) . "\n";
+            $message .= sprintf($copy['amount'], number_format($importo, 2)) . "\n\n";
+            $message .= $copy['app'] . "\n{$redirect_pagamento}\n\n";
+            $message .= $copy['web'] . "\n{$web_payment_url}\n\n";
+            $message .= $copy['thanks'];
             
             wp_mail($user->user_email, $subject, $message);
             

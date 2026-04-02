@@ -726,24 +726,6 @@ class WECOOP_Soci_Endpoint {
         $tessera_url = home_url('/tessera-socio/?id=' . $params['numero_tessera']);
         $reset_url = home_url('/cambia-password.php?token=' . $reset_token);
         
-        $message = "Ciao $nome,\n\n";
-        $message .= "La tua richiesta di adesione a WECOOP è stata approvata! 🎉\n\n";
-        $message .= "--- CREDENZIALI DI ACCESSO ---\n";
-        $message .= "Email: $email\n";
-        $message .= "Password temporanea: $password\n\n";
-        $message .= "--- LA TUA TESSERA DIGITALE ---\n";
-        $message .= "Numero Tessera: {$params['numero_tessera']}\n\n";
-        $message .= "Visualizza la tua tessera digitale con QR Code:\n";
-        $message .= "$tessera_url\n\n";
-        $message .= "--- CAMBIA PASSWORD ---\n";
-        $message .= "Ti consigliamo di cambiare subito la password temporanea:\n";
-        $message .= "$reset_url\n";
-        $message .= "(Link valido per 24 ore)\n\n";
-        $message .= "⚠️ IMPORTANTE:\n";
-        $message .= "- Salva il link della tessera tra i preferiti\n";
-        // URL tessera digitale
-        $tessera_url = home_url('/tessera-socio/?id=' . $params['numero_tessera']);
-        
         // Log inizio invio email
         error_log("WECOOP: Tentativo invio email benvenuto a {$email}");
         
@@ -768,31 +750,35 @@ class WECOOP_Soci_Endpoint {
             error_log("WECOOP: Email multilingua result: " . ($email_sent ? 'SUCCESS' : 'FAILED'));
         } else {
             error_log("WECOOP: Sistema multilingua non disponibile, uso fallback");
-            // Fallback al vecchio sistema
-            $content = "
-                <h1>Benvenuto in WECOOP, {$nome}! 🎉</h1>
-                <p>La tua richiesta di adesione è stata <strong>approvata</strong>!</p>
-                
-                <h2>📋 I tuoi dati di accesso:</h2>
-                <div style='background: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; border-radius: 5px; margin: 20px 0;'>
-                    <p style='margin: 5px 0;'><strong>Email / Username:</strong> {$email}</p>
-                    <p style='margin: 5px 0;'><strong>Password temporanea:</strong> <span style='font-family: monospace; background: #e9ecef; padding: 5px 10px; border-radius: 3px;'>{$password}</span></p>
-                    <p style='margin: 5px 0;'><strong>Numero tessera:</strong> {$params['numero_tessera']}</p>
-                </div>
-            ";
-            
             if (class_exists('WeCoop_Email_Template_Unified')) {
-                $email_sent = WeCoop_Email_Template_Unified::send(
+                $fallback_lang = get_user_meta($user_id, 'preferred_language', true);
+                $fallback_lang = in_array($fallback_lang, ['it', 'en', 'es', 'fr'], true) ? $fallback_lang : 'it';
+
+                $email_sent = WeCoop_Email_Template_Unified::send_welcome(
+                    $nome,
                     $email,
-                    '🎉 Benvenuto in WECOOP',
-                    $content,
-                    [
-                        'button_text' => '🔐 Accedi alla Piattaforma',
-                        'button_url' => wp_login_url()
-                    ]
+                    $password,
+                    $params['numero_tessera'],
+                    $tessera_url,
+                    $fallback_lang,
+                    $email
                 );
             } else {
-                $email_sent = wp_mail($email, '🎉 Benvenuto in WECOOP', strip_tags($content));
+                $subject_map = [
+                    'it' => '🎉 Benvenuto in WECOOP',
+                    'en' => '🎉 Welcome to WECOOP',
+                    'es' => '🎉 Bienvenido a WECOOP',
+                    'fr' => '🎉 Bienvenue chez WECOOP',
+                ];
+                $message_map = [
+                    'it' => "Ciao {$nome},\n\nLa tua richiesta di adesione è stata approvata.\nEmail / Username: {$email}\nPassword temporanea: {$password}\nNumero tessera: {$params['numero_tessera']}\n\nAccedi qui: " . wp_login_url(),
+                    'en' => "Hello {$nome},\n\nYour membership request has been approved.\nEmail / Username: {$email}\nTemporary password: {$password}\nMembership number: {$params['numero_tessera']}\n\nLog in here: " . wp_login_url(),
+                    'es' => "Hola {$nome},\n\nTu solicitud de adhesión ha sido aprobada.\nEmail / Usuario: {$email}\nContraseña temporal: {$password}\nNúmero de tarjeta: {$params['numero_tessera']}\n\nAccede aquí: " . wp_login_url(),
+                    'fr' => "Bonjour {$nome},\n\nVotre demande d'adhésion a été approuvée.\nEmail / Identifiant: {$email}\nMot de passe temporaire: {$password}\nNuméro de carte: {$params['numero_tessera']}\n\nConnectez-vous ici: " . wp_login_url(),
+                ];
+                $fallback_lang = get_user_meta($user_id, 'preferred_language', true);
+                $fallback_lang = in_array($fallback_lang, ['it', 'en', 'es', 'fr'], true) ? $fallback_lang : 'it';
+                $email_sent = wp_mail($email, $subject_map[$fallback_lang], $message_map[$fallback_lang]);
             }
         }
         

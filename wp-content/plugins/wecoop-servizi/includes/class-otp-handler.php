@@ -169,7 +169,7 @@ class WECOOP_OTP_Handler {
 
         // Invio OTP su canali disponibili
         $sms_sent = self::send_otp_via_sms($telefono, $otp_code, $richiesta_id, $user_id);
-        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id);
+        $email_sent = self::send_otp_via_email($email, $otp_code, $richiesta_id, $user_id);
 
         // Almeno un canale deve riuscire
         if (!$sms_sent && !$email_sent) {
@@ -374,39 +374,68 @@ class WECOOP_OTP_Handler {
     /**
      * Invio OTP via email.
      */
-    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null) {
+    private static function send_otp_via_email($email, $otp_code, $richiesta_id = null, $user_id = null) {
         if (!$email || !is_email($email)) {
             error_log('[WECOOP OTP] ⚠️ Email non valida o assente per invio OTP');
             return false;
         }
 
-        $subject = '🔐 Codice OTP Firma Documento WECOOP';
         $expiry_minutes = intval(self::OTP_EXPIRY_TIME / 60);
 
-        $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">Codice OTP</h1>';
-        $content .= '<p style="margin:0 0 14px;">Usa questo codice per completare la firma digitale. Lo stesso codice viene inviato anche via SMS.</p>';
+        $lang = 'it';
+        if (class_exists('WeCoop_Multilingual_Email')) {
+            $lang = WeCoop_Multilingual_Email::get_user_language($user_id);
+        }
+
+        $subject = class_exists('WeCoop_Multilingual_Email')
+            ? WeCoop_Multilingual_Email::get_translation('otp_email_subject', $lang)
+            : '🔐 Codice OTP Firma Documento WECOOP';
+
+        $content = '<h1 style="margin:0 0 12px; color:#2c3e50;">' . esc_html(class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_title', $lang) : 'Codice OTP') . '</h1>';
+        $content .= '<p style="margin:0 0 14px;">' . (class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_intro', $lang) : 'Usa questo codice per completare la firma digitale. Lo stesso codice viene inviato anche via SMS.') . '</p>';
         $content .= '<div style="margin:18px 0; text-align:center;">';
         $content .= '<span style="display:inline-block; font-size:40px; letter-spacing:8px; font-weight:700; color:#1f2d3d; background:#f4f7fb; border:1px solid #d8e1ee; border-radius:10px; padding:14px 24px;">' . esc_html($otp_code) . '</span>';
         $content .= '</div>';
-        $content .= '<p style="margin:0 0 8px;">Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.</p>';
+        $content .= '<p style="margin:0 0 8px;">' . (class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_expiry', $lang, ['minutes' => $expiry_minutes]) : ('Il codice e\' valido per <strong>' . $expiry_minutes . ' minuti</strong>.')) . '</p>';
 
         if ($richiesta_id) {
-            $content .= '<p style="margin:10px 0 0; color:#666; font-size:14px;">ID richiesta: <strong>' . intval($richiesta_id) . '</strong></p>';
+            $request_label = class_exists('WeCoop_Multilingual_Email')
+                ? WeCoop_Multilingual_Email::get_translation('otp_email_request_id', $lang, ['richiesta_id' => intval($richiesta_id)])
+                : ('ID richiesta: <strong>' . intval($richiesta_id) . '</strong>');
+            $content .= '<p style="margin:10px 0 0; color:#666; font-size:14px;">' . $request_label . '</p>';
         }
 
-        $content .= '<p style="margin-top:16px; color:#666; font-size:14px;">Se non hai richiesto questo codice, ignora questa email.</p>';
+        $content .= '<p style="margin-top:16px; color:#666; font-size:14px;">' . (class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_warning', $lang) : 'Se non hai richiesto questo codice, ignora questa email.') . '</p>';
 
         if (class_exists('WeCoop_Email_Template_Unified')) {
             $sent = WeCoop_Email_Template_Unified::send($email, $subject, $content, [
-                'preheader' => 'Codice OTP per completare la firma digitale',
+                'lang' => $lang,
+                'preheader' => class_exists('WeCoop_Multilingual_Email') ? WeCoop_Multilingual_Email::get_translation('otp_email_preheader', $lang) : 'Codice OTP per completare la firma digitale',
                 'button_text' => '',
                 'button_url' => ''
             ]);
         } else {
-            $fallback_message = "Ciao,\n\n";
-            $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
-            $fallback_message .= "Lo stesso codice viene inviato anche via SMS.\n";
-            $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
+            if ($lang === 'en') {
+                $fallback_message = "Hello,\n\n";
+                $fallback_message .= "Your OTP code for the digital signature is: {$otp_code}\n";
+                $fallback_message .= "The same code is also sent by SMS.\n";
+                $fallback_message .= "Valid for {$expiry_minutes} minutes.\n";
+            } elseif ($lang === 'es') {
+                $fallback_message = "Hola,\n\n";
+                $fallback_message .= "Tu código OTP para la firma digital es: {$otp_code}\n";
+                $fallback_message .= "El mismo código también se envía por SMS.\n";
+                $fallback_message .= "Válido durante {$expiry_minutes} minutos.\n";
+            } elseif ($lang === 'fr') {
+                $fallback_message = "Bonjour,\n\n";
+                $fallback_message .= "Votre code OTP pour la signature numérique est: {$otp_code}\n";
+                $fallback_message .= "Le même code est également envoyé par SMS.\n";
+                $fallback_message .= "Valable pendant {$expiry_minutes} minutes.\n";
+            } else {
+                $fallback_message = "Ciao,\n\n";
+                $fallback_message .= "Il tuo codice OTP per la firma digitale è: {$otp_code}\n";
+                $fallback_message .= "Lo stesso codice viene inviato anche via SMS.\n";
+                $fallback_message .= "Valido per {$expiry_minutes} minuti.\n";
+            }
             if ($richiesta_id) {
                 $fallback_message .= "ID richiesta: {$richiesta_id}\n";
             }

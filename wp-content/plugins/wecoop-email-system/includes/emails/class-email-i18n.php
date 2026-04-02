@@ -13,27 +13,47 @@ class WECOOP_Email_i18n {
         'it' => [
             'welcome' => 'Benvenuto',
             'hello' => 'Ciao',
-            'thanks' => 'Grazie'
+            'thanks' => 'Grazie',
+            'username' => 'Username',
+            'password' => 'Password',
+            'membership_card' => 'Tessera',
+            'view_card' => 'Visualizza Tessera'
         ],
         'en' => [
             'welcome' => 'Welcome',
             'hello' => 'Hello',
-            'thanks' => 'Thank you'
+            'thanks' => 'Thank you',
+            'username' => 'Username',
+            'password' => 'Password',
+            'membership_card' => 'Membership Card',
+            'view_card' => 'View Card'
         ],
         'fr' => [
             'welcome' => 'Bienvenue',
             'hello' => 'Bonjour',
-            'thanks' => 'Merci'
+            'thanks' => 'Merci',
+            'username' => 'Nom d\'utilisateur',
+            'password' => 'Mot de passe',
+            'membership_card' => 'Carte',
+            'view_card' => 'Voir la Carte'
         ],
         'es' => [
             'welcome' => 'Bienvenido',
             'hello' => 'Hola',
-            'gracias' => 'Gracias'
+            'thanks' => 'Gracias',
+            'username' => 'Usuario',
+            'password' => 'Contraseña',
+            'membership_card' => 'Tarjeta',
+            'view_card' => 'Ver Tarjeta'
         ],
         'ar' => [
             'welcome' => 'مرحبا',
             'hello' => 'مرحبا',
-            'thanks' => 'شكرا'
+            'thanks' => 'شكرا',
+            'username' => 'اسم المستخدم',
+            'password' => 'كلمة المرور',
+            'membership_card' => 'البطاقة',
+            'view_card' => 'عرض البطاقة'
         ]
     ];
     

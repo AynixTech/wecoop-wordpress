@@ -499,21 +499,59 @@ class WECOOP_Servizi_WooCommerce_Integration {
             error_log("[WECOOP SERVIZI] Email pagamento inviata a {$user->user_email}");
         } else {
             // Fallback: email standard WordPress
-            $subject = 'Richiesta di Pagamento - Pratica ' . $numero_pratica;
-            $message = sprintf(
-                "Ciao %s,\n\n" .
-                "La tua richiesta di servizio è stata presa in carico:\n\n" .
-                "Servizio: %s\n" .
-                "Numero Pratica: %s\n" .
-                "Importo: €%s\n\n" .
-                "Per procedere, completa il pagamento cliccando qui:\n%s\n\n" .
-                "Grazie,\nIl Team WeCoop",
-                $user->display_name,
-                $servizio,
-                $numero_pratica,
-                number_format($importo, 2, ',', '.'),
-                $payment_url
-            );
+            $lang = get_user_meta($user_id, 'preferred_language', true);
+            $lang = in_array($lang, ['it', 'en', 'es', 'fr'], true) ? $lang : 'it';
+            $copy = [
+                'it' => [
+                    'subject' => 'Richiesta di Pagamento - Pratica %s',
+                    'hello' => 'Ciao %s',
+                    'intro' => 'La tua richiesta di servizio è stata presa in carico:',
+                    'service' => 'Servizio: %s',
+                    'case' => 'Numero Pratica: %s',
+                    'amount' => 'Importo: €%s',
+                    'action' => 'Per procedere, completa il pagamento cliccando qui:',
+                    'thanks' => "Grazie,\nIl Team WeCoop",
+                ],
+                'en' => [
+                    'subject' => 'Payment Request - Case %s',
+                    'hello' => 'Hello %s',
+                    'intro' => 'Your service request has been accepted:',
+                    'service' => 'Service: %s',
+                    'case' => 'Case Number: %s',
+                    'amount' => 'Amount: €%s',
+                    'action' => 'To continue, complete the payment here:',
+                    'thanks' => "Thank you,\nThe WeCoop Team",
+                ],
+                'es' => [
+                    'subject' => 'Solicitud de Pago - Expediente %s',
+                    'hello' => 'Hola %s',
+                    'intro' => 'Tu solicitud de servicio ha sido aceptada:',
+                    'service' => 'Servicio: %s',
+                    'case' => 'Número de expediente: %s',
+                    'amount' => 'Importe: €%s',
+                    'action' => 'Para continuar, completa el pago aquí:',
+                    'thanks' => "Gracias,\nEl equipo de WeCoop",
+                ],
+                'fr' => [
+                    'subject' => 'Demande de Paiement - Dossier %s',
+                    'hello' => 'Bonjour %s',
+                    'intro' => 'Votre demande de service a été acceptée :',
+                    'service' => 'Service : %s',
+                    'case' => 'Numéro de dossier : %s',
+                    'amount' => 'Montant : €%s',
+                    'action' => 'Pour continuer, complétez le paiement ici :',
+                    'thanks' => "Merci,\nL'équipe WeCoop",
+                ],
+            ][$lang];
+
+            $subject = sprintf($copy['subject'], $numero_pratica);
+            $message = sprintf($copy['hello'], $user->display_name) . "\n\n";
+            $message .= $copy['intro'] . "\n\n";
+            $message .= sprintf($copy['service'], $servizio) . "\n";
+            $message .= sprintf($copy['case'], $numero_pratica) . "\n";
+            $message .= sprintf($copy['amount'], number_format($importo, 2, ',', '.')) . "\n\n";
+            $message .= $copy['action'] . "\n{$payment_url}\n\n";
+            $message .= $copy['thanks'];
             
             wp_mail($user->user_email, $subject, $message);
         }
