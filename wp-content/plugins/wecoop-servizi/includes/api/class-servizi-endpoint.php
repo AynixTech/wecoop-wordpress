@@ -960,6 +960,19 @@ class WECOOP_Servizi_Endpoint {
             $is_merged = (get_post_meta($richiesta_id, 'documento_unico_merged_firma', true) === 'yes');
             $force_merge = filter_var($request->get_param('force_merge'), FILTER_VALIDATE_BOOLEAN);
 
+            if (!empty($documento_url)) {
+                $resolved_merged_url = self::resolve_existing_upload_url($documento_url);
+                if ($resolved_merged_url === null) {
+                    delete_post_meta($richiesta_id, 'documento_unico_merged_url');
+                    $documento_url = '';
+                    $is_merged = false;
+                } else {
+                    $documento_url = $resolved_merged_url;
+                }
+            }
+
+            $attestato_url = self::resolve_existing_upload_url($attestato_url);
+
             if ($is_firmato && empty($attestato_url)) {
                 return new WP_Error('attestato_missing', 'Attestato firma non disponibile', ['status' => 404]);
             }
@@ -979,7 +992,17 @@ class WECOOP_Servizi_Endpoint {
                     update_post_meta($richiesta_id, 'documento_unico_merged_firma_il', current_time('mysql'));
                 } else {
                     error_log('[WECOOP API] ❌ download-merged merge_failed richiesta #' . $richiesta_id . ' msg=' . ($merge_result['message'] ?? 'n/a'));
-                    return new WP_Error('merge_failed', $merge_result['message'] ?? 'Errore merge PDF', ['status' => 500]);
+                    return new WP_Error('merge_failed', $merge_result['message'] ?? 'Errore merge PDF', [
+                        'status' => 500,
+                        'richiesta_id' => $richiesta_id,
+                        'documento_url' => $documento_originale_url,
+                        'documento_path' => (string) ($merge_result['documento_path'] ?? self::upload_url_to_path($documento_originale_url)),
+                        'attestato_url' => $attestato_url,
+                        'attestato_path' => (string) ($merge_result['attestato_path'] ?? self::upload_url_to_path($attestato_url)),
+                        'force_merge' => $force_merge,
+                        'is_firmato' => $is_firmato,
+                        'is_merged' => $is_merged
+                    ]);
                 }
             }
 
@@ -1098,7 +1121,9 @@ class WECOOP_Servizi_Endpoint {
         $richiesta_id = intval($request['richiesta_id']);
         $current_user_id = get_current_user_id();
         $documento_url = self::resolve_documento_unico_url($richiesta_id);
-        $attestato_firma_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', true));
+        $documento_merged_url = self::resolve_existing_upload_url(trim((string) get_post_meta($richiesta_id, 'documento_unico_merged_url', true)));
+        $attestato_firma_url = self::resolve_existing_upload_url(trim((string) get_post_meta($richiesta_id, 'documento_unico_attestato_firma_url', true)));
+        $stato_richiesta = trim((string) get_post_meta($richiesta_id, 'stato', true));
         
         // Verifica ownership
         $richiesta_user_id = get_post_meta($richiesta_id, 'user_id', true);
@@ -1118,9 +1143,14 @@ class WECOOP_Servizi_Endpoint {
                 'message' => 'Documento non ancora firmato',
                 'richiesta_id' => $richiesta_id,
                 'documento_url' => $documento_url,
-                'documento_download_url' => $documento_url
+                'documento_download_url' => $documento_url,
+                'documento_merged_url' => null,
+                'attestato_firma_url' => null,
+                'stato_richiesta' => $stato_richiesta
             ], 200);
         }
+
+        $documento_download_url = $documento_merged_url ?: $documento_url;
         
         return new WP_REST_Response([
             'firmato' => true,
@@ -1130,8 +1160,10 @@ class WECOOP_Servizi_Endpoint {
             'firma_tipo' => $firma->firma_tipo,
             'documento_hash_sha256' => $firma->documento_hash,
             'documento_url' => $documento_url,
-            'documento_download_url' => $documento_url,
+            'documento_download_url' => $documento_download_url,
+            'documento_merged_url' => $documento_merged_url,
             'attestato_firma_url' => $attestato_firma_url,
+            'stato_richiesta' => $stato_richiesta,
             'metadata' => json_decode($firma->firma_metadata, true),
             'richiesta_id' => $richiesta_id
         ], 200);
@@ -1162,13 +1194,21 @@ class WECOOP_Servizi_Endpoint {
         }
 
         $stored_original_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url_originale', true));
-        if (!empty($stored_original_url)) {
-            return $stored_original_url;
+        $resolved_original_url = self::resolve_existing_upload_url($stored_original_url);
+        if (!empty($resolved_original_url)) {
+            if ($resolved_original_url !== $stored_original_url) {
+                update_post_meta($richiesta_id, 'documento_unico_url_originale', $resolved_original_url);
+            }
+            return $resolved_original_url;
         }
 
         $stored_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url', true));
-        if (!empty($stored_url)) {
-            return $stored_url;
+        $resolved_stored_url = self::resolve_existing_upload_url($stored_url);
+        if (!empty($resolved_stored_url)) {
+            if ($resolved_stored_url !== $stored_url) {
+                update_post_meta($richiesta_id, 'documento_unico_url', $resolved_stored_url);
+            }
+            return $resolved_stored_url;
         }
 
         $uploads = wp_get_upload_dir();
@@ -1203,6 +1243,29 @@ class WECOOP_Servizi_Endpoint {
         return $resolved_url;
     }
 
+    private static function resolve_existing_upload_url($url) {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return null;
+        }
+
+        $resolved_path = self::upload_url_to_path($url);
+        if (!empty($resolved_path) && file_exists($resolved_path)) {
+            $uploads = wp_get_upload_dir();
+            $basedir = wp_normalize_path((string) ($uploads['basedir'] ?? ''));
+            $resolved_path = wp_normalize_path($resolved_path);
+
+            if ($basedir !== '' && strpos($resolved_path, $basedir) === 0) {
+                $relative = ltrim(substr($resolved_path, strlen($basedir)), '/');
+                return trailingslashit((string) ($uploads['baseurl'] ?? '')) . str_replace(' ', '%20', $relative);
+            }
+
+            return $url;
+        }
+
+        return null;
+    }
+
     /**
      * Converte URL upload in path locale filesystem.
      */
@@ -1212,12 +1275,31 @@ class WECOOP_Servizi_Endpoint {
         $basedir = rtrim((string) ($uploads['basedir'] ?? ''), '/');
         $url = trim((string) $url);
 
-        if (empty($baseurl) || empty($basedir) || empty($url) || strpos($url, $baseurl) !== 0) {
+        if (empty($basedir) || empty($url)) {
             return '';
         }
 
-        $relative = ltrim(substr($url, strlen($baseurl)), '/');
-        $relative = rawurldecode($relative);
-        return $basedir . '/' . $relative;
+        if (!empty($baseurl) && strpos($url, $baseurl) === 0) {
+            $relative = ltrim(substr($url, strlen($baseurl)), '/');
+            $relative = rawurldecode($relative);
+            return $basedir . '/' . $relative;
+        }
+
+        $parsed = wp_parse_url($url);
+        $path_component = (string) ($parsed['path'] ?? '');
+        if ($path_component !== '') {
+            $uploads_pos = strpos($path_component, '/uploads/');
+            if ($uploads_pos !== false) {
+                $relative = substr($path_component, $uploads_pos + strlen('/uploads/'));
+                return $basedir . '/' . ltrim(rawurldecode($relative), '/');
+            }
+
+            $basename = basename($path_component);
+            if ($basename !== '' && $basename !== '.' && $basename !== '..') {
+                return $basedir . '/wecoop-documenti-unici/' . rawurldecode($basename);
+            }
+        }
+
+        return '';
     }
 }

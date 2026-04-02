@@ -386,7 +386,7 @@ class WECOOP_Documento_Unico_PDF {
         error_log("[WECOOP DOC PDF] Lunghezza HTML: " . strlen($html) . " bytes");
         error_log("[WECOOP DOC PDF] HTML Preview (primi 800 chars): " . substr($html, 0, 800));
         
-        // Se è una richiesta, elimina i PDF vecchi
+        // Se è una richiesta, elimina solo i PDF vecchi non più referenziati.
         if ($richiesta_id) {
             self::elimina_pdf_precedenti($richiesta_id);
         }
@@ -497,11 +497,37 @@ class WECOOP_Documento_Unico_PDF {
             error_log("[WECOOP DOC PDF] ℹ️ Nessun PDF precedente trovato per richiesta #$richiesta_id");
             return;
         }
+
+        $protected_urls = array_filter([
+            trim((string) get_post_meta($richiesta_id, 'documento_unico_url', true)),
+            trim((string) get_post_meta($richiesta_id, 'documento_unico_url_originale', true)),
+            trim((string) get_post_meta($richiesta_id, 'documento_unico_merged_url', true))
+        ]);
+
+        $protected_paths = [];
+        foreach ($protected_urls as $protected_url) {
+            $protected_path = self::upload_url_to_path($protected_url);
+            if (!empty($protected_path)) {
+                $protected_paths[] = wp_normalize_path($protected_path);
+            }
+        }
+
+        $protected_paths = array_unique($protected_paths);
+        $removed_count = 0;
+        $skipped_count = 0;
         
-        // Elimina ogni file trovato
+        // Elimina solo file non protetti dai metadati correnti.
         foreach ($files as $file) {
+            $normalized_file = wp_normalize_path($file);
+            if (in_array($normalized_file, $protected_paths, true)) {
+                $skipped_count++;
+                error_log("[WECOOP DOC PDF] 🔒 PDF preservato: $file");
+                continue;
+            }
+
             if (file_exists($file)) {
                 if (unlink($file)) {
+                    $removed_count++;
                     error_log("[WECOOP DOC PDF] ✅ PDF rimosso: $file");
                 } else {
                     error_log("[WECOOP DOC PDF] ❌ Impossibile rimuovere: $file");
@@ -509,7 +535,7 @@ class WECOOP_Documento_Unico_PDF {
             }
         }
         
-        error_log("[WECOOP DOC PDF] ✅ Pulizia completata - " . count($files) . " file rimossi");
+        error_log("[WECOOP DOC PDF] ✅ Pulizia completata - rimossi: $removed_count, preservati: $skipped_count");
     }
     
     /**
@@ -715,14 +741,22 @@ class WECOOP_Documento_Unico_PDF {
         if (!$documento_path || !file_exists($documento_path)) {
             return [
                 'success' => false,
-                'message' => 'PDF Documento Unico non trovato su disco'
+                'message' => 'PDF Documento Unico non trovato su disco',
+                'documento_url' => $documento_url,
+                'documento_path' => $documento_path,
+                'attestato_url' => $attestato_url,
+                'attestato_path' => $attestato_path
             ];
         }
 
         if (!$attestato_path || !file_exists($attestato_path)) {
             return [
                 'success' => false,
-                'message' => 'PDF attestato firma non trovato su disco'
+                'message' => 'PDF attestato firma non trovato su disco',
+                'documento_url' => $documento_url,
+                'documento_path' => $documento_path,
+                'attestato_url' => $attestato_url,
+                'attestato_path' => $attestato_path
             ];
         }
 
@@ -811,13 +845,32 @@ class WECOOP_Documento_Unico_PDF {
         $basedir = rtrim((string) $upload_dir['basedir'], '/');
         $url = trim((string) $url);
 
-        if ($url === '' || strpos($url, $baseurl) !== 0) {
+        if ($url === '' || $basedir === '') {
             return '';
         }
 
-        $relative = ltrim(substr($url, strlen($baseurl)), '/');
-        $relative = rawurldecode($relative);
-        return $basedir . '/' . $relative;
+        if ($baseurl !== '' && strpos($url, $baseurl) === 0) {
+            $relative = ltrim(substr($url, strlen($baseurl)), '/');
+            $relative = rawurldecode($relative);
+            return $basedir . '/' . $relative;
+        }
+
+        $parsed = wp_parse_url($url);
+        $path_component = (string) ($parsed['path'] ?? '');
+        if ($path_component !== '') {
+            $uploads_pos = strpos($path_component, '/uploads/');
+            if ($uploads_pos !== false) {
+                $relative = substr($path_component, $uploads_pos + strlen('/uploads/'));
+                return $basedir . '/' . ltrim(rawurldecode($relative), '/');
+            }
+
+            $basename = basename($path_component);
+            if ($basename !== '' && $basename !== '.' && $basename !== '..') {
+                return $basedir . '/wecoop-documenti-unici/' . rawurldecode($basename);
+            }
+        }
+
+        return '';
     }
 
     /**
