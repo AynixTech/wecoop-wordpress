@@ -9,6 +9,65 @@
 if (!defined('ABSPATH')) exit;
 
 class WeCoop_Ricevuta_PDF {
+
+    /**
+     * Estrae l'importo corretto dal record pagamento.
+     */
+    private static function get_payment_amount($payment) {
+        if (isset($payment->importo) && $payment->importo !== null && $payment->importo !== '') {
+            return (float) $payment->importo;
+        }
+
+        if (isset($payment->amount) && $payment->amount !== null && $payment->amount !== '') {
+            return (float) $payment->amount;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Rende leggibile il metodo di pagamento per la ricevuta.
+     */
+    private static function get_payment_method_details($payment) {
+        $raw_method = '';
+
+        if (isset($payment->metodo_pagamento) && $payment->metodo_pagamento) {
+            $raw_method = strtolower((string) $payment->metodo_pagamento);
+        } elseif (isset($payment->payment_method) && $payment->payment_method) {
+            $raw_method = strtolower((string) $payment->payment_method);
+        }
+
+        $details_map = [
+            'stripe' => 'Stripe',
+            'card' => 'Carta di credito',
+            'carta' => 'Carta di credito',
+            'carta_di_credito' => 'Carta di credito',
+            'credit_card' => 'Carta di credito',
+            'sepa_debit' => 'Addebito SEPA',
+            'bank_transfer' => 'Bonifico bancario',
+            'bonifico' => 'Bonifico bancario',
+            'bonifico_bancario' => 'Bonifico bancario',
+            'paypal' => 'PayPal',
+            'app' => 'App WeCoop',
+        ];
+
+        $detail = $details_map[$raw_method] ?? ucfirst(str_replace('_', ' ', $raw_method));
+        if ($detail === '') {
+            $detail = 'Canale non specificato';
+        }
+
+        // Se il pagamento passa da Stripe ma il canale finale noto e carta, rendi il testo piu chiaro.
+        if ($raw_method === 'stripe') {
+            $detail = 'Stripe';
+        }
+
+        return [
+            'label' => 'Pagamento online',
+            'detail' => $detail,
+            'is_bank_transfer' => in_array($raw_method, ['bank_transfer', 'bonifico', 'bonifico_bancario', 'sepa_debit'], true),
+            'is_card' => in_array($raw_method, ['stripe', 'card', 'carta', 'carta_di_credito', 'credit_card'], true),
+        ];
+    }
     
     /**
      * Genera ricevuta PDF per erogazione liberale
@@ -56,6 +115,9 @@ class WeCoop_Ricevuta_PDF {
         $indirizzo = get_user_meta($user_id, 'indirizzo', true);
         $cap = get_user_meta($user_id, 'cap', true);
         $comune = get_user_meta($user_id, 'comune', true);
+        if (empty($comune)) {
+            $comune = get_user_meta($user_id, 'citta', true);
+        }
         $provincia = get_user_meta($user_id, 'provincia', true);
         $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
         
@@ -65,14 +127,7 @@ class WeCoop_Ricevuta_PDF {
         $data_iscrizione_runts = get_option('wecoop_data_runts', '01/01/2023');
         
         // Metodo pagamento
-        $metodo_map = [
-            'card' => 'Carta di credito',
-            'sepa_debit' => 'Bonifico SEPA',
-            'bancontact' => 'Bancontact',
-            'ideal' => 'iDEAL',
-            'stripe' => 'Carta di credito'
-        ];
-        $metodo_pagamento = $metodo_map[$payment->payment_method] ?? 'Carta di credito';
+        $payment_method = self::get_payment_method_details($payment);
         
         // Genera numero ricevuta
         $anno = date('Y', strtotime($payment->paid_at));
@@ -82,8 +137,9 @@ class WeCoop_Ricevuta_PDF {
         $data_pagamento = date('d/m/Y', strtotime($payment->paid_at));
         
         // Importo
-        $importo_num = number_format($payment->amount, 2, ',', '.');
-        $importo_lettere = self::numero_in_lettere($payment->amount);
+        $importo = self::get_payment_amount($payment);
+        $importo_num = number_format($importo, 2, ',', '.');
+        $importo_lettere = self::numero_in_lettere($importo);
         
         // Genera HTML ricevuta
         $html = self::genera_html_ricevuta([
@@ -95,7 +151,10 @@ class WeCoop_Ricevuta_PDF {
             'data_runts' => $data_iscrizione_runts,
             'importo_cifre' => $importo_num,
             'importo_lettere' => $importo_lettere,
-            'metodo_pagamento' => $metodo_pagamento,
+            'metodo_pagamento' => $payment_method['label'],
+            'metodo_pagamento_dettaglio' => $payment_method['detail'],
+            'is_bank_transfer' => $payment_method['is_bank_transfer'],
+            'is_card_payment' => $payment_method['is_card'],
             'nominativo' => trim($nome . ' ' . $cognome),
             'indirizzo' => $indirizzo,
             'cap' => $cap,
@@ -191,7 +250,7 @@ class WeCoop_Ricevuta_PDF {
                     nella persona del suo rappresentante legale <strong><?php echo esc_html($data['rappresentante_legale']); ?></strong> 
                     dichiara di aver ricevuto quale erogazione liberale in data odierna 
                     Euro (in cifre) <strong>€ <?php echo esc_html($data['importo_cifre']); ?></strong> 
-                    (in lettere) <strong><?php echo esc_html($data['importo_lettere']); ?></strong> tramite:
+                    (in lettere) <strong><?php echo esc_html($data['importo_lettere']); ?></strong> tramite <strong><?php echo esc_html($data['metodo_pagamento']); ?></strong>:
                 </p>
             </div>
             
@@ -199,20 +258,21 @@ class WeCoop_Ricevuta_PDF {
                 <table>
                     <tr>
                         <td style="width: 50%;">
-                            <span class="checkbox <?php echo in_array($data['metodo_pagamento'], ['Bonifico bancario', 'Bonifico SEPA']) ? 'checked' : ''; ?>"></span> Bonifico bancario<br>
+                            <span class="checkbox <?php echo !empty($data['is_bank_transfer']) ? 'checked' : ''; ?>"></span> Bonifico bancario<br>
                             <span class="checkbox <?php echo $data['metodo_pagamento'] === 'Versamento postale' ? 'checked' : ''; ?>"></span> Versamento con bollettino postale<br>
                             <span class="checkbox"></span> Assegno circolare<br>
                             <span class="checkbox"></span> Assegno bancario non trasferibile
                         </td>
                         <td style="width: 50%;">
-                            <span class="checkbox <?php echo strpos($data['metodo_pagamento'], 'Carta') !== false ? 'checked' : ''; ?>"></span> Carta di credito<br>
+                            <span class="checkbox <?php echo !empty($data['is_card_payment']) ? 'checked' : ''; ?>"></span> Carta di credito<br>
                             <span class="checkbox"></span> Carta di debito<br>
                             <span class="checkbox"></span> Bonifico postale<br>
-                            <span class="checkbox"></span> _________________________
+                            <span class="checkbox checked"></span> <?php echo esc_html($data['metodo_pagamento']); ?>
                         </td>
                     </tr>
                 </table>
                 <p style="margin-top: 10px; font-size: 10pt; color: #666;">
+                    <em>Dettaglio pagamento: <?php echo esc_html($data['metodo_pagamento_dettaglio']); ?></em><br>
                     <em>Riferimento: Pratica <?php echo esc_html($data['numero_pratica']); ?> - <?php echo esc_html($data['servizio']); ?></em><br>
                     <em>ID Transazione: <?php echo esc_html($data['transaction_id']); ?></em>
                 </p>

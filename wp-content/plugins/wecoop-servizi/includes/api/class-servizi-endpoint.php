@@ -936,9 +936,14 @@ class WECOOP_Servizi_Endpoint {
                 return new WP_Error('forbidden', 'Non hai i permessi', ['status' => 403]);
             }
 
-            $documento_url = self::resolve_documento_unico_url($richiesta_id);
-            if (empty($documento_url)) {
+            $documento_originale_url = self::resolve_documento_unico_url($richiesta_id);
+            if (empty($documento_originale_url)) {
                 return new WP_Error('document_not_found', 'Documento unico non trovato', ['status' => 404]);
+            }
+
+            $documento_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_merged_url', true));
+            if (empty($documento_url)) {
+                $documento_url = $documento_originale_url;
             }
 
             $is_firmato = (get_post_meta($richiesta_id, 'documento_unico_firmato', true) === 'yes');
@@ -953,13 +958,13 @@ class WECOOP_Servizi_Endpoint {
             if ($is_firmato && !empty($attestato_url) && class_exists('WECOOP_Documento_Unico_PDF') && ($force_merge || !$is_merged)) {
                 $merge_result = WECOOP_Documento_Unico_PDF::merge_documento_unico_with_attestato(
                     $richiesta_id,
-                    $documento_url,
+                    $documento_originale_url,
                     $attestato_url
                 );
 
                 if (!empty($merge_result['success']) && !empty($merge_result['url'])) {
                     $documento_url = (string) $merge_result['url'];
-                    update_post_meta($richiesta_id, 'documento_unico_url', $documento_url);
+                    update_post_meta($richiesta_id, 'documento_unico_merged_url', $documento_url);
                     update_post_meta($richiesta_id, 'documento_unico_hash', (string) ($merge_result['hash_sha256'] ?? ''));
                     update_post_meta($richiesta_id, 'documento_unico_merged_firma', 'yes');
                     update_post_meta($richiesta_id, 'documento_unico_merged_firma_il', current_time('mysql'));
@@ -1145,6 +1150,11 @@ class WECOOP_Servizi_Endpoint {
         $richiesta_id = absint($richiesta_id);
         if (!$richiesta_id) {
             return null;
+        }
+
+        $stored_original_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url_originale', true));
+        if (!empty($stored_original_url)) {
+            return $stored_original_url;
         }
 
         $stored_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url', true));

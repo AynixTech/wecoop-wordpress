@@ -237,6 +237,10 @@ class WECOOP_Firma_Handler {
 
                 $documento_unico_url = trim((string) get_post_meta($richiesta_id, 'documento_unico_url', true));
                 if (!empty($documento_unico_url)) {
+                    if (!get_post_meta($richiesta_id, 'documento_unico_url_originale', true)) {
+                        update_post_meta($richiesta_id, 'documento_unico_url_originale', $documento_unico_url);
+                    }
+
                     $merge_result = WECOOP_Documento_Unico_PDF::merge_documento_unico_with_attestato(
                         $richiesta_id,
                         $documento_unico_url,
@@ -245,8 +249,7 @@ class WECOOP_Firma_Handler {
 
                     if (!empty($merge_result['success']) && !empty($merge_result['url'])) {
                         $documento_unico_merged_url = (string) $merge_result['url'];
-                        update_post_meta($richiesta_id, 'documento_unico_url_originale', $documento_unico_url);
-                        update_post_meta($richiesta_id, 'documento_unico_url', $documento_unico_merged_url);
+                        update_post_meta($richiesta_id, 'documento_unico_merged_url', $documento_unico_merged_url);
                         update_post_meta($richiesta_id, 'documento_unico_hash', (string) ($merge_result['hash_sha256'] ?? ''));
                         update_post_meta($richiesta_id, 'documento_unico_merged_firma', 'yes');
                         update_post_meta($richiesta_id, 'documento_unico_merged_firma_il', $firma_timestamp);
