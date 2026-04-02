@@ -205,6 +205,9 @@ class WeCoop_Ricevuta_PDF {
      * Genera HTML ricevuta
      */
     private static function genera_html_ricevuta($data) {
+        $firma_path = WECOOP_SERVIZI_PLUGIN_DIR . 'assets/img/firma_mary_delgado.png';
+        $firma_disponibile = file_exists($firma_path);
+
         ob_start();
         ?>
         <!DOCTYPE html>
@@ -223,6 +226,7 @@ class WeCoop_Ricevuta_PDF {
                 .checkbox.checked::before { content: '✓'; }
                 .footer { margin-top: 50px; font-size: 10pt; line-height: 1.4; }
                 .firma { margin-top: 60px; text-align: right; }
+                .firma img { max-width: 220px; height: auto; margin-top: 8px; }
                 table { width: 100%; border-collapse: collapse; }
                 td { padding: 5px; }
             </style>
@@ -344,8 +348,12 @@ class WeCoop_Ricevuta_PDF {
             
             <div class="firma">
                 <p><strong>FIRMA LEGALE RAPPRESENTANTE e TIMBRO</strong></p>
-                <br><br>
-                <p>____________________________________</p>
+                <?php if ($firma_disponibile): ?>
+                    <img src="<?php echo esc_attr($firma_path); ?>" alt="Firma legale rappresentante">
+                <?php else: ?>
+                    <br><br>
+                    <p>____________________________________</p>
+                <?php endif; ?>
             </div>
             
             <div class="footer">

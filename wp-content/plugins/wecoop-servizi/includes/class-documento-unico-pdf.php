@@ -185,6 +185,8 @@ class WECOOP_Documento_Unico_PDF {
      */
     private static function genera_html_documento($documento_testo, $richiesta_id) {
         $data_ora = wp_date('d/m/Y H:i:s');
+        $firma_path = WECOOP_SERVIZI_PLUGIN_DIR . 'assets/img/firma_mary_delgado.png';
+        $firma_disponibile = file_exists($firma_path);
         
         // Formatta il testo in paragrafi HTML
         $html_content = self::formatta_testo_html($documento_testo);
@@ -255,6 +257,19 @@ class WECOOP_Documento_Unico_PDF {
             color: #666;
             text-align: center;
         }
+        .footer-signature {
+            margin-bottom: 14px;
+        }
+        .footer-signature p {
+            margin: 0 0 6px 0;
+            color: #333;
+            font-size: 10px;
+        }
+        .footer-signature img {
+            max-width: 180px;
+            height: auto;
+            display: inline-block;
+        }
         .footer-logo {
             text-align: center;
             margin-bottom: 15px;
@@ -290,6 +305,15 @@ class WECOOP_Documento_Unico_PDF {
     </div>
     
     <div class="footer">
+        <div class="footer-signature">
+            <p><strong>Firma Legale Rappresentante</strong></p>
+            <?php if ($firma_disponibile): ?>
+                <img src="<?php echo esc_attr($firma_path); ?>" alt="Firma legale rappresentante">
+            <?php else: ?>
+                <p>____________________________________</p>
+            <?php endif; ?>
+        </div>
+
         <!-- Logo WECOOP -->
         <div class="footer-logo">
             <img src="<?php echo WECOOP_SERVIZI_PLUGIN_DIR; ?>assets/img/wecooplogo.png" alt="WECOOP Logo" style="max-width: 60px; height: auto;">
