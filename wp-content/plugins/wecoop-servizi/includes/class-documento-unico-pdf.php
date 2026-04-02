@@ -46,8 +46,30 @@ class WECOOP_Documento_Unico_PDF {
         
         // Prepara dati per compilazione
         [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
+        
+        // Codice fiscale: da dati richiesta con fallback a user_meta
         $codice_fiscale = trim($dati['codice_fiscale'] ?? '');
+        if (empty($codice_fiscale)) {
+            $codice_fiscale = trim((string) get_user_meta($user_id, 'codice_fiscale', true));
+        }
+        
+        // Telefono: da dati richiesta con fallback a user_meta
         $telefono = trim($dati['telefono'] ?? '');
+        if (empty($telefono)) {
+            $telefono = trim((string) get_user_meta($user_id, 'telefono', true));
+            if (empty($telefono)) {
+                $telefono = trim((string) get_user_meta($user_id, 'telefono_completo', true));
+            }
+        }
+        
+        // Indirizzo e localita'
+        $indirizzo = trim((string) get_user_meta($user_id, 'indirizzo', true));
+        $cap = trim((string) get_user_meta($user_id, 'cap', true));
+        $comune = trim((string) get_user_meta($user_id, 'comune', true));
+        if (empty($comune)) {
+            $comune = trim((string) get_user_meta($user_id, 'citta', true));
+        }
+        $provincia = trim((string) get_user_meta($user_id, 'provincia', true));
         
         error_log('[WECOOP DOC UNICO] 📋 Dati compilazione:');
         error_log('[WECOOP DOC UNICO] - Nome: ' . $nome);
@@ -55,6 +77,10 @@ class WECOOP_Documento_Unico_PDF {
         error_log('[WECOOP DOC UNICO] - CF: ' . $codice_fiscale);
         error_log('[WECOOP DOC UNICO] - Email: ' . $user->user_email);
         error_log('[WECOOP DOC UNICO] - Tel: ' . $telefono);
+        error_log('[WECOOP DOC UNICO] - Indirizzo: ' . $indirizzo);
+        error_log('[WECOOP DOC UNICO] - Cap: ' . $cap);
+        error_log('[WECOOP DOC UNICO] - Comune: ' . $comune);
+        error_log('[WECOOP DOC UNICO] - Provincia: ' . $provincia);
         
         // Compila placeholders
         $documento_compilato = self::compila_placeholders(
@@ -66,6 +92,10 @@ class WECOOP_Documento_Unico_PDF {
                 'codice_fiscale' => $codice_fiscale,
                 'email' => $user->user_email,
                 'telefono' => $telefono,
+                'indirizzo' => $indirizzo,
+                'cap' => $cap,
+                'comune' => $comune,
+                'provincia' => $provincia,
                 'case_id' => $richiesta_id,
                 'data' => date('d/m/Y'),
                 'timestamp' => current_time('mysql')
@@ -511,6 +541,30 @@ class WECOOP_Documento_Unico_PDF {
 
         [$nome, $cognome, $nome_completo] = self::resolve_nome_cognome($user_id, $dati, $user);
         
+        // Codice fiscale: da dati richiesta con fallback a user_meta
+        $codice_fiscale = trim($dati['codice_fiscale'] ?? '');
+        if (empty($codice_fiscale)) {
+            $codice_fiscale = trim((string) get_user_meta($user_id, 'codice_fiscale', true));
+        }
+        
+        // Telefono: da dati richiesta con fallback a user_meta
+        $telefono = trim($dati['telefono'] ?? '');
+        if (empty($telefono)) {
+            $telefono = trim((string) get_user_meta($user_id, 'telefono', true));
+            if (empty($telefono)) {
+                $telefono = trim((string) get_user_meta($user_id, 'telefono_completo', true));
+            }
+        }
+        
+        // Indirizzo e localita'
+        $indirizzo = trim((string) get_user_meta($user_id, 'indirizzo', true));
+        $cap = trim((string) get_user_meta($user_id, 'cap', true));
+        $comune = trim((string) get_user_meta($user_id, 'comune', true));
+        if (empty($comune)) {
+            $comune = trim((string) get_user_meta($user_id, 'citta', true));
+        }
+        $provincia = trim((string) get_user_meta($user_id, 'provincia', true));
+        
         // Compila placeholders
         return self::compila_placeholders(
             $documento_testo,
@@ -518,9 +572,13 @@ class WECOOP_Documento_Unico_PDF {
                 'nome' => $nome,
                 'cognome' => $cognome,
                 'nome_completo' => $nome_completo,
-                'codice_fiscale' => $dati['codice_fiscale'] ?? '',
+                'codice_fiscale' => $codice_fiscale,
                 'email' => $user->user_email,
-                'telefono' => $dati['telefono'] ?? '',
+                'telefono' => $telefono,
+                'indirizzo' => $indirizzo,
+                'cap' => $cap,
+                'comune' => $comune,
+                'provincia' => $provincia,
                 'case_id' => $richiesta_id,
                 'data' => date('d/m/Y'),
                 'timestamp' => current_time('mysql')
