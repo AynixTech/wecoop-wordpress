@@ -69,7 +69,7 @@ class WeCoop_Core {
         require_once WECOOP_CORE_INCLUDES_DIR . 'class-user-meta.php';
         require_once WECOOP_CORE_INCLUDES_DIR . 'class-email-template-unified.php';
         require_once WECOOP_CORE_INCLUDES_DIR . 'class-multilingual-email.php';
-        require_once WECOOP_CORE_INCLUDES_DIR . 'class-rest-charset-handler.php';
+        // require_once WECOOP_CORE_INCLUDES_DIR . 'class-rest-charset-handler.php'; // TODO: Fix conflict con endpoint custom
     }
     
     /**
@@ -85,7 +85,7 @@ class WeCoop_Core {
         WeCoop_Socio_Role::init();
         WeCoop_Auth_Handler::init();
         WeCoop_User_Meta::init();
-        WeCoop_REST_Charset_Handler::init();
+        // WeCoop_REST_Charset_Handler::init(); // TODO: Fix conflict
     }
     
     /**
