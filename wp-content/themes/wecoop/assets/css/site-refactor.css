@@ -1129,6 +1129,11 @@ body.home .wecoop-whatsapp-button {
     font-size: 17px;
     color: var(--ws-text);
     background: #fff;
+    overflow-x: hidden;
+}
+
+body.home {
+    overflow-x: hidden;
 }
 
 .ws-container {
@@ -1227,6 +1232,12 @@ body.home .wecoop-whatsapp-button {
     gap: 22px;
 }
 
+.ws-grid-2 > *,
+.ws-grid-3 > *,
+.ws-grid-4 > * {
+    min-width: 0;
+}
+
 .ws-grid-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1315,12 +1326,23 @@ body.home .wecoop-whatsapp-button {
 
 .ws-img {
     width: 100%;
+    max-width: 100%;
     border-radius: 16px;
     display: block;
     object-fit: cover;
 }
 
+.ws-hero__media {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+}
+
 .ws-hero__media img {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
     min-height: 420px;
 }
 
