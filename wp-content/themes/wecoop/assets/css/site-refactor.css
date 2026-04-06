@@ -1364,10 +1364,15 @@ body.home {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-size: 1rem;
+    font-weight: 600;
     margin-bottom: 10px;
+}
+
+.ws-icon i,
+.ws-tile__icon i,
+.ws-mini__icon i {
+    line-height: 1;
 }
 
 .ws-icon--blue {
@@ -1394,7 +1399,7 @@ body.home {
     margin-bottom: 0;
     width: 30px;
     height: 30px;
-    font-size: 0.72rem;
+    font-size: 0.86rem;
 }
 
 .ws-tile h3,
@@ -1407,7 +1412,7 @@ body.home {
     border: 1px solid rgba(0, 0, 0, 0.08);
     width: 34px;
     height: 34px;
-    font-size: 0.76rem;
+    font-size: 0.86rem;
 }
 
 .ws-card h3,
@@ -1510,29 +1515,35 @@ body.home {
     padding: 30px 24px;
 }
 
-.ws-stat::before {
-    content: "";
+.ws-stat__icon {
     width: 42px;
     height: 42px;
     border-radius: 999px;
     margin: 0 auto 8px;
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
 }
 
-.ws-stat--users::before {
+.ws-stat--users .ws-stat__icon {
     background: rgba(18, 130, 168, 0.14);
+    color: var(--ws-blue);
 }
 
-.ws-stat--learn::before {
+.ws-stat--learn .ws-stat__icon {
     background: rgba(89, 181, 117, 0.16);
+    color: var(--ws-green);
 }
 
-.ws-stat--work::before {
+.ws-stat--work .ws-stat__icon {
     background: rgba(230, 38, 107, 0.14);
+    color: var(--ws-pink);
 }
 
-.ws-stat--app::before {
+.ws-stat--app .ws-stat__icon {
     background: rgba(55, 154, 196, 0.14);
+    color: var(--ws-blue-2);
 }
 
 .ws-stat strong {
@@ -1585,7 +1596,7 @@ body.home {
 
 .ws-partner-placeholder span {
     opacity: 0.45;
-    font-weight: 700;
+    font-size: 1.2rem;
 }
 
 .ws-section--cta {

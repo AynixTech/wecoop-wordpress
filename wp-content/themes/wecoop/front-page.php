@@ -43,17 +43,17 @@ get_header();
             <p class="ws-lead">Un modelo innovador que combina un centro territorial, servicios de orientacion, formacion, oportunidades laborales y una plataforma digital integrada.</p>
             <div class="ws-grid-3">
                 <article class="ws-card ws-card--blue">
-                    <span class="ws-icon ws-icon--blue" aria-hidden="true">CT</span>
+                    <span class="ws-icon ws-icon--blue" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
                     <h3>Centro Territorial</h3>
                     <p>Un espacio fisico de referencia donde las personas encuentran orientacion, acompanamiento personalizado y acceso a servicios de inclusion social.</p>
                 </article>
                 <article class="ws-card ws-card--green">
-                    <span class="ws-icon ws-icon--green" aria-hidden="true">FE</span>
+                    <span class="ws-icon ws-icon--green" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span>
                     <h3>Formacion y Empleo</h3>
                     <p>Recorridos formativos personalizados, desarrollo de competencias profesionales y conexion directa con oportunidades laborales reales.</p>
                 </article>
                 <article class="ws-card ws-card--pink">
-                    <span class="ws-icon ws-icon--pink" aria-hidden="true">PD</span>
+                    <span class="ws-icon ws-icon--pink" aria-hidden="true"><i class="fa-solid fa-mobile-screen-button"></i></span>
                     <h3>Plataforma Digital</h3>
                     <p>Tecnologia accesible que permite gestionar citas, acceder a formacion, comunicarse con operadores y hacer seguimiento del recorrido personal.</p>
                 </article>
@@ -66,12 +66,12 @@ get_header();
             <h2>El Modelo Fisico + Digital</h2>
             <p class="ws-lead">Un ecosistema integrado que conecta territorio, personas, servicios y tecnologia.</p>
             <div class="ws-grid-3">
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">1</span><h3>Territorio</h3><p>Presencia local y comunitaria</p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">2</span><h3>Personas</h3><p>En el centro del sistema</p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">3</span><h3>Servicios</h3><p>Orientacion y acompanamiento</p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">4</span><h3>Formacion</h3><p>Desarrollo de competencias</p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">5</span><h3>Oportunidades</h3><p>Acceso al empleo</p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true">6</span><h3>Plataforma Digital</h3><p>Tecnologia inclusiva</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span><h3>Territorio</h3><p>Presencia local y comunitaria</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><h3>Personas</h3><p>En el centro del sistema</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-heart"></i></span><h3>Servicios</h3><p>Orientacion y acompanamiento</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><h3>Formacion</h3><p>Desarrollo de competencias</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><h3>Oportunidades</h3><p>Acceso al empleo</p></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-globe"></i></span><h3>Plataforma Digital</h3><p>Tecnologia inclusiva</p></article>
             </div>
         </div>
     </section>
@@ -87,10 +87,10 @@ get_header();
                 <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_team_of_professionals_discussing_project_planning_around_a_table_with_laptop,_documen_771206.png'); ?>" alt="Equipo Passaparola">
             </div>
             <div class="ws-grid-4">
-                <article class="ws-mini ws-mini--pink"><span class="ws-mini__icon" aria-hidden="true">P</span><h3>Problema</h3><p>Dificultad de acceso a servicios y oportunidades para personas migrantes y vulnerables.</p></article>
-                <article class="ws-mini ws-mini--blue"><span class="ws-mini__icon" aria-hidden="true">S</span><h3>Solucion</h3><p>Sistema integrado de orientacion, formacion y conexion con oportunidades laborales.</p></article>
-                <article class="ws-mini ws-mini--green"><span class="ws-mini__icon" aria-hidden="true">A</span><h3>Actividades</h3><p>Orientacion personalizada, formacion profesional, insercion laboral y seguimiento continuo.</p></article>
-                <article class="ws-mini ws-mini--lime"><span class="ws-mini__icon" aria-hidden="true">I</span><h3>Impacto</h3><p>Inclusion social efectiva, autonomia personal y acceso real al mercado laboral.</p></article>
+                <article class="ws-mini ws-mini--pink"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-bullseye"></i></span><h3>Problema</h3><p>Dificultad de acceso a servicios y oportunidades para personas migrantes y vulnerables.</p></article>
+                <article class="ws-mini ws-mini--blue"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span><h3>Solucion</h3><p>Sistema integrado de orientacion, formacion y conexion con oportunidades laborales.</p></article>
+                <article class="ws-mini ws-mini--green"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><h3>Actividades</h3><p>Orientacion personalizada, formacion profesional, insercion laboral y seguimiento continuo.</p></article>
+                <article class="ws-mini ws-mini--lime"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-chart-line"></i></span><h3>Impacto</h3><p>Inclusion social efectiva, autonomia personal y acceso real al mercado laboral.</p></article>
             </div>
         </div>
     </section>
@@ -123,10 +123,10 @@ get_header();
             <h2>Nuestro Impacto Social</h2>
             <p class="ws-lead">Resultados medibles de un modelo que transforma vidas y genera oportunidades reales.</p>
             <div class="ws-grid-4">
-                <article class="ws-stat ws-stat--users"><strong>400+</strong><span>Beneficiarios</span></article>
-                <article class="ws-stat ws-stat--learn"><strong>150+</strong><span>Recorridos Formativos</span></article>
-                <article class="ws-stat ws-stat--work"><strong>80+</strong><span>Inserciones Laborales</span></article>
-                <article class="ws-stat ws-stat--app"><strong>300+</strong><span>Usuarios Plataforma</span></article>
+                <article class="ws-stat ws-stat--users"><i class="fa-solid fa-users ws-stat__icon" aria-hidden="true"></i><strong>400+</strong><span>Beneficiarios</span></article>
+                <article class="ws-stat ws-stat--learn"><i class="fa-solid fa-graduation-cap ws-stat__icon" aria-hidden="true"></i><strong>150+</strong><span>Recorridos Formativos</span></article>
+                <article class="ws-stat ws-stat--work"><i class="fa-solid fa-briefcase ws-stat__icon" aria-hidden="true"></i><strong>80+</strong><span>Inserciones Laborales</span></article>
+                <article class="ws-stat ws-stat--app"><i class="fa-solid fa-mobile-screen-button ws-stat__icon" aria-hidden="true"></i><strong>300+</strong><span>Usuarios Plataforma</span></article>
             </div>
         </div>
     </section>
@@ -140,12 +140,12 @@ get_header();
                     <strong>Partner Tecnologico</strong>
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_2.png'); ?>" alt="AYNIX">
                 </div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true">B</span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
             </div>
         </div>
     </section>
