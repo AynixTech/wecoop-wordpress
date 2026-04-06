@@ -1364,7 +1364,7 @@ body.home {
     align-items: center;
     justify-content: center;
     border-radius: 10px;
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     margin-bottom: 10px;
 }
@@ -1375,31 +1375,52 @@ body.home {
     line-height: 1;
 }
 
+.ws-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
 .ws-icon--blue {
     background: rgba(18, 130, 168, 0.12);
+}
+
+.ws-icon--blue i {
+    color: var(--ws-blue);
 }
 
 .ws-icon--green {
     background: rgba(89, 181, 117, 0.14);
 }
 
+.ws-icon--green i {
+    color: var(--ws-green);
+}
+
 .ws-icon--pink {
     background: rgba(230, 38, 107, 0.12);
+}
+
+.ws-icon--pink i {
+    color: var(--ws-pink);
 }
 
 .ws-tile {
     display: grid;
     grid-template-columns: auto 1fr;
     column-gap: 10px;
-    align-items: center;
+    row-gap: 2px;
+    align-items: start;
 }
 
 .ws-tile__icon {
     background: #f2f7fa;
     margin-bottom: 0;
-    width: 30px;
-    height: 30px;
-    font-size: 0.86rem;
+    width: 28px;
+    height: 28px;
+    font-size: 0.74rem;
+    color: #64808d;
 }
 
 .ws-tile h3,
@@ -1407,12 +1428,54 @@ body.home {
     grid-column: 2;
 }
 
+.ws-tile h3 {
+    margin: 0 0 2px;
+}
+
+.ws-tile p {
+    margin: 0;
+}
+
+.ws-grid-3 .ws-tile:nth-child(1) .ws-tile__icon,
+.ws-grid-3 .ws-tile:nth-child(6) .ws-tile__icon {
+    color: var(--ws-blue);
+}
+
+.ws-grid-3 .ws-tile:nth-child(2) .ws-tile__icon {
+    color: var(--ws-green);
+}
+
+.ws-grid-3 .ws-tile:nth-child(3) .ws-tile__icon,
+.ws-grid-3 .ws-tile:nth-child(5) .ws-tile__icon {
+    color: #5f6368;
+}
+
+.ws-grid-3 .ws-tile:nth-child(4) .ws-tile__icon {
+    color: var(--ws-pink);
+}
+
 .ws-mini__icon {
     background: #fff;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    width: 34px;
-    height: 34px;
-    font-size: 0.86rem;
+    width: 30px;
+    height: 30px;
+    font-size: 0.78rem;
+}
+
+.ws-mini--pink .ws-mini__icon i {
+    color: var(--ws-pink);
+}
+
+.ws-mini--blue .ws-mini__icon i {
+    color: var(--ws-blue);
+}
+
+.ws-mini--green .ws-mini__icon i {
+    color: var(--ws-green);
+}
+
+.ws-mini--lime .ws-mini__icon i {
+    color: #6f9630;
 }
 
 .ws-card h3,
@@ -1519,11 +1582,11 @@ body.home {
     width: 42px;
     height: 42px;
     border-radius: 999px;
-    margin: 0 auto 8px;
+    margin: 0 auto 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 1.05rem;
 }
 
 .ws-stat--users .ws-stat__icon {
@@ -1595,8 +1658,9 @@ body.home {
 }
 
 .ws-partner-placeholder span {
-    opacity: 0.45;
-    font-size: 1.2rem;
+    opacity: 0.38;
+    font-size: 1.1rem;
+    color: #7a8490;
 }
 
 .ws-section--cta {
