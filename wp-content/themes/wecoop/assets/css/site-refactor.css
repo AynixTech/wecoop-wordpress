@@ -433,6 +433,11 @@ a {
     --wf-soft: #f5f8fb;
 }
 
+.wecoop-figma-home :where(a, button):focus-visible {
+    outline: 2px solid var(--wf-brand-2);
+    outline-offset: 2px;
+}
+
 .wecoop-figma-home .wf-section,
 .wecoop-figma-home .wf-hero {
     border: 1px solid var(--wecoop-border);
@@ -482,6 +487,10 @@ a {
     gap: 28px;
     grid-template-columns: 1.08fr 0.92fr;
     background: linear-gradient(120deg, #eef7fb 0%, #ffffff 48%, #eef8f2 100%);
+}
+
+.wecoop-figma-home .wf-hero__content {
+    max-width: 66ch;
 }
 
 .wecoop-figma-home .wf-hero__content p {
@@ -553,6 +562,35 @@ a {
     gap: 14px;
 }
 
+.wecoop-figma-home .wf-linkbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 0;
+}
+
+.wecoop-figma-home .wf-linkbar a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 999px;
+    border: 1px solid var(--wecoop-border);
+    background: #fff;
+    color: #4d4c4c;
+    padding: 7px 12px;
+    font-weight: 600;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wecoop-figma-home .wf-linkbar a:hover,
+.wecoop-figma-home .wf-linkbar a:focus-visible {
+    color: var(--wf-brand);
+    border-color: var(--wf-brand);
+    box-shadow: 0 8px 18px rgba(18, 130, 168, 0.15);
+    transform: translateY(-1px);
+}
+
 .wecoop-figma-home .wf-grid--2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -579,6 +617,10 @@ a {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.wecoop-figma-home .wf-card {
+    height: 100%;
+}
+
 .wecoop-figma-home .wf-card:hover,
 .wecoop-figma-home .wf-stat:hover {
     transform: translateY(-2px);
@@ -593,6 +635,17 @@ a {
 .wecoop-figma-home .wf-card p {
     margin: 0;
     color: #4d4c4c;
+    line-height: 1.55;
+}
+
+.wecoop-figma-home .wf-band {
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 600;
 }
 
 .wecoop-figma-home .wf-pill {
@@ -663,6 +716,9 @@ a {
 .wecoop-figma-home .wf-stat {
     text-align: center;
     background: linear-gradient(180deg, #ffffff, #f5fbff);
+    min-height: 116px;
+    display: grid;
+    place-items: center;
 }
 
 .wecoop-figma-home .wf-stat strong {
@@ -694,6 +750,12 @@ a {
     background: #fff;
     border-radius: 12px;
     padding: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wecoop-figma-home .wf-partners__logos img:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(17, 34, 53, 0.08);
 }
 
 .wecoop-figma-home .wf-cta-row {
@@ -725,8 +787,24 @@ a {
     padding: 14px;
 }
 
+.wecoop-figma-home .wf-contact .wecoop-contact-form :where(input, textarea, select) {
+    width: 100%;
+    border: 1px solid var(--wecoop-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #fff;
+}
+
+.wecoop-figma-home .wf-contact .wecoop-contact-form :where(input, textarea, select):focus {
+    border-color: var(--wf-brand-2);
+    box-shadow: 0 0 0 3px rgba(55, 154, 196, 0.14);
+    outline: none;
+}
+
 .wecoop-figma-home .wf-contact .wecoop-contact-form button {
     background: var(--wf-brand);
+    border-radius: 999px;
+    padding: 10px 16px;
 }
 
 .wecoop-figma-home .wf-links__list {
@@ -750,6 +828,53 @@ a {
     border-color: var(--wf-brand);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+    .wecoop-figma-home .wf-hero,
+    .wecoop-figma-home .wf-section {
+        animation: wf-fade-up 0.55s ease both;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(2) {
+        animation-delay: 0.04s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(3) {
+        animation-delay: 0.08s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(4) {
+        animation-delay: 0.12s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(5) {
+        animation-delay: 0.16s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(6) {
+        animation-delay: 0.2s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(7) {
+        animation-delay: 0.24s;
+    }
+
+    .wecoop-figma-home .wf-section:nth-of-type(8) {
+        animation-delay: 0.28s;
+    }
+}
+
+@keyframes wf-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @media (max-width: 980px) {
     .wecoop-figma-home .wf-hero,
     .wecoop-figma-home .wf-grid--4,
@@ -771,6 +896,10 @@ a {
 
     .wecoop-figma-home .wf-cta-row {
         grid-template-columns: 1fr;
+    }
+
+    .wecoop-figma-home .wf-linkbar {
+        padding-bottom: 4px;
     }
 }
 
@@ -844,6 +973,10 @@ a {
         font-size: 0.92rem;
     }
 
+    .wecoop-figma-home .wf-actions .wf-btn {
+        flex: 1 1 48%;
+    }
+
     .wecoop-figma-home .wf-card,
     .wecoop-figma-home .wf-stat,
     .wecoop-figma-home .wf-pill {
@@ -874,6 +1007,14 @@ a {
     .wecoop-figma-home .wf-steps,
     .wecoop-figma-home .wf-partners__logos {
         grid-template-columns: 1fr;
+    }
+
+    .wecoop-figma-home .wf-linkbar a {
+        width: 100%;
+    }
+
+    .wecoop-figma-home .wf-actions .wf-btn {
+        width: 100%;
     }
 }
 
@@ -955,37 +1096,3 @@ a {
     }
 }
 
-body.wecoop-figma-mode .wecoop-header,
-body.wecoop-figma-mode .wecoop-footer,
-body.wecoop-figma-mode .wecoop-whatsapp-button {
-    display: none !important;
-}
-
-body.wecoop-figma-mode #content {
-    min-height: 100vh;
-}
-
-.wecoop-figma-embed-main {
-    width: 100%;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
-    background: #fff;
-}
-
-.wecoop-figma-embed-frame {
-    display: block;
-    width: 100%;
-    height: 100vh;
-    border: 0;
-}
-
-.wecoop-figma-noscript {
-    max-width: 760px;
-    margin: 8vh auto;
-    padding: 20px;
-    border: 1px solid var(--wecoop-border);
-    border-radius: 14px;
-    background: #fff;
-    color: #2f3d46;
-}
