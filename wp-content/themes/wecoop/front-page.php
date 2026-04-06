@@ -17,7 +17,7 @@ get_header();
             <h1>WECOOP</h1>
             <p>Per visualizzare la copia fedele del sito Figma, abilita JavaScript nel browser.</p>
             <p>Source: https://stark-report-13830941.figma.site/</p>
-            <p>Asset locali disponibili in <strong>new_refactor_themes</strong> e <strong>assets/img/refactor</strong>.</p>
+            <p>Asset locali disponibili in <strong>assets/img/refactor</strong>.</p>
         </section>
     </noscript>
 </main>

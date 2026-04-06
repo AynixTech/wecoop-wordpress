@@ -50,17 +50,6 @@ function wecoop_enqueue_assets() {
         file_exists(get_template_directory() . '/assets/js/theme.js') ? filemtime(get_template_directory() . '/assets/js/theme.js') : null,
         true
     );
-
-    $refactor_css_files = glob(get_template_directory() . '/assets/refactor-dist/*.css');
-    if (!empty($refactor_css_files)) {
-        $refactor_css_file = basename($refactor_css_files[0]);
-        wp_enqueue_style(
-            'wecoop-refactor-import',
-            get_template_directory_uri() . '/assets/refactor-dist/' . $refactor_css_file,
-            ['wecoop-site-refactor'],
-            filemtime($refactor_css_files[0])
-        );
-    }
 }
 add_action('wp_enqueue_scripts', 'wecoop_enqueue_assets');
 
