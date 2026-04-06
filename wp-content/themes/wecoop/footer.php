@@ -4,35 +4,41 @@
         <div class="wecoop-footer__inner">
             <div>
                 <h3>WECOOP</h3>
-                <p><?php echo esc_html(wecoop_t('Punto de acceso a servicios, formacion y trabajo en red.', 'Punto di accesso a servizi, formazione e lavoro in rete.')); ?></p>
-                <p>Via Benefattori dell'Ospedale, 3 - Milano</p>
-                <p>CF 97977210158</p>
-            </div>
-
-            <div>
-                <h4><?php echo esc_html(wecoop_t('Menu', 'Menu')); ?></h4>
-                <?php
-                wp_nav_menu([
-                    'theme_location' => 'footer-menu',
-                    'container' => false,
-                    'menu_class' => 'wecoop-footer__menu',
-                    'fallback_cb' => false,
-                ]);
-                ?>
-            </div>
-
-            <div>
-                <h4><?php echo esc_html(wecoop_t('Newsletter', 'Newsletter')); ?></h4>
-                <?php echo do_shortcode('[wecoop_newsletter]'); ?>
-                <div class="wecoop-footer__social">
-                    <a href="https://www.facebook.com/profile.php?id=61568241435990" target="_blank" rel="noopener">Facebook</a>
-                    <a href="https://www.instagram.com/wecoop_aps" target="_blank" rel="noopener">Instagram</a>
+                <p>Un ecosistema de inclusion y oportunidades para todos.</p>
+                <ul class="wecoop-footer__menu">
+                    <li><a href="<?php echo esc_url(home_url('/#que-es')); ?>">Que es WECOOP</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#passaparola')); ?>">Passaparola</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#plataforma')); ?>">Plataforma Digital</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#impacto')); ?>">Impacto</a></li>
+                </ul>
+                <div class="wecoop-footer__brand-logos">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="App WECOOP">
                 </div>
+            </div>
+
+            <div>
+                <h4>Colabora</h4>
+                <ul class="wecoop-footer__menu">
+                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Empresas</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Instituciones</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Fundaciones</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Voluntarios</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4>Contacto</h4>
+                <ul class="wecoop-footer__menu">
+                    <li>Via Populonia 8, Milano</li>
+                    <li><a href="mailto:info@wecoop.it">info@wecoop.it</a></li>
+                    <li><a href="tel:+3902XXXXXXX">+39 02 XXXX XXXX</a></li>
+                </ul>
             </div>
         </div>
 
         <div class="wecoop-footer__bottom">
-            <p>&copy; <?php echo esc_html(gmdate('Y')); ?> WECOOP - <?php echo esc_html(wecoop_t('Todos los derechos reservados.', 'Tutti i diritti riservati.')); ?></p>
+            <p>&copy; <?php echo esc_html(gmdate('Y')); ?> WECOOP. Todos los derechos reservados.</p>
         </div>
     </footer>
 

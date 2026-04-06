@@ -155,9 +155,9 @@ a {
 }
 
 .wecoop-main {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 36px 20px 64px;
+    padding: 34px 20px 68px;
 }
 
 .wecoop-page-content .wecoop-section {
@@ -264,16 +264,34 @@ a {
 
 .wecoop-footer {
     border-top: 1px solid var(--wecoop-border);
-    background: #e8efe6;
+    background: #ffffff;
 }
 
 .wecoop-footer__inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 32px 20px;
+    padding: 34px 20px;
     display: grid;
     grid-template-columns: 1.2fr 1fr 1fr;
     gap: 24px;
+}
+
+.wecoop-footer__inner h3,
+.wecoop-footer__inner h4 {
+    margin: 0 0 10px;
+}
+
+.wecoop-footer__brand-logos {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.wecoop-footer__brand-logos img {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
 }
 
 .wecoop-footer__menu {
@@ -284,10 +302,15 @@ a {
 
 .wecoop-footer__menu li {
     margin-bottom: 8px;
+    color: var(--wecoop-muted);
 }
 
 .wecoop-footer__menu a {
     text-decoration: none;
+}
+
+.wecoop-footer__menu a:hover {
+    color: var(--wecoop-accent);
 }
 
 .wecoop-newsletter-form,
@@ -398,5 +421,536 @@ a {
 
     .wecoop-header__actions .wecoop-contact-btn {
         display: none;
+    }
+}
+
+.wecoop-figma-home {
+    --wf-brand: #1282a8;
+    --wf-brand-2: #379ac4;
+    --wf-accent: #59b575;
+    --wf-pink: #e6266b;
+    --wf-text: #2f3d46;
+    --wf-soft: #f5f8fb;
+}
+
+.wecoop-figma-home .wf-section,
+.wecoop-figma-home .wf-hero {
+    border: 1px solid var(--wecoop-border);
+    background: #fff;
+    border-radius: 22px;
+    box-shadow: var(--wecoop-shadow);
+    padding: 34px;
+    margin-bottom: 20px;
+    scroll-margin-top: 96px;
+}
+
+.wecoop-figma-home .wf-eyebrow {
+    margin: 0 0 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7c8788;
+}
+
+.wecoop-figma-home h1,
+.wecoop-figma-home h2,
+.wecoop-figma-home h3 {
+    font-family: "Lora", serif;
+    color: var(--wf-text);
+}
+
+.wecoop-figma-home h1 {
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+    margin-bottom: 10px;
+}
+
+.wecoop-figma-home h2 {
+    font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+    margin-bottom: 8px;
+}
+
+.wecoop-figma-home .wf-lead {
+    margin: 0 0 18px;
+    font-size: 1.03rem;
+    color: #4d4c4c;
+    max-width: 76ch;
+}
+
+.wecoop-figma-home .wf-hero {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: 1.08fr 0.92fr;
+    background: linear-gradient(120deg, #eef7fb 0%, #ffffff 48%, #eef8f2 100%);
+}
+
+.wecoop-figma-home .wf-hero__content p {
+    margin-top: 0;
+}
+
+.wecoop-figma-home .wf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.wecoop-figma-home .wf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.wecoop-figma-home .wf-btn--primary {
+    background: var(--wf-brand);
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(18, 130, 168, 0.28);
+}
+
+.wecoop-figma-home .wf-btn--ghost {
+    background: #fff;
+    border-color: var(--wf-brand);
+    color: var(--wf-brand);
+}
+
+.wecoop-figma-home .wf-btn:hover {
+    transform: translateY(-1px);
+}
+
+.wecoop-figma-home .wf-kpi {
+    display: inline-block;
+    border-radius: 999px;
+    background: #eaf5fb;
+    color: var(--wf-brand);
+    font-weight: 700;
+    padding: 7px 14px;
+}
+
+.wecoop-figma-home .wf-hero__media img,
+.wecoop-figma-home .wf-wide-image img,
+.wecoop-figma-home .wf-media-card img,
+.wecoop-figma-home .wf-cta-row img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 16px;
+}
+
+.wecoop-figma-home .wf-hero__media {
+    margin: 0;
+    min-height: 380px;
+}
+
+.wecoop-figma-home .wf-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.wecoop-figma-home .wf-grid--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wecoop-figma-home .wf-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wecoop-figma-home .wf-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wecoop-figma-home .wf-grid--6 {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.wecoop-figma-home .wf-card,
+.wecoop-figma-home .wf-stat,
+.wecoop-figma-home .wf-pill {
+    border: 1px solid var(--wecoop-border);
+    border-radius: 16px;
+    background: var(--wf-soft);
+    padding: 14px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wecoop-figma-home .wf-card:hover,
+.wecoop-figma-home .wf-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(17, 34, 53, 0.1);
+}
+
+.wecoop-figma-home .wf-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.08rem;
+}
+
+.wecoop-figma-home .wf-card p {
+    margin: 0;
+    color: #4d4c4c;
+}
+
+.wecoop-figma-home .wf-pill {
+    text-align: center;
+    font-weight: 700;
+    background: #f2f8fc;
+    color: var(--wf-brand);
+}
+
+.wecoop-figma-home .wf-inline-logo {
+    margin: 16px 0 0;
+}
+
+.wecoop-figma-home .wf-inline-logo img {
+    width: 160px;
+    height: auto;
+}
+
+.wecoop-figma-home .wf-wide-image {
+    margin: 0 0 14px;
+    height: 280px;
+}
+
+.wecoop-figma-home .wf-media-card {
+    margin: 0;
+    height: 280px;
+}
+
+.wecoop-figma-home .wf-subtitle {
+    margin: 18px 0 10px;
+    font-size: 1.2rem;
+}
+
+.wecoop-figma-home .wf-steps {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: wf-steps;
+}
+
+.wecoop-figma-home .wf-steps li {
+    counter-increment: wf-steps;
+    border: 1px solid var(--wecoop-border);
+    border-radius: 14px;
+    background: #fff;
+    padding: 10px;
+    text-align: center;
+    font-weight: 600;
+    color: #4d4c4c;
+}
+
+.wecoop-figma-home .wf-steps li::before {
+    content: counter(wf-steps);
+    display: block;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    background: var(--wf-brand-2);
+    color: #fff;
+    font-size: 0.8rem;
+}
+
+.wecoop-figma-home .wf-stat {
+    text-align: center;
+    background: linear-gradient(180deg, #ffffff, #f5fbff);
+}
+
+.wecoop-figma-home .wf-stat strong {
+    display: block;
+    font-size: 2rem;
+    color: var(--wf-brand);
+}
+
+.wecoop-figma-home .wf-partners {
+    margin-top: 18px;
+}
+
+.wecoop-figma-home .wf-partners h3 {
+    margin: 0 0 12px;
+}
+
+.wecoop-figma-home .wf-partners__logos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    align-items: center;
+}
+
+.wecoop-figma-home .wf-partners__logos img {
+    width: 100%;
+    max-height: 58px;
+    object-fit: contain;
+    border: 1px solid var(--wecoop-border);
+    background: #fff;
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.wecoop-figma-home .wf-cta-row {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+}
+
+.wecoop-figma-home .wf-cta-row img {
+    height: 170px;
+}
+
+.wecoop-figma-home .wf-contact__grid {
+    align-items: start;
+}
+
+.wecoop-figma-home .wf-contact__info img {
+    margin-top: 10px;
+    width: 180px;
+    height: auto;
+}
+
+.wecoop-figma-home .wf-contact .wecoop-contact-form {
+    background: #fff;
+    border: 1px solid var(--wecoop-border);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.wecoop-figma-home .wf-contact .wecoop-contact-form button {
+    background: var(--wf-brand);
+}
+
+.wecoop-figma-home .wf-links__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.wecoop-figma-home .wf-links__list a {
+    text-decoration: none;
+    border: 1px solid var(--wecoop-border);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 600;
+    color: #4d4c4c;
+    background: #fff;
+}
+
+.wecoop-figma-home .wf-links__list a:hover {
+    color: var(--wf-brand);
+    border-color: var(--wf-brand);
+}
+
+@media (max-width: 980px) {
+    .wecoop-figma-home .wf-hero,
+    .wecoop-figma-home .wf-grid--4,
+    .wecoop-figma-home .wf-grid--3,
+    .wecoop-figma-home .wf-grid--6,
+    .wecoop-figma-home .wf-steps,
+    .wecoop-figma-home .wf-partners__logos {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .wecoop-figma-home .wf-grid--2,
+    .wecoop-figma-home .wf-contact__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wecoop-figma-home .wf-hero__media {
+        min-height: 300px;
+    }
+
+    .wecoop-figma-home .wf-cta-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1024px) {
+    .wecoop-main {
+        max-width: 980px;
+        padding-top: 28px;
+    }
+
+    .wecoop-figma-home .wf-section,
+    .wecoop-figma-home .wf-hero {
+        padding: 28px;
+        border-radius: 20px;
+    }
+
+    .wecoop-figma-home h1 {
+        font-size: clamp(1.8rem, 4vw, 2.55rem);
+    }
+
+    .wecoop-figma-home h2 {
+        font-size: clamp(1.4rem, 3vw, 2rem);
+    }
+}
+
+@media (max-width: 768px) {
+    .wecoop-header {
+        background: rgba(255, 255, 255, 0.97);
+    }
+
+    .wecoop-header__inner {
+        padding: 10px 16px;
+        gap: 12px;
+    }
+
+    .wecoop-brand__name {
+        font-size: 1.2rem;
+    }
+
+    .wecoop-main {
+        padding: 20px 14px 52px;
+    }
+
+    .wecoop-figma-home .wf-section,
+    .wecoop-figma-home .wf-hero {
+        padding: 20px;
+        border-radius: 16px;
+        margin-bottom: 14px;
+        scroll-margin-top: 76px;
+    }
+
+    .wecoop-figma-home .wf-hero {
+        gap: 16px;
+    }
+
+    .wecoop-figma-home .wf-hero__media {
+        min-height: 240px;
+    }
+
+    .wecoop-figma-home .wf-wide-image,
+    .wecoop-figma-home .wf-media-card {
+        height: 220px;
+    }
+
+    .wecoop-figma-home .wf-kpi {
+        font-size: 0.88rem;
+        padding: 6px 11px;
+    }
+
+    .wecoop-figma-home .wf-btn {
+        padding: 9px 13px;
+        font-size: 0.92rem;
+    }
+
+    .wecoop-figma-home .wf-card,
+    .wecoop-figma-home .wf-stat,
+    .wecoop-figma-home .wf-pill {
+        padding: 12px;
+    }
+
+    .wecoop-figma-home .wf-stat strong {
+        font-size: 1.75rem;
+    }
+
+    .wecoop-footer__inner {
+        padding: 26px 16px;
+        gap: 18px;
+    }
+}
+
+@media (max-width: 640px) {
+    .wecoop-figma-home .wf-section,
+    .wecoop-figma-home .wf-hero {
+        padding: 18px;
+        border-radius: 16px;
+        scroll-margin-top: 84px;
+    }
+
+    .wecoop-figma-home .wf-grid--4,
+    .wecoop-figma-home .wf-grid--3,
+    .wecoop-figma-home .wf-grid--6,
+    .wecoop-figma-home .wf-steps,
+    .wecoop-figma-home .wf-partners__logos {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 390px) {
+    .wecoop-header__inner {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .wecoop-main {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: 46px;
+    }
+
+    .wecoop-figma-home .wf-section,
+    .wecoop-figma-home .wf-hero {
+        padding: 14px;
+        border-radius: 14px;
+        scroll-margin-top: 74px;
+    }
+
+    .wecoop-figma-home h1 {
+        font-size: 1.62rem;
+        line-height: 1.16;
+    }
+
+    .wecoop-figma-home h2 {
+        font-size: 1.34rem;
+        line-height: 1.2;
+    }
+
+    .wecoop-figma-home .wf-lead {
+        font-size: 0.95rem;
+        margin-bottom: 14px;
+    }
+
+    .wecoop-figma-home .wf-hero__media,
+    .wecoop-figma-home .wf-wide-image,
+    .wecoop-figma-home .wf-media-card {
+        min-height: 190px;
+        height: 190px;
+    }
+
+    .wecoop-figma-home .wf-steps li {
+        font-size: 0.86rem;
+        padding: 8px;
+    }
+
+    .wecoop-footer__inner {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .wecoop-whatsapp-button {
+        right: 10px;
+        bottom: 10px;
+        padding: 10px 12px;
+        font-size: 0.88rem;
+    }
+}
+
+@media (min-width: 1440px) {
+    .wecoop-main {
+        max-width: 1280px;
+    }
+
+    .wecoop-figma-home .wf-section,
+    .wecoop-figma-home .wf-hero {
+        padding: 38px;
+    }
+
+    .wecoop-figma-home .wf-hero {
+        grid-template-columns: 1.06fr 0.94fr;
+    }
+
+    .wecoop-figma-home .wf-hero__media {
+        min-height: 430px;
     }
 }

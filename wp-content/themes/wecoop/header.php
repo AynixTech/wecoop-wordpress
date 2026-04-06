@@ -25,19 +25,32 @@ $current_url_no_lang = remove_query_arg('lang', home_url($current_request_uri));
 
         <nav id="wecoop-main-nav" class="wecoop-nav" aria-label="Main Navigation">
             <?php
-            wp_nav_menu([
-                'theme_location' => 'main-menu',
-                'container' => false,
-                'menu_class' => 'wecoop-nav__list',
-                'fallback_cb' => false,
-            ]);
+            if (is_front_page()) {
+                ?>
+                <ul class="wecoop-nav__list">
+                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="#que-es">Que es WECOOP</a></li>
+                    <li><a href="#passaparola">Passaparola</a></li>
+                    <li><a href="#plataforma">Plataforma Digital</a></li>
+                    <li><a href="#impacto">Impacto</a></li>
+                    <li><a href="#contacto">Contacto</a></li>
+                </ul>
+                <?php
+            } else {
+                wp_nav_menu([
+                    'theme_location' => 'main-menu',
+                    'container' => false,
+                    'menu_class' => 'wecoop-nav__list',
+                    'fallback_cb' => false,
+                ]);
+            }
             ?>
         </nav>
 
         <div class="wecoop-header__actions">
             <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'es', $current_url_no_lang)); ?>">ES</a>
             <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'it', $current_url_no_lang)); ?>">IT</a>
-            <a class="wecoop-contact-btn" href="<?php echo esc_url(home_url('/contact')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
+            <a class="wecoop-contact-btn" href="<?php echo esc_url(is_front_page() ? '#contacto' : home_url('/contact')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
         </div>
     </div>
 </header>
