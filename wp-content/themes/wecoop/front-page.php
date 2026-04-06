@@ -3,6 +3,8 @@ get_header();
 $tr = static function($key, $default = '') {
     return translate_string($key, $default);
 };
+$current_lang = wecoop_language();
+$lang_base_url = remove_query_arg('lang');
 ?>
 
 <main class="ws-site" aria-label="<?php echo esc_attr($tr('frontpage.aria.homepage', 'WECOOP homepage')); ?>">
@@ -17,6 +19,11 @@ $tr = static function($key, $default = '') {
                 <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Plataforma Digital')); ?></a>
                 <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impacto')); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contacto')); ?></a>
+            </div>
+            <div class="ws-lang-switcher" aria-label="Language switcher">
+                <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
+                <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
+                <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
             </div>
             <a class="ws-btn ws-btn--primary" href="#contacto"><?php echo esc_html($tr('frontpage.nav.cta', 'Colabora')); ?></a>
         </div>

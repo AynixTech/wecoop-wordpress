@@ -106,6 +106,12 @@ a {
     padding: 6px 10px;
 }
 
+.wecoop-lang.is-active {
+    background: var(--wecoop-accent);
+    border-color: var(--wecoop-accent);
+    color: #fff;
+}
+
 .wecoop-contact-btn,
 .wecoop-btn,
 .wecoop-newsletter-form button,
@@ -1197,6 +1203,40 @@ body.home {
     color: var(--ws-blue);
 }
 
+.ws-lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 4px;
+}
+
+.ws-lang-switcher a {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.16);
+    color: var(--ws-text);
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: #fff;
+}
+
+.ws-lang-switcher a:hover {
+    border-color: var(--ws-blue);
+    color: var(--ws-blue);
+}
+
+.ws-lang-switcher a.is-active {
+    background: var(--ws-blue);
+    border-color: var(--ws-blue);
+    color: #fff;
+}
+
 .ws-btn {
     display: inline-flex;
     align-items: center;
@@ -1809,6 +1849,10 @@ body.home {
 @media (max-width: 768px) {
     .ws-links {
         display: none;
+    }
+
+    .ws-lang-switcher {
+        margin-left: auto;
     }
 
     .ws-nav__inner {

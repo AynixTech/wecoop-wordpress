@@ -10,6 +10,7 @@
 <?php
 $current_request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
 $current_url_no_lang = remove_query_arg('lang', home_url($current_request_uri));
+$current_lang = wecoop_language();
 ?>
 
 <header class="wecoop-header">
@@ -48,8 +49,9 @@ $current_url_no_lang = remove_query_arg('lang', home_url($current_request_uri));
         </nav>
 
         <div class="wecoop-header__actions">
-            <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'es', $current_url_no_lang)); ?>">ES</a>
-            <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'it', $current_url_no_lang)); ?>">IT</a>
+            <a class="wecoop-lang <?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $current_url_no_lang)); ?>" aria-label="Switch to English">EN</a>
+            <a class="wecoop-lang <?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $current_url_no_lang)); ?>" aria-label="Passa a Italiano">IT</a>
+            <a class="wecoop-lang <?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $current_url_no_lang)); ?>" aria-label="Cambiar a Español">ES</a>
             <a class="wecoop-contact-btn" href="<?php echo esc_url(is_front_page() ? '#contacto' : home_url('/contact')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
         </div>
     </div>

@@ -79,9 +79,9 @@ function wecoop_register_block_patterns() {
 add_action('init', 'wecoop_register_block_patterns');
 
 function wecoop_language() {
-    $lang = isset($_GET['lang']) ? sanitize_key($_GET['lang']) : (isset($_COOKIE['site_lang']) ? sanitize_key($_COOKIE['site_lang']) : 'es');
+    $lang = isset($_GET['lang']) ? sanitize_key($_GET['lang']) : (isset($_COOKIE['site_lang']) ? sanitize_key($_COOKIE['site_lang']) : 'it');
     if (!in_array($lang, ['it', 'es', 'en'], true)) {
-        $lang = 'es';
+        $lang = 'it';
     }
     return $lang;
 }
@@ -91,7 +91,7 @@ function translate_string($key, $default = '') {
 
     $lang = wecoop_language();
     $lang_file = get_template_directory() . '/languages/' . $lang . '.json';
-    $fallback_file = get_template_directory() . '/languages/es.json';
+    $fallback_file = get_template_directory() . '/languages/it.json';
 
     if (!isset($cache[$lang])) {
         $cache[$lang] = [];
@@ -104,13 +104,13 @@ function translate_string($key, $default = '') {
         }
     }
 
-    if (!isset($cache['es'])) {
-        $cache['es'] = [];
+    if (!isset($cache['it'])) {
+        $cache['it'] = [];
         if (file_exists($fallback_file)) {
             $json = file_get_contents($fallback_file);
             $decoded = json_decode((string) $json, true);
             if (is_array($decoded)) {
-                $cache['es'] = $decoded;
+                $cache['it'] = $decoded;
             }
         }
     }
@@ -119,15 +119,25 @@ function translate_string($key, $default = '') {
         return $cache[$lang][$key];
     }
 
-    if (isset($cache['es'][$key]) && is_string($cache['es'][$key])) {
-        return $cache['es'][$key];
+    if (isset($cache['it'][$key]) && is_string($cache['it'][$key])) {
+        return $cache['it'][$key];
     }
 
     return $default !== '' ? $default : $key;
 }
 
-function wecoop_t($es, $it = '') {
-    return wecoop_language() === 'it' && $it !== '' ? $it : $es;
+function wecoop_t($es, $it = '', $en = '') {
+    $lang = wecoop_language();
+
+    if ($lang === 'it' && $it !== '') {
+        return $it;
+    }
+
+    if ($lang === 'en' && $en !== '') {
+        return $en;
+    }
+
+    return $es;
 }
 
 function wecoop_save_language_cookie() {
