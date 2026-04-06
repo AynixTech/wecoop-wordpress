@@ -16,6 +16,24 @@ get_header();
     endif;
     ?>
 
+    <section class="wecoop-refactor-visuals">
+        <div class="wecoop-section-head">
+            <h2>WECOOP in Action</h2>
+            <p>Images imported from the new refactor package.</p>
+        </div>
+        <div class="wecoop-refactor-visuals__grid">
+            <figure>
+                <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_diverse_people_connecting_through_technology_in_a_modern_community_hub,_smartphones_a_903873.png'); ?>" alt="Community and digital connection">
+            </figure>
+            <figure>
+                <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_social_worker_managing_appointments_and_digital_services_on_a_laptop_while_talking_wi_122886.png'); ?>" alt="Social worker supporting service users">
+            </figure>
+            <figure>
+                <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_person_navigating_a_mobile_app_for_booking_appointments_and_accessing_services,_finge_122886.png'); ?>" alt="User using mobile app for services">
+            </figure>
+        </div>
+    </section>
+
     <section class="wecoop-news-preview">
         <div class="wecoop-section-head">
             <h2>Blog & News</h2>
