@@ -1126,12 +1126,13 @@ body.home .wecoop-whatsapp-button {
     --ws-text: #4d4c4c;
     --ws-muted: #7c8788;
     font-family: "Poppins", sans-serif;
+    font-size: 17px;
     color: var(--ws-text);
     background: #fff;
 }
 
 .ws-container {
-    width: min(1200px, calc(100% - 32px));
+    width: min(1240px, calc(100% - 44px));
     margin: 0 auto;
 }
 
@@ -1145,15 +1146,15 @@ body.home .wecoop-whatsapp-button {
 }
 
 .ws-nav__inner {
-    min-height: 86px;
+    min-height: 92px;
     display: flex;
     align-items: center;
     gap: 14px;
 }
 
 .ws-brand img {
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
     display: block;
     object-fit: contain;
 }
@@ -1167,7 +1168,7 @@ body.home .wecoop-whatsapp-button {
 
 .ws-brand span {
     color: var(--ws-text);
-    font-size: 1.45rem;
+    font-size: 1.62rem;
     font-weight: 800;
     letter-spacing: 0.03em;
 }
@@ -1177,14 +1178,14 @@ body.home .wecoop-whatsapp-button {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 24px;
 }
 
 .ws-links a {
     text-decoration: none;
     color: var(--ws-text);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
 }
 
 .ws-links a:hover {
@@ -1199,7 +1200,7 @@ body.home .wecoop-whatsapp-button {
     border-radius: 10px;
     border: 1px solid transparent;
     font-weight: 700;
-    padding: 12px 20px;
+    padding: 12px 22px;
 }
 
 .ws-btn--primary {
@@ -1239,7 +1240,7 @@ body.home .wecoop-whatsapp-button {
 }
 
 .ws-section {
-    padding: 84px 0;
+    padding: 96px 0;
 }
 
 .ws-section h2,
@@ -1249,14 +1250,28 @@ body.home .wecoop-whatsapp-button {
     color: var(--ws-text);
 }
 
+.ws-section h2 {
+    font-size: clamp(2.05rem, 3.8vw, 3rem);
+    line-height: 1.12;
+}
+
+.ws-site h3 {
+    font-size: 1.23rem;
+    line-height: 1.25;
+}
+
+.ws-site p {
+    font-size: 1rem;
+}
+
 .ws-hero {
-    padding: 72px 0;
+    padding: 84px 0;
     background: linear-gradient(130deg, rgba(18, 130, 168, 0.07), #fff 48%, rgba(89, 181, 117, 0.08));
 }
 
 .ws-hero h1 {
-    font-size: clamp(2rem, 5vw, 3.8rem);
-    line-height: 1.08;
+    font-size: clamp(2.7rem, 5.4vw, 4.2rem);
+    line-height: 1.05;
 }
 
 .ws-hero h1 span:first-of-type {
@@ -1270,8 +1285,8 @@ body.home .wecoop-whatsapp-button {
 .ws-hero p,
 .ws-lead {
     color: var(--ws-muted);
-    font-size: 1.15rem;
-    line-height: 1.65;
+    font-size: 1.1rem;
+    line-height: 1.6;
     max-width: 72ch;
 }
 
@@ -1290,12 +1305,12 @@ body.home .wecoop-whatsapp-button {
     background: #fff;
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 14px;
-    padding: 10px 14px;
+    padding: 11px 16px;
 }
 
 .ws-kpi strong {
     color: var(--ws-green);
-    font-size: 1.2rem;
+    font-size: 1.32rem;
 }
 
 .ws-img {
@@ -1306,7 +1321,7 @@ body.home .wecoop-whatsapp-button {
 }
 
 .ws-hero__media img {
-    min-height: 380px;
+    min-height: 420px;
 }
 
 .ws-card,
@@ -1395,16 +1410,22 @@ body.home .wecoop-whatsapp-button {
     background: linear-gradient(180deg, #fff, #f7fbfd);
     border: 1px solid rgba(0, 0, 0, 0.08);
     text-align: center;
+    padding: 30px 24px;
 }
 
 .ws-stat strong {
     display: block;
-    font-size: 2rem;
+    font-size: 2.3rem;
     color: var(--ws-blue);
 }
 
 .ws-stat span {
     color: var(--ws-muted);
+    font-size: 0.95rem;
+}
+
+.ws-pass {
+    align-items: center;
 }
 
 .ws-section--gray {
@@ -1524,6 +1545,7 @@ body.home .wecoop-whatsapp-button {
     color: rgba(255, 255, 255, 0.78);
     text-decoration: none;
     margin: 6px 0;
+    font-size: 0.95rem;
 }
 
 .ws-footer a:hover {
@@ -1574,7 +1596,7 @@ body.home .wecoop-whatsapp-button {
     }
 
     .ws-nav__inner {
-        min-height: 78px;
+        min-height: 80px;
     }
 
     .ws-brand img {
@@ -1594,11 +1616,11 @@ body.home .wecoop-whatsapp-button {
     }
 
     .ws-hero {
-        padding: 40px 0;
+        padding: 46px 0;
     }
 
     .ws-section {
-        padding: 60px 0;
+        padding: 68px 0;
     }
 
     .ws-btn {
