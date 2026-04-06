@@ -1575,6 +1575,10 @@ body.home {
     background: linear-gradient(180deg, #fff, #f7fbfd);
     border: 1px solid rgba(0, 0, 0, 0.08);
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     padding: 30px 24px;
 }
 
@@ -1583,10 +1587,12 @@ body.home {
     height: 42px;
     border-radius: 999px;
     margin: 0 auto 10px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.05rem;
+    line-height: 1;
+    text-align: center;
 }
 
 .ws-stat--users .ws-stat__icon {
