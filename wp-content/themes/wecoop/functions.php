@@ -80,10 +80,50 @@ add_action('init', 'wecoop_register_block_patterns');
 
 function wecoop_language() {
     $lang = isset($_GET['lang']) ? sanitize_key($_GET['lang']) : (isset($_COOKIE['site_lang']) ? sanitize_key($_COOKIE['site_lang']) : 'es');
-    if (!in_array($lang, ['it', 'es'], true)) {
+    if (!in_array($lang, ['it', 'es', 'en'], true)) {
         $lang = 'es';
     }
     return $lang;
+}
+
+function translate_string($key, $default = '') {
+    static $cache = [];
+
+    $lang = wecoop_language();
+    $lang_file = get_template_directory() . '/languages/' . $lang . '.json';
+    $fallback_file = get_template_directory() . '/languages/es.json';
+
+    if (!isset($cache[$lang])) {
+        $cache[$lang] = [];
+        if (file_exists($lang_file)) {
+            $json = file_get_contents($lang_file);
+            $decoded = json_decode((string) $json, true);
+            if (is_array($decoded)) {
+                $cache[$lang] = $decoded;
+            }
+        }
+    }
+
+    if (!isset($cache['es'])) {
+        $cache['es'] = [];
+        if (file_exists($fallback_file)) {
+            $json = file_get_contents($fallback_file);
+            $decoded = json_decode((string) $json, true);
+            if (is_array($decoded)) {
+                $cache['es'] = $decoded;
+            }
+        }
+    }
+
+    if (isset($cache[$lang][$key]) && is_string($cache[$lang][$key])) {
+        return $cache[$lang][$key];
+    }
+
+    if (isset($cache['es'][$key]) && is_string($cache['es'][$key])) {
+        return $cache['es'][$key];
+    }
+
+    return $default !== '' ? $default : $key;
 }
 
 function wecoop_t($es, $it = '') {
@@ -91,7 +131,7 @@ function wecoop_t($es, $it = '') {
 }
 
 function wecoop_save_language_cookie() {
-    if (isset($_GET['lang']) && in_array($_GET['lang'], ['it', 'es'], true)) {
+    if (isset($_GET['lang']) && in_array($_GET['lang'], ['it', 'es', 'en'], true)) {
         setcookie('site_lang', sanitize_key($_GET['lang']), time() + YEAR_IN_SECONDS, COOKIEPATH ?: '/', COOKIE_DOMAIN, is_ssl(), true);
     }
 }
