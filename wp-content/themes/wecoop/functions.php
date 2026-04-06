@@ -25,15 +25,15 @@ add_action('after_setup_theme', 'wecoop_setup');
 
 function wecoop_enqueue_assets() {
     wp_enqueue_style('wecoop-style', get_stylesheet_uri(), [], filemtime(get_stylesheet_directory() . '/style.css'));
+    wp_enqueue_style('wecoop-fonts', 'https://fonts.googleapis.com/css2?family=Lora:wght@500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap', [], null);
+    wp_enqueue_style('wecoop-fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', [], '6.5.2');
+
     wp_enqueue_style(
         'wecoop-site-refactor',
         get_template_directory_uri() . '/assets/css/site-refactor.css',
-        ['wecoop-style'],
+        ['wecoop-style', 'wecoop-fontawesome'],
         file_exists(get_template_directory() . '/assets/css/site-refactor.css') ? filemtime(get_template_directory() . '/assets/css/site-refactor.css') : null
     );
-
-    wp_enqueue_style('wecoop-fonts', 'https://fonts.googleapis.com/css2?family=Lora:wght@500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap', [], null);
-    wp_enqueue_style('wecoop-fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', [], '6.5.2');
 
     wp_enqueue_script(
         'wecoop-theme-js',

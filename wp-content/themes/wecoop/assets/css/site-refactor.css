@@ -1582,7 +1582,7 @@ body.home {
     padding: 30px 24px;
 }
 
-.ws-stat__icon {
+.ws-stat .ws-stat__icon {
     width: 42px;
     height: 42px;
     border-radius: 999px;
@@ -1593,6 +1593,11 @@ body.home {
     font-size: 1.05rem;
     line-height: 1;
     text-align: center;
+}
+
+.ws-stat .ws-stat__icon::before {
+    margin: 0;
+    line-height: 1;
 }
 
 .ws-stat--users .ws-stat__icon {

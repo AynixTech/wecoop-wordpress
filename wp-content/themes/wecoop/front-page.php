@@ -7,7 +7,6 @@ get_header();
         <div class="ws-container ws-nav__inner">
             <a class="ws-brand" href="#inicio">
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
-                <span>WECOOP</span>
             </a>
             <div class="ws-links" aria-label="Main navigation">
                 <a href="#que-es">Que es WECOOP</a>
