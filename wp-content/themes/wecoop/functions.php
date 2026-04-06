@@ -23,6 +23,15 @@ function wecoop_setup() {
 }
 add_action('after_setup_theme', 'wecoop_setup');
 
+function wecoop_add_body_classes($classes) {
+    if (is_front_page()) {
+        $classes[] = 'wecoop-figma-mode';
+    }
+
+    return $classes;
+}
+add_filter('body_class', 'wecoop_add_body_classes');
+
 function wecoop_enqueue_assets() {
     wp_enqueue_style('wecoop-style', get_stylesheet_uri(), [], filemtime(get_stylesheet_directory() . '/style.css'));
     wp_enqueue_style(
