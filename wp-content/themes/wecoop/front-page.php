@@ -32,7 +32,7 @@ get_header();
                 <div class="ws-kpi"><strong>400+</strong> Beneficiarios</div>
             </div>
             <div class="ws-hero__media">
-                <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_diverse_people_connecting_through_technology_in_a_modern_community_hub,_smartphones_a_903873.png'); ?>" alt="Comunidad WECOOP">
+                <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecoop-hero-community.png'); ?>" alt="Comunidad WECOOP">
             </div>
         </div>
     </section>
