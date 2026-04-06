@@ -3,74 +3,43 @@
 <head>
     <meta charset="<?php bloginfo('charset'); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo theme_translate('meta.title'); ?></title>
-
-    <meta name="description" content="<?php echo theme_translate('meta.description'); ?>">
-    
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
+<?php
+$current_request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
+$current_url_no_lang = remove_query_arg('lang', home_url($current_request_uri));
+?>
 
-<div class="top-menu">
-    <ul class="top-menu__list">
-        <li><a href="<?php echo esc_url(home_url('/chi-siamo')); ?>"><?php echo theme_translate('nav.about'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/diventa-volontario')); ?>"><?php echo theme_translate('nav.volunteer'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/hai-un-idea')); ?>"><?php echo theme_translate('nav.idea'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/sostienici')); ?>"><?php echo theme_translate('nav.support'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="top-menu__5x1000"><?php echo theme_translate('nav.5x1000'); ?></a></li>
-    </ul>
-</div>
+<header class="wecoop-header">
+    <div class="wecoop-header__inner">
+        <a class="wecoop-brand" href="<?php echo esc_url(home_url('/')); ?>" aria-label="WECOOP Home">
+            <span class="wecoop-brand__name">WECOOP</span>
+            <span class="wecoop-brand__tagline"><?php echo esc_html(wecoop_t('Fisico + Digital', 'Fisico + Digitale')); ?></span>
+        </a>
 
-<header class="header">
-   <nav class="header__nav">
-    <ul class="nav-menu">
-        <li><a href="<?php echo home_url(); ?>"><?php echo theme_translate('nav.home'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/servizi')); ?>"><?php echo theme_translate('nav.services'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/progetti')); ?>"><?php echo theme_translate('nav.projects'); ?></a></li>
-        <li><a href="<?php echo esc_url(home_url('/iniziative')); ?>"><?php echo theme_translate('nav.initiatives'); ?></a></li>
-    </ul>
-</nav>
-<div class="header__logo">
-    <a href="<?php echo esc_url(home_url()); ?>">
-        <img src="<?php echo esc_url(home_url('/wp-content/uploads/2025/05/wecooplogo2.png')); ?>" alt="WeCoop logo" />
-    </a>
-</div>
+        <button class="wecoop-menu-toggle" type="button" aria-expanded="false" aria-controls="wecoop-main-nav">
+            <span></span><span></span><span></span>
+        </button>
 
-<div class="header__contact">
-    <a href="<?php echo esc_url(home_url('/contatti')); ?>" class="contact-button">
-         <button class="btn-primary"><?php echo theme_translate('nav.contact'); ?></button>
-    </a>
-</div>
-<div class="hamburger" onclick="toggleMenu()">
-    <div class="line"></div>
-    <div class="line"></div>
-    <div class="line"></div>
-</div>
+        <nav id="wecoop-main-nav" class="wecoop-nav" aria-label="Main Navigation">
+            <?php
+            wp_nav_menu([
+                'theme_location' => 'main-menu',
+                'container' => false,
+                'menu_class' => 'wecoop-nav__list',
+                'fallback_cb' => false,
+            ]);
+            ?>
+        </nav>
+
+        <div class="wecoop-header__actions">
+            <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'es', $current_url_no_lang)); ?>">ES</a>
+            <a class="wecoop-lang" href="<?php echo esc_url(add_query_arg('lang', 'it', $current_url_no_lang)); ?>">IT</a>
+            <a class="wecoop-contact-btn" href="<?php echo esc_url(home_url('/contact')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
+        </div>
+    </div>
 </header>
 
-<div id="modal-menu" class="modal-menu">
-    <div class="menu-content">
-        <div class="menu-close-wrapper">
-            <button class="menu-close" onclick="toggleMenu()">✖</button>
-        </div>
-        <nav>
-            <ul class="mobile-nav-menu">
-                <li><a href="<?php echo home_url(); ?>"><?php echo theme_translate('nav.home'); ?></a></li>
-                <li><a href="<?php echo esc_url(home_url('/servizi')); ?>"><?php echo theme_translate('nav.services'); ?></a></li>
-                <li><a href="<?php echo esc_url(home_url('/progetti')); ?>"><?php echo theme_translate('nav.projects'); ?></a></li>
-                <li><a href="<?php echo esc_url(home_url('/iniziative')); ?>"><?php echo theme_translate('nav.initiatives'); ?></a></li>
-                <li><a href="<?php echo esc_url(home_url('/sostienici#5x1000')); ?>" class="menu-5x1000"><?php echo theme_translate('nav.5x1000'); ?></a></li>
-                <li><a href="<?php echo esc_url(home_url('/contatti')); ?>"><?php echo theme_translate('nav.contact'); ?></a></li>
-            </ul>
-        </nav>
-    </div>
-</div>
-
-<script>
-    function toggleMenu() {
-        const modal = document.getElementById('modal-menu');
-        modal.classList.toggle('active');
-    }
-</script>
-</body>
-</html>
+<div id="content" class="wecoop-site-content">
