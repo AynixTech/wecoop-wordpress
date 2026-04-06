@@ -1,0 +1,19 @@
+{
+  "name": "@figma/my-make-file",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "vite": "6.3.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.3.5"
+    }
+  }
+}
