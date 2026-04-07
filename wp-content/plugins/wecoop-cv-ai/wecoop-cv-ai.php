@@ -76,6 +76,99 @@ function wecoop_cv_bffe_token() {
     return (string) get_option('wecoop_cv_bffe_token', '');
 }
 
+function wecoop_cv_openai_api_key() {
+    if (defined('OPENAI_API_KEY')) {
+        $key = (string) constant('OPENAI_API_KEY');
+        if ($key !== '') {
+            return $key;
+        }
+    }
+
+    return '';
+}
+
+function wecoop_cv_enhance_content_with_ai(array $payload) {
+    $api_key = wecoop_cv_openai_api_key();
+    if ($api_key === '') {
+        return [];
+    }
+
+    $lang = (string) ($payload['config']['cvLanguage'] ?? 'it');
+    $lang_map = [
+        'it' => 'Italian',
+        'es' => 'Spanish',
+        'en' => 'English',
+        'fr' => 'French',
+        'de' => 'German',
+        'pt' => 'Portuguese',
+        'nl' => 'Dutch',
+        'pl' => 'Polish',
+        'ro' => 'Romanian',
+        'uk' => 'Ukrainian',
+        'ru' => 'Russian',
+        'el' => 'Greek',
+        'sv' => 'Swedish',
+        'cs' => 'Czech',
+        'hu' => 'Hungarian',
+        'tr' => 'Turkish',
+    ];
+    $target_language = isset($lang_map[$lang]) ? $lang_map[$lang] : 'Italian';
+
+    $source = [
+        'personalInfo' => $payload['personalInfo'] ?? [],
+        'education' => $payload['education'] ?? [],
+        'experience' => $payload['experience'] ?? [],
+        'languages' => $payload['languages'] ?? [],
+        'skills' => $payload['skills'] ?? [],
+        'jobGoal' => $payload['jobGoal'] ?? [],
+    ];
+
+    $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+        'timeout' => 20,
+        'headers' => [
+            'Authorization' => 'Bearer ' . $api_key,
+            'Content-Type' => 'application/json',
+        ],
+        'body' => wp_json_encode([
+            'model' => 'gpt-4o-mini',
+            'temperature' => 0.4,
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'You are a professional CV writer. Return ONLY valid JSON.',
+                ],
+                [
+                    'role' => 'user',
+                    'content' => 'Using the following CV data, produce polished content in ' . $target_language . '. Return JSON with keys: profileSummary (string, max 80 words), keySkillsSummary (string, max 35 words), experienceHighlights (array of max 5 concise bullet strings). Data: ' . wp_json_encode($source),
+                ],
+            ],
+        ]),
+    ]);
+
+    if (is_wp_error($response)) {
+        return [];
+    }
+
+    $raw = (string) wp_remote_retrieve_body($response);
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $content = $decoded['choices'][0]['message']['content'] ?? '';
+    if (!is_string($content) || $content === '') {
+        return [];
+    }
+
+    $enhanced = json_decode($content, true);
+    if (!is_array($enhanced)) {
+        return [];
+    }
+
+    return $enhanced;
+}
+
 function wecoop_cv_upstream_path($resource = '') {
     $base_url = wecoop_cv_bffe_base_url();
     $base_path = (string) parse_url($base_url, PHP_URL_PATH);
@@ -208,15 +301,37 @@ function wecoop_cv_build_local_html(array $payload) {
         $skills = esc_html(implode(', ', array_map('strval', $payload['skills'])));
     }
 
+    $enhanced = wecoop_cv_enhance_content_with_ai($payload);
+    $profile_summary = isset($enhanced['profileSummary']) && is_string($enhanced['profileSummary'])
+        ? trim($enhanced['profileSummary'])
+        : '';
+    $skills_summary = isset($enhanced['keySkillsSummary']) && is_string($enhanced['keySkillsSummary'])
+        ? trim($enhanced['keySkillsSummary'])
+        : '';
+
+    $highlight_html = '';
+    if (!empty($enhanced['experienceHighlights']) && is_array($enhanced['experienceHighlights'])) {
+        $top = array_slice($enhanced['experienceHighlights'], 0, 5);
+        foreach ($top as $item) {
+            if (!is_string($item) || trim($item) === '') {
+                continue;
+            }
+            $highlight_html .= '<li>' . esc_html(trim($item)) . '</li>';
+        }
+    }
+
     return '<!doctype html><html><head><meta charset="UTF-8"><style>'
         . 'body{font-family:Arial,sans-serif;font-size:12px;color:#111;}h1{font-size:24px;margin-bottom:6px;}h2{font-size:16px;margin:18px 0 8px;}ul{padding-left:18px;}li{margin-bottom:8px;} .meta{color:#444;}'
         . '</style></head><body>'
         . '<h1>' . esc_html($full_name) . '</h1>'
         . '<p class="meta">Email: ' . esc_html($email) . ' | Telefono: ' . esc_html($phone) . '</p>'
         . '<p class="meta">Obiettivo: ' . esc_html($target) . '</p>'
+        . ($profile_summary !== '' ? '<h2>Profilo professionale</h2><p>' . esc_html($profile_summary) . '</p>' : '')
+        . ($highlight_html !== '' ? '<h2>Punti di forza</h2><ul>' . $highlight_html . '</ul>' : '')
         . '<h2>Esperienza</h2><ul>' . ($experience_html !== '' ? $experience_html : '<li>N/A</li>') . '</ul>'
         . '<h2>Formazione</h2><ul>' . ($education_html !== '' ? $education_html : '<li>N/A</li>') . '</ul>'
         . '<h2>Competenze</h2><p>' . ($skills !== '' ? $skills : 'N/A') . '</p>'
+        . ($skills_summary !== '' ? '<p class="meta">' . esc_html($skills_summary) . '</p>' : '')
         . '</body></html>';
 }
 
