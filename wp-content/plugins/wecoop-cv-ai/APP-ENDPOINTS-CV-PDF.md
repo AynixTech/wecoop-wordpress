@@ -15,10 +15,11 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
 ## Flusso minimo per ottenere il PDF
 
 1. Chiamare `GET /cv/templates` per ottenere i template disponibili.
-2. Chiamare `POST /cv/generate` includendo `config.template` con uno dei template ricevuti.
-3. Se `status=generated` e `files.pdfUrl` presente, mostrare subito pulsante download PDF.
-4. Se `status=processing`, fare polling su `GET /cv/{cv_id}` ogni 2-3 secondi fino a `generated` (max 60-90s).
-5. In alternativa, mostrare storico da `GET /cv` e permettere apertura PDF dai risultati.
+2. Quando l'utente arriva all'ultimo step (scelta template), chiamare `POST /cv/preview` con i dati gia compilati per ottenere la preview valorizzata.
+3. Chiamare `POST /cv/generate` includendo `config.template` con uno dei template ricevuti.
+4. Se `status=generated` e `files.pdfUrl` presente, mostrare subito pulsante download PDF.
+5. Se `status=processing`, fare polling su `GET /cv/{cv_id}` ogni 2-3 secondi fino a `generated` (max 60-90s).
+6. In alternativa, mostrare storico da `GET /cv` e permettere apertura PDF dai risultati.
 
 ---
 
@@ -135,6 +136,7 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
       "id": "vibrant",
       "name": "Vibrant",
       "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/vibrant.html",
+      "previewEndpoint": "https://www.wecoop.org/wp-json/wecoop/v1/cv/preview?template=vibrant",
       "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/vibrant.css",
       "isDefault": false
     },
@@ -142,6 +144,7 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
       "id": "formal",
       "name": "Formal",
       "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/formal.html",
+      "previewEndpoint": "https://www.wecoop.org/wp-json/wecoop/v1/cv/preview?template=formal",
       "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/formal.css",
       "isDefault": true
     },
@@ -149,6 +152,7 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
       "id": "matrix",
       "name": "Matrix",
       "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/matrix.html",
+      "previewEndpoint": "https://www.wecoop.org/wp-json/wecoop/v1/cv/preview?template=matrix",
       "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/matrix.css",
       "isDefault": false
     },
@@ -156,10 +160,39 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
       "id": "peach",
       "name": "Peach",
       "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/peach.html",
+      "previewEndpoint": "https://www.wecoop.org/wp-json/wecoop/v1/cv/preview?template=peach",
       "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/peach.css",
       "isDefault": false
     }
   ]
+}
+```
+
+Nota:
+
+- `htmlUrl` punta al file template sorgente.
+- `previewEndpoint` genera una preview dinamica con i dati correnti del form e il template selezionato.
+
+---
+
+## 0.b) Preview dinamica template (ultimo step)
+
+**Endpoint**
+
+`POST /wp-json/wecoop/v1/cv/preview?template=peach`
+
+**Body**
+
+Stessa struttura del payload CV (anche parziale), usando i dati gia compilati in app.
+
+**Response esempio**
+
+```json
+{
+  "ok": true,
+  "requestId": "req_xxx",
+  "template": "peach",
+  "html": "<!doctype html><html>...preview valorizzata...</html>"
 }
 ```
 

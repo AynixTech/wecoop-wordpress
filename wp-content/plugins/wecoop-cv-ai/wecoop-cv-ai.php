@@ -56,12 +56,14 @@ function wecoop_cv_allowed_templates() {
 
 function wecoop_cv_template_catalog() {
     $base = untrailingslashit(WECOOP_CV_AI_PLUGIN_URL) . '/template_cv/';
+    $api_base = home_url('/wp-json/wecoop/v1/cv/preview');
 
     return [
         [
             'id' => 'vibrant',
             'name' => 'Vibrant',
             'htmlUrl' => $base . 'vibrant.html',
+            'previewEndpoint' => add_query_arg(['template' => 'vibrant'], $api_base),
             'cssUrl' => $base . 'vibrant.css',
             'isDefault' => false,
         ],
@@ -69,6 +71,7 @@ function wecoop_cv_template_catalog() {
             'id' => 'formal',
             'name' => 'Formal',
             'htmlUrl' => $base . 'formal.html',
+            'previewEndpoint' => add_query_arg(['template' => 'formal'], $api_base),
             'cssUrl' => $base . 'formal.css',
             'isDefault' => true,
         ],
@@ -76,6 +79,7 @@ function wecoop_cv_template_catalog() {
             'id' => 'matrix',
             'name' => 'Matrix',
             'htmlUrl' => $base . 'matrix.html',
+            'previewEndpoint' => add_query_arg(['template' => 'matrix'], $api_base),
             'cssUrl' => $base . 'matrix.css',
             'isDefault' => false,
         ],
@@ -83,6 +87,7 @@ function wecoop_cv_template_catalog() {
             'id' => 'peach',
             'name' => 'Peach',
             'htmlUrl' => $base . 'peach.html',
+            'previewEndpoint' => add_query_arg(['template' => 'peach'], $api_base),
             'cssUrl' => $base . 'peach.css',
             'isDefault' => false,
         ],
@@ -370,6 +375,7 @@ function wecoop_cv_html_to_pdf($html, $filename) {
 function wecoop_cv_render_external_template($template, array $vars) {
     $template_dir = WECOOP_CV_AI_PLUGIN_DIR . 'template_cv/';
     $template_file = $template_dir . $template . '.html';
+    $css_file = $template_dir . $template . '.css';
 
     if (!file_exists($template_file)) {
         return '';
@@ -384,10 +390,26 @@ function wecoop_cv_render_external_template($template, array $vars) {
         $html = str_replace('{{' . $key . '}}', (string) $value, $html);
     }
 
+    // mPDF renders HTML from a string and does not reliably resolve relative stylesheet links.
+    // Inline the template CSS so the selected visual layout is always applied.
+    if (file_exists($css_file)) {
+        $css = (string) file_get_contents($css_file);
+        if ($css !== '') {
+            $html = preg_replace('/<link[^>]+rel=["\']stylesheet["\'][^>]*>/i', '', $html);
+            $style_tag = "<style>\n" . $css . "\n</style>\n";
+
+            if (stripos($html, '</head>') !== false) {
+                $html = str_ireplace('</head>', $style_tag . '</head>', $html);
+            } else {
+                $html = $style_tag . $html;
+            }
+        }
+    }
+
     return $html;
 }
 
-function wecoop_cv_build_local_html(array $payload) {
+function wecoop_cv_build_local_html(array $payload, $enable_ai = true) {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
     $full_name = trim((string) ($personal['firstName'] ?? '') . ' ' . (string) ($personal['lastName'] ?? ''));
     $email = (string) ($personal['email'] ?? '');
@@ -478,7 +500,7 @@ function wecoop_cv_build_local_html(array $payload) {
         $skills = esc_html(implode(', ', array_map('strval', $payload['skills'])));
     }
 
-    $enhanced = wecoop_cv_enhance_content_with_ai($payload);
+    $enhanced = $enable_ai ? wecoop_cv_enhance_content_with_ai($payload) : [];
     $profile_summary = isset($enhanced['profileSummary']) && is_string($enhanced['profileSummary'])
         ? trim($enhanced['profileSummary'])
         : '';
@@ -573,7 +595,7 @@ function wecoop_cv_build_local_html(array $payload) {
             . '<p class="meta">' . esc_html($email) . '<br>' . esc_html($phone) . '<br>' . esc_html($address) . '</p>'
             . '<h2>' . esc_html($labels['profile']) . '</h2><p>' . esc_html($profile_summary !== '' ? $profile_summary : $labels['na']) . '</p>'
             . '<h2>' . esc_html($labels['skills']) . '</h2><p>' . ($skills !== '' ? $skills : esc_html($labels['na'])) . '</p>'
-            . '<h2>Languages</h2><ul>' . ($languages_html !== '' ? $languages_html : '<li>' . esc_html($labels['na']) . '</li>') . '</ul>'
+            . '<h2>' . esc_html($labels['languages']) . '</h2><ul>' . ($languages_html !== '' ? $languages_html : '<li>' . esc_html($labels['na']) . '</li>') . '</ul>'
             . '</td><td class="right">'
             . '<h1>' . esc_html($full_name !== '' ? $full_name : 'N/A') . '</h1>'
             . '<p class="meta">' . esc_html($labels['goal']) . ': ' . esc_html($target) . '</p>'
@@ -1044,6 +1066,46 @@ function wecoop_cv_rest_templates(WP_REST_Request $request) {
     ], 200);
 }
 
+function wecoop_cv_rest_preview(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+
+    if (!wecoop_cv_rate_limit_allow('preview')) {
+        return wecoop_cv_error_response(429, 'RATE_LIMITED', 'Too many requests, retry later', [], $request_id);
+    }
+
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        $payload = [];
+    }
+
+    $payload = wecoop_cv_recursive_sanitize($payload);
+    if (!isset($payload['config']) || !is_array($payload['config'])) {
+        $payload['config'] = [];
+    }
+
+    $template_from_query = wecoop_cv_resolve_template((string) $request->get_param('template'));
+    $template_from_body = wecoop_cv_resolve_template((string) ($payload['config']['template'] ?? ''));
+    $template = $template_from_query !== '' ? $template_from_query : $template_from_body;
+    if ($template === '') {
+        $template = 'formal';
+    }
+    $payload['config']['template'] = $template;
+
+    $language = sanitize_key((string) ($payload['config']['cvLanguage'] ?? ''));
+    if ($language !== '' && !in_array($language, wecoop_cv_allowed_languages(), true)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid language', ['config.cvLanguage' => 'Language not allowed'], $request_id);
+    }
+
+    $html = wecoop_cv_build_local_html($payload, false);
+
+    return new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'template' => $template,
+        'html' => $html,
+    ], 200);
+}
+
 function wecoop_cv_register_rest_routes() {
     register_rest_route('wecoop/v1', '/cv/generate', [
         'methods' => WP_REST_Server::CREATABLE,
@@ -1057,6 +1119,18 @@ function wecoop_cv_register_rest_routes() {
         'permission_callback' => '__return_true',
         'args' => [
             'default' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+        ],
+    ]);
+
+    register_rest_route('wecoop/v1', '/cv/preview', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_cv_rest_preview',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'template' => [
                 'type' => 'string',
                 'required' => false,
             ],
