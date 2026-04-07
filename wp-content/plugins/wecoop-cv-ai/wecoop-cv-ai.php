@@ -263,16 +263,32 @@ function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $r
 
     $status = (int) wp_remote_retrieve_response_code($response);
     $raw_body = (string) wp_remote_retrieve_body($response);
+    $content_type = (string) wp_remote_retrieve_header($response, 'content-type');
     $decoded = json_decode($raw_body, true);
 
     if (!is_array($decoded)) {
         $decoded = [
             'ok' => false,
+            'requestId' => $request_id,
             'error' => [
                 'code' => 'UPSTREAM_ERROR',
                 'message' => 'Invalid response from CV service',
+                'upstream' => [
+                    'url' => $url,
+                    'statusCode' => $status,
+                    'contentType' => $content_type,
+                    'bodyPreview' => mb_substr(wp_strip_all_tags($raw_body), 0, 240),
+                ],
             ],
         ];
+
+        $error_status = ($status >= 400 && $status <= 599) ? $status : 502;
+        $response_obj = new WP_REST_Response($decoded, $error_status);
+        if ($request_id !== '') {
+            $response_obj->header('X-Request-Id', $request_id);
+        }
+
+        return $response_obj;
     }
 
     $response_obj = new WP_REST_Response($decoded, $status > 0 ? $status : 502);
@@ -281,6 +297,46 @@ function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $r
     }
 
     return $response_obj;
+}
+
+function wecoop_cv_rest_debug(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $base_url = wecoop_cv_bffe_base_url();
+    $probe_path = '/api/v1/cv';
+    $probe_url = rtrim($base_url, '/') . $probe_path;
+
+    $probe = wp_remote_get($probe_url, [
+        'timeout' => 20,
+        'headers' => [
+            'X-Request-Id' => $request_id,
+        ],
+    ]);
+
+    $probe_data = [
+        'ok' => true,
+        'requestId' => $request_id,
+        'resolvedBaseUrl' => $base_url,
+        'probeUrl' => $probe_url,
+        'note' => 'If probe status is 404 with HTML body, /api/v1/cv is not exposed on this host (missing BFFE route/reverse-proxy).',
+    ];
+
+    if (is_wp_error($probe)) {
+        $probe_data['probe'] = [
+            'ok' => false,
+            'error' => $probe->get_error_message(),
+        ];
+        return new WP_REST_Response($probe_data, 200);
+    }
+
+    $probe_body = (string) wp_remote_retrieve_body($probe);
+    $probe_data['probe'] = [
+        'ok' => true,
+        'statusCode' => (int) wp_remote_retrieve_response_code($probe),
+        'contentType' => (string) wp_remote_retrieve_header($probe, 'content-type'),
+        'bodyPreview' => mb_substr(wp_strip_all_tags($probe_body), 0, 240),
+    ];
+
+    return new WP_REST_Response($probe_data, 200);
 }
 
 function wecoop_cv_rest_generate(WP_REST_Request $request) {
@@ -454,6 +510,12 @@ function wecoop_cv_register_rest_routes() {
     register_rest_route('wecoop/v1', '/cv', [
         'methods' => WP_REST_Server::READABLE,
         'callback' => 'wecoop_cv_rest_list',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/cv/debug', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_cv_rest_debug',
         'permission_callback' => '__return_true',
     ]);
 }
