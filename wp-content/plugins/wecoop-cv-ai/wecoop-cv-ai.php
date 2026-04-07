@@ -722,18 +722,72 @@ function wecoop_cv_recursive_sanitize($value) {
     return $value;
 }
 
+function wecoop_cv_normalize_payload(array $payload) {
+    $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+    $config = isset($payload['config']) && is_array($payload['config']) ? $payload['config'] : [];
+
+    if (empty($personal['firstName'])) {
+        $personal['firstName'] = (string) ($personal['first_name'] ?? $personal['name'] ?? $personal['givenName'] ?? '');
+    }
+
+    if (empty($personal['lastName'])) {
+        $personal['lastName'] = (string) ($personal['last_name'] ?? $personal['surname'] ?? $personal['familyName'] ?? '');
+    }
+
+    if ((empty($personal['firstName']) || empty($personal['lastName'])) && !empty($personal['fullName'])) {
+        $parts = preg_split('/\s+/', trim((string) $personal['fullName']));
+        if (is_array($parts) && !empty($parts)) {
+            if (empty($personal['firstName'])) {
+                $personal['firstName'] = (string) array_shift($parts);
+            }
+            if (empty($personal['lastName'])) {
+                $personal['lastName'] = !empty($parts) ? (string) implode(' ', $parts) : '';
+            }
+        }
+    }
+
+    if (empty($personal['email'])) {
+        $personal['email'] = (string) ($personal['emailAddress'] ?? $personal['mail'] ?? '');
+    }
+
+    if (empty($config['template'])) {
+        $config['template'] = (string) ($payload['cvModel'] ?? $config['model'] ?? $config['templateId'] ?? '');
+    }
+
+    if (empty($config['cvLanguage'])) {
+        $config['cvLanguage'] = (string) ($payload['cvLanguage'] ?? $config['language'] ?? $config['cvLang'] ?? '');
+    }
+
+    if (!isset($config['includePhoto'])) {
+        $config['includePhoto'] = !empty($payload['hasPhoto']) || !empty($personal['hasPhoto']) || !empty($config['hasPhoto']);
+    }
+
+    $payload['personalInfo'] = $personal;
+    $payload['config'] = $config;
+
+    if (isset($payload['skills']) && is_string($payload['skills'])) {
+        $skills = array_filter(array_map('trim', explode(',', $payload['skills'])));
+        $payload['skills'] = array_values($skills);
+    }
+
+    foreach (['experience', 'education', 'languages', 'skills'] as $list_key) {
+        if (isset($payload[$list_key]) && !is_array($payload[$list_key])) {
+            $payload[$list_key] = [];
+        }
+    }
+
+    return $payload;
+}
+
 function wecoop_cv_validate_payload(array $payload) {
     $errors = [];
 
-    $first_name = $payload['personalInfo']['firstName'] ?? '';
-    $last_name = $payload['personalInfo']['lastName'] ?? '';
+    $first_name = trim((string) ($payload['personalInfo']['firstName'] ?? ''));
+    $last_name = trim((string) ($payload['personalInfo']['lastName'] ?? ''));
     $email = $payload['personalInfo']['email'] ?? '';
 
-    if ($first_name === '') {
-        $errors['personalInfo.firstName'] = 'Required';
-    }
-    if ($last_name === '') {
-        $errors['personalInfo.lastName'] = 'Required';
+    if ($first_name === '' && $last_name === '') {
+        $errors['personalInfo.firstName'] = 'At least a name is required';
     }
     if ($email === '' || !is_email($email)) {
         $errors['personalInfo.email'] = 'Invalid email format';
@@ -878,6 +932,7 @@ function wecoop_cv_rest_generate(WP_REST_Request $request) {
     }
 
     $payload = wecoop_cv_recursive_sanitize($payload);
+    $payload = wecoop_cv_normalize_payload($payload);
     $payload_size = strlen((string) wp_json_encode($payload));
     $summary = [
         'educationCount' => is_array($payload['education'] ?? null) ? count($payload['education']) : 0,
@@ -1083,6 +1138,7 @@ function wecoop_cv_rest_preview(WP_REST_Request $request) {
     }
 
     $payload = wecoop_cv_recursive_sanitize($payload);
+    $payload = wecoop_cv_normalize_payload($payload);
     if (!isset($payload['config']) || !is_array($payload['config'])) {
         $payload['config'] = [];
     }
