@@ -332,13 +332,15 @@ function wecoop_cv_html_to_pdf($html, $filename) {
     }
 
     try {
+        $has_sheet_layout = stripos((string) $html, 'class="sheet"') !== false;
+
         $mpdf = new \Mpdf\Mpdf([
             'mode' => 'utf-8',
             'format' => 'A4',
-            'margin_left' => 15,
-            'margin_right' => 15,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
+            'margin_left' => $has_sheet_layout ? 0 : 15,
+            'margin_right' => $has_sheet_layout ? 0 : 15,
+            'margin_top' => $has_sheet_layout ? 0 : 15,
+            'margin_bottom' => $has_sheet_layout ? 0 : 15,
             'margin_header' => 5,
             'margin_footer' => 5,
         ]);
@@ -409,7 +411,7 @@ function wecoop_cv_render_external_template($template, array $vars) {
     return $html;
 }
 
-function wecoop_cv_build_local_html(array $payload, $enable_ai = true) {
+function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_mode = 'pdf') {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
     $full_name = trim((string) ($personal['firstName'] ?? '') . ' ' . (string) ($personal['lastName'] ?? ''));
     $email = (string) ($personal['email'] ?? '');
@@ -524,28 +526,30 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true) {
         $photo_html = '<img class="cv-photo" src="' . esc_url($photo_url) . '" alt="photo">';
     }
 
-    $external = wecoop_cv_render_external_template($template, [
-        'full_name' => esc_html($full_name !== '' ? $full_name : 'N/A'),
-        'job_title' => esc_html($target),
-        'label_contact' => esc_html($labels['contact']),
-        'email' => esc_html($email),
-        'phone' => esc_html($phone),
-        'address' => esc_html($address),
-        'label_profile' => esc_html($labels['profile']),
-        'label_experience' => esc_html($labels['experience']),
-        'label_education' => esc_html($labels['education']),
-        'label_skills' => esc_html($labels['skills']),
-        'label_languages' => esc_html($labels['languages']),
-        'profile_summary' => esc_html($profile_summary !== '' ? $profile_summary : $labels['na']),
-        'skills_list' => ($skills !== '' ? '<p>' . $skills . '</p>' : '<p>' . esc_html($labels['na']) . '</p>'),
-        'languages_list' => ($languages_html !== '' ? '<ul>' . $languages_html . '</ul>' : '<p>' . esc_html($labels['na']) . '</p>'),
-        'experience_list' => ($experience_blocks !== '' ? $experience_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
-        'education_list' => ($education_blocks !== '' ? $education_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
-        'photo_url' => esc_url($photo_url),
-    ]);
+    if ($render_mode === 'preview') {
+        $external = wecoop_cv_render_external_template($template, [
+            'full_name' => esc_html($full_name !== '' ? $full_name : 'N/A'),
+            'job_title' => esc_html($target),
+            'label_contact' => esc_html($labels['contact']),
+            'email' => esc_html($email),
+            'phone' => esc_html($phone),
+            'address' => esc_html($address),
+            'label_profile' => esc_html($labels['profile']),
+            'label_experience' => esc_html($labels['experience']),
+            'label_education' => esc_html($labels['education']),
+            'label_skills' => esc_html($labels['skills']),
+            'label_languages' => esc_html($labels['languages']),
+            'profile_summary' => esc_html($profile_summary !== '' ? $profile_summary : $labels['na']),
+            'skills_list' => ($skills !== '' ? '<p>' . $skills . '</p>' : '<p>' . esc_html($labels['na']) . '</p>'),
+            'languages_list' => ($languages_html !== '' ? '<ul>' . $languages_html . '</ul>' : '<p>' . esc_html($labels['na']) . '</p>'),
+            'experience_list' => ($experience_blocks !== '' ? $experience_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
+            'education_list' => ($education_blocks !== '' ? $education_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
+            'photo_url' => esc_url($photo_url),
+        ]);
 
-    if ($external !== '') {
-        return $external;
+        if ($external !== '') {
+            return $external;
+        }
     }
 
     if ($template === 'matrix') {
@@ -626,7 +630,7 @@ function wecoop_cv_generate_local_fallback(array $payload, $request_id) {
     if ($template === '') {
         $template = 'formal';
     }
-    $html = wecoop_cv_build_local_html($payload);
+    $html = wecoop_cv_build_local_html($payload, true, 'pdf');
 
     $pdf = wecoop_cv_html_to_pdf($html, $cv_id);
     if (empty($pdf['success'])) {
@@ -1096,7 +1100,7 @@ function wecoop_cv_rest_preview(WP_REST_Request $request) {
         return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid language', ['config.cvLanguage' => 'Language not allowed'], $request_id);
     }
 
-    $html = wecoop_cv_build_local_html($payload, false);
+    $html = wecoop_cv_build_local_html($payload, false, 'preview');
 
     return new WP_REST_Response([
         'ok' => true,
