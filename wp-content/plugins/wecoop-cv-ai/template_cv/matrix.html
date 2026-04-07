@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="matrix.css">
+  <title>{{full_name}} - CV</title>
+</head>
+<body class="matrix">
+  <div class="sheet">
+    <aside class="left">
+      <img class="photo" src="{{photo_url}}" alt="profile">
+      <h1>{{full_name}}</h1>
+      <p class="role">{{job_title}}</p>
+
+      <h2>{{label_contact}}</h2>
+      <p>{{phone}}</p>
+      <p>{{email}}</p>
+      <p>{{address}}</p>
+
+      <h2>{{label_skills}}</h2>
+      <div>{{skills_list}}</div>
+
+      <h2>{{label_languages}}</h2>
+      <div>{{languages_list}}</div>
+    </aside>
+
+    <main class="right">
+      <section>
+        <h2>{{label_profile}}</h2>
+        <p>{{profile_summary}}</p>
+      </section>
+
+      <section>
+        <h2>{{label_experience}}</h2>
+        <div>{{experience_list}}</div>
+      </section>
+
+      <section>
+        <h2>{{label_education}}</h2>
+        <div>{{education_list}}</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

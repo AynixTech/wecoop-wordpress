@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="formal.css">
+  <title>{{full_name}} - CV</title>
+</head>
+<body class="formal">
+  <div class="sheet">
+    <header>
+      <div>
+        <h1>{{full_name}}</h1>
+        <p class="role">{{job_title}}</p>
+      </div>
+      <img class="photo" src="{{photo_url}}" alt="profile">
+    </header>
+
+    <section class="contact">
+      <strong>Email:</strong> {{email}} | <strong>Phone:</strong> {{phone}} | <strong>Address:</strong> {{address}}
+    </section>
+
+    <section>
+      <h2>{{label_profile}}</h2>
+      <p>{{profile_summary}}</p>
+    </section>
+
+    <section>
+      <h2>{{label_experience}}</h2>
+      <div>{{experience_list}}</div>
+    </section>
+
+    <section>
+      <h2>{{label_education}}</h2>
+      <div>{{education_list}}</div>
+    </section>
+
+    <section class="grid-2">
+      <div>
+        <h2>{{label_skills}}</h2>
+        <div>{{skills_list}}</div>
+      </div>
+      <div>
+        <h2>{{label_languages}}</h2>
+        <div>{{languages_list}}</div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

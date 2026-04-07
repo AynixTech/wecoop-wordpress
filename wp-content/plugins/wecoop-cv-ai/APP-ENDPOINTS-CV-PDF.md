@@ -14,10 +14,11 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
 
 ## Flusso minimo per ottenere il PDF
 
-1. Chiamare `POST /cv/generate` con i dati CV.
-2. Se `status=generated` e `files.pdfUrl` presente, mostrare subito pulsante download PDF.
-3. Se `status=processing`, fare polling su `GET /cv/{cv_id}` ogni 2-3 secondi fino a `generated` (max 60-90s).
-4. In alternativa, mostrare storico da `GET /cv` e permettere apertura PDF dai risultati.
+1. Chiamare `GET /cv/templates` per ottenere i template disponibili.
+2. Chiamare `POST /cv/generate` includendo `config.template` con uno dei template ricevuti.
+3. Se `status=generated` e `files.pdfUrl` presente, mostrare subito pulsante download PDF.
+4. Se `status=processing`, fare polling su `GET /cv/{cv_id}` ogni 2-3 secondi fino a `generated` (max 60-90s).
+5. In alternativa, mostrare storico da `GET /cv` e permettere apertura PDF dai risultati.
 
 ---
 
@@ -72,7 +73,7 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
     "industry": "Finanzas"
   },
   "config": {
-    "template": "europass",
+    "template": "formal",
     "cvLanguage": "it",
     "includePhoto": true
   }
@@ -108,6 +109,57 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
       "personalInfo.email": "Invalid email format"
     }
   }
+}
+```
+
+---
+
+## 0) Lista template disponibili
+
+**Endpoint**
+
+`GET /wp-json/wecoop/v1/cv/templates`
+
+**Query params opzionali**
+
+- `default` (string): forza quale template marcare come predefinito nella risposta.
+
+**Response esempio**
+
+```json
+{
+  "ok": true,
+  "defaultTemplate": "formal",
+  "items": [
+    {
+      "id": "vibrant",
+      "name": "Vibrant",
+      "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/vibrant.html",
+      "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/vibrant.css",
+      "isDefault": false
+    },
+    {
+      "id": "formal",
+      "name": "Formal",
+      "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/formal.html",
+      "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/formal.css",
+      "isDefault": true
+    },
+    {
+      "id": "matrix",
+      "name": "Matrix",
+      "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/matrix.html",
+      "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/matrix.css",
+      "isDefault": false
+    },
+    {
+      "id": "peach",
+      "name": "Peach",
+      "htmlUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/peach.html",
+      "cssUrl": "https://www.wecoop.org/wp-content/plugins/wecoop-cv-ai/template_cv/peach.css",
+      "isDefault": false
+    }
+  ]
 }
 ```
 
@@ -172,7 +224,7 @@ Usare il proxy WordPress per centralizzare sicurezza, rate limit e configurazion
     {
       "cvId": "cv_01HXYZ...",
       "status": "generated",
-      "template": "europass",
+      "template": "formal",
       "cvLanguage": "it",
       "createdAt": "2026-04-07T14:35:00Z",
       "files": {
