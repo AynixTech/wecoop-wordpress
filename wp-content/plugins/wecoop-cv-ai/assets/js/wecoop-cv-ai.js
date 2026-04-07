@@ -66,6 +66,86 @@
     status.setAttribute("data-status", kind);
   }
 
+  function buildHistoryUrl(root) {
+    var form = root.querySelector("[data-history-form]");
+    var params = new URLSearchParams({ page: "1", limit: "10" });
+
+    if (form) {
+      var status = (form.querySelector('[name="status"]') || {}).value || "";
+      var language = (form.querySelector('[name="language"]') || {}).value || "";
+
+      if (status) {
+        params.set("status", status);
+      }
+
+      if (language) {
+        params.set("language", language);
+      }
+    }
+
+    return wecoopCvAiConfig.restUrl + "/cv?" + params.toString();
+  }
+
+  function renderHistory(root, data) {
+    var container = root.querySelector("[data-history-list]");
+    if (!container) {
+      return;
+    }
+
+    var items = (data && data.items) || [];
+    if (!items.length) {
+      container.innerHTML = "<p>Nessun CV trovato.</p>";
+      return;
+    }
+
+    container.innerHTML = items.map(function (item) {
+      var pdfUrl = item.files && item.files.pdfUrl ? item.files.pdfUrl : "";
+      var docxUrl = item.files && item.files.docxUrl ? item.files.docxUrl : "";
+
+      return [
+        '<article class="wecoop-cv-ai__history-item">',
+        "<h3>" + (item.cvId || "-") + "</h3>",
+        "<p><strong>Status:</strong> " + (item.status || "-") + "</p>",
+        "<p><strong>Template:</strong> " + (item.template || "-") + "</p>",
+        "<p><strong>Lingua:</strong> " + (item.cvLanguage || "-") + "</p>",
+        "<p><strong>Creato:</strong> " + (item.createdAt || "-") + "</p>",
+        '<div class="wecoop-cv-ai__history-actions">',
+        pdfUrl ? '<a class="wecoop-cv-ai__download" href="' + pdfUrl + '" target="_blank" rel="noopener">PDF</a>' : "",
+        docxUrl ? '<a class="wecoop-cv-ai__download" href="' + docxUrl + '" target="_blank" rel="noopener">DOCX</a>' : "",
+        "</div>",
+        "</article>",
+      ].join("");
+    }).join("");
+  }
+
+  async function loadHistory(root) {
+    var container = root.querySelector("[data-history-list]");
+    if (!container) {
+      return;
+    }
+
+    container.innerHTML = "<p>Caricamento CV...</p>";
+
+    try {
+      var response = await fetch(buildHistoryUrl(root), {
+        method: "GET",
+        headers: {
+          "X-WP-Nonce": wecoopCvAiConfig.nonce,
+        },
+      });
+
+      var data = await response.json();
+      if (!response.ok || !data.ok) {
+        container.innerHTML = "<p>Errore nel caricamento dello storico CV.</p>";
+        return;
+      }
+
+      renderHistory(root, data);
+    } catch (err) {
+      container.innerHTML = "<p>Servizio storico CV non disponibile.</p>";
+    }
+  }
+
   function renderFieldErrors(root, fields) {
     var box = root.querySelector(".wecoop-cv-ai__error");
     var entries = Object.entries(fields || {});
@@ -179,6 +259,7 @@
       docxLink.href = data.files && data.files.docxUrl ? data.files.docxUrl : "#";
 
       result.hidden = false;
+      loadHistory(root);
     } catch (err) {
       setStatus(root, "Servizio temporaneamente non disponibile.", "error");
       renderFieldErrors(root, {});
@@ -199,5 +280,15 @@
     form.addEventListener("submit", function (event) {
       submitHandler(event, root);
     });
+
+    var historyForm = root.querySelector("[data-history-form]");
+    if (historyForm) {
+      historyForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        loadHistory(root);
+      });
+    }
+
+    loadHistory(root);
   });
 })();

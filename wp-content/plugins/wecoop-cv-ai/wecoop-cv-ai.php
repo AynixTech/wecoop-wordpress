@@ -19,6 +19,33 @@ define('WECOOP_CV_AI_VERSION', '1.0.0');
 define('WECOOP_CV_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WECOOP_CV_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+function wecoop_cv_request_id() {
+    $incoming = isset($_SERVER['HTTP_X_REQUEST_ID']) ? sanitize_text_field((string) $_SERVER['HTTP_X_REQUEST_ID']) : '';
+    if ($incoming !== '') {
+        return $incoming;
+    }
+
+    return 'req_' . str_replace('-', '', wp_generate_uuid4());
+}
+
+function wecoop_cv_actor_id() {
+    $user_id = get_current_user_id();
+    if ($user_id > 0) {
+        return 'usr_' . (string) $user_id;
+    }
+
+    return 'anon';
+}
+
+function wecoop_cv_log_event($event, array $data = []) {
+    $entry = array_merge([
+        'event' => $event,
+        'timestamp' => gmdate('c'),
+    ], $data);
+
+    error_log((string) wp_json_encode($entry));
+}
+
 function wecoop_cv_allowed_languages() {
     return ['it', 'es', 'en', 'fr', 'de', 'pt', 'nl', 'pl', 'ro', 'uk', 'ru', 'el', 'sv', 'cs', 'hu', 'tr'];
 }
@@ -155,27 +182,43 @@ function wecoop_cv_validate_payload(array $payload) {
     return $errors;
 }
 
-function wecoop_cv_error_response($status, $code, $message, $fields = []) {
-    return new WP_REST_Response([
+function wecoop_cv_error_response($status, $code, $message, $fields = [], $request_id = '') {
+    $payload = [
         'ok' => false,
+        'requestId' => $request_id,
         'error' => [
             'code' => $code,
             'message' => $message,
             'fields' => (object) $fields,
         ],
-    ], $status);
+    ];
+
+    $response = new WP_REST_Response($payload, $status);
+    if ($request_id !== '') {
+        $response->header('X-Request-Id', $request_id);
+    }
+
+    return $response;
 }
 
-function wecoop_cv_call_bffe($method, $path, $body = null) {
+function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $request_id = '') {
     $base_url = wecoop_cv_bffe_base_url();
     if ($base_url === '') {
         return new WP_Error('CONFIG_ERROR', 'BFFE base URL is not configured');
     }
 
     $url = $base_url . $path;
+    if (!empty($query)) {
+        $url = add_query_arg($query, $url);
+    }
+
     $headers = [
         'Content-Type' => 'application/json',
     ];
+
+    if ($request_id !== '') {
+        $headers['X-Request-Id'] = $request_id;
+    }
 
     $token = wecoop_cv_bffe_token();
     if ($token !== '') {
@@ -211,43 +254,164 @@ function wecoop_cv_call_bffe($method, $path, $body = null) {
         ];
     }
 
-    return new WP_REST_Response($decoded, $status > 0 ? $status : 502);
+    $response_obj = new WP_REST_Response($decoded, $status > 0 ? $status : 502);
+    if ($request_id !== '') {
+        $response_obj->header('X-Request-Id', $request_id);
+    }
+
+    return $response_obj;
 }
 
 function wecoop_cv_rest_generate(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $actor_id = wecoop_cv_actor_id();
+    $start_ts = microtime(true);
+
     if (!wecoop_cv_rate_limit_allow('generate')) {
-        return wecoop_cv_error_response(429, 'RATE_LIMITED', 'Too many requests, retry later');
+        return wecoop_cv_error_response(429, 'RATE_LIMITED', 'Too many requests, retry later', [], $request_id);
     }
 
     $payload = $request->get_json_params();
     if (!is_array($payload)) {
-        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON');
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
     }
 
     $payload = wecoop_cv_recursive_sanitize($payload);
+    $payload_size = strlen((string) wp_json_encode($payload));
+    $summary = [
+        'educationCount' => is_array($payload['education'] ?? null) ? count($payload['education']) : 0,
+        'experienceCount' => is_array($payload['experience'] ?? null) ? count($payload['experience']) : 0,
+        'languagesCount' => is_array($payload['languages'] ?? null) ? count($payload['languages']) : 0,
+        'skillsCount' => is_array($payload['skills'] ?? null) ? count($payload['skills']) : 0,
+    ];
+
+    wecoop_cv_log_event('cv_generate_request_received', [
+        'requestId' => $request_id,
+        'userId' => $actor_id,
+        'method' => 'POST',
+        'path' => '/api/v1/cv/generate',
+        'payloadSizeBytes' => $payload_size,
+        'summary' => $summary,
+    ]);
+
     $errors = wecoop_cv_validate_payload($payload);
 
     if (!empty($errors)) {
-        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid required fields', $errors);
+        wecoop_cv_log_event('cv_generate_validation_failed', [
+            'requestId' => $request_id,
+            'userId' => $actor_id,
+            'invalidFields' => array_keys($errors),
+        ]);
+
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid required fields', $errors, $request_id);
     }
 
-    $response = wecoop_cv_call_bffe('POST', '/api/v1/cv/generate', $payload);
+    wecoop_cv_log_event('cv_generate_ai_request_started', [
+        'requestId' => $request_id,
+        'provider' => 'bffe',
+        'template' => (string) ($payload['config']['template'] ?? ''),
+        'cvLanguage' => (string) ($payload['config']['cvLanguage'] ?? ''),
+    ]);
+
+    $ai_start_ts = microtime(true);
+    $response = wecoop_cv_call_bffe('POST', '/api/v1/cv/generate', $payload, [], $request_id);
+    $ai_duration = (int) round((microtime(true) - $ai_start_ts) * 1000);
+
     if (is_wp_error($response)) {
-        return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message());
+        return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message(), [], $request_id);
     }
+
+    $response_data = $response->get_data();
+    $cv_id = is_array($response_data) ? (string) ($response_data['cvId'] ?? '') : '';
+
+    wecoop_cv_log_event('cv_generate_ai_request_completed', [
+        'requestId' => $request_id,
+        'provider' => 'bffe',
+        'durationMs' => $ai_duration,
+        'tokenUsage' => null,
+    ]);
+
+    wecoop_cv_log_event('cv_generate_file_build_completed', [
+        'requestId' => $request_id,
+        'cvId' => $cv_id,
+        'pdfGenerated' => !empty($response_data['files']['pdfUrl']),
+        'docxGenerated' => !empty($response_data['files']['docxUrl']),
+        'durationMs' => null,
+    ]);
+
+    wecoop_cv_log_event('cv_generate_response_sent', [
+        'requestId' => $request_id,
+        'cvId' => $cv_id,
+        'statusCode' => $response->get_status(),
+        'totalDurationMs' => (int) round((microtime(true) - $start_ts) * 1000),
+    ]);
 
     return $response;
 }
 
 function wecoop_cv_rest_get(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
     $cv_id = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $request['cv_id']);
     if ($cv_id === '') {
-        return wecoop_cv_error_response(400, 'INVALID_CV_ID', 'cv_id is required');
+        return wecoop_cv_error_response(400, 'INVALID_CV_ID', 'cv_id is required', [], $request_id);
     }
 
-    $response = wecoop_cv_call_bffe('GET', '/api/v1/cv/' . rawurlencode($cv_id));
+    $response = wecoop_cv_call_bffe('GET', '/api/v1/cv/' . rawurlencode($cv_id), null, [], $request_id);
     if (is_wp_error($response)) {
-        return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message());
+        return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message(), [], $request_id);
+    }
+
+    return $response;
+}
+
+function wecoop_cv_rest_list(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+
+    if (!wecoop_cv_rate_limit_allow('list')) {
+        return wecoop_cv_error_response(429, 'RATE_LIMITED', 'Too many requests, retry later', [], $request_id);
+    }
+
+    $page = max(1, (int) $request->get_param('page'));
+    $limit = (int) $request->get_param('limit');
+    if ($limit <= 0) {
+        $limit = 10;
+    }
+    $limit = min(50, $limit);
+
+    $status = sanitize_key((string) $request->get_param('status'));
+    $language = sanitize_key((string) $request->get_param('language'));
+
+    $allowed_status = ['generated', 'processing', 'failed'];
+    $fields = [];
+
+    if ($status !== '' && !in_array($status, $allowed_status, true)) {
+        $fields['status'] = 'Status not allowed';
+    }
+
+    if ($language !== '' && !in_array($language, wecoop_cv_allowed_languages(), true)) {
+        $fields['language'] = 'Language not allowed';
+    }
+
+    if (!empty($fields)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid query parameters', $fields, $request_id);
+    }
+
+    $query = [
+        'page' => $page,
+        'limit' => $limit,
+    ];
+
+    if ($status !== '') {
+        $query['status'] = $status;
+    }
+
+    if ($language !== '') {
+        $query['language'] = $language;
+    }
+
+    $response = wecoop_cv_call_bffe('GET', '/api/v1/cv', null, $query, $request_id);
+    if (is_wp_error($response)) {
+        return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message(), [], $request_id);
     }
 
     return $response;
@@ -263,6 +427,12 @@ function wecoop_cv_register_rest_routes() {
     register_rest_route('wecoop/v1', '/cv/(?P<cv_id>[A-Za-z0-9_-]+)', [
         'methods' => WP_REST_Server::READABLE,
         'callback' => 'wecoop_cv_rest_get',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/cv', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_cv_rest_list',
         'permission_callback' => '__return_true',
     ]);
 }
@@ -345,6 +515,30 @@ function wecoop_cv_generator_shortcode() {
             <a class="wecoop-cv-ai__download" data-download="pdf" href="#" target="_blank" rel="noopener">Descargar PDF</a>
             <a class="wecoop-cv-ai__download" data-download="docx" href="#" target="_blank" rel="noopener">Descargar Word</a>
         </div>
+
+        <section class="wecoop-cv-ai__history">
+            <h2>CVs generados</h2>
+            <form class="wecoop-cv-ai__history-filters" data-history-form>
+                <label>Estado
+                    <select name="status">
+                        <option value="">Todos</option>
+                        <option value="generated">generated</option>
+                        <option value="processing">processing</option>
+                        <option value="failed">failed</option>
+                    </select>
+                </label>
+                <label>Idioma
+                    <select name="language">
+                        <option value="">Todos</option>
+                        <?php foreach (wecoop_cv_allowed_languages() as $lang) : ?>
+                            <option value="<?php echo esc_attr($lang); ?>"><?php echo esc_html($lang); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <button type="submit">Filtrar</button>
+            </form>
+            <div class="wecoop-cv-ai__history-list" data-history-list></div>
+        </section>
     </section>
     <?php
     return (string) ob_get_clean();
