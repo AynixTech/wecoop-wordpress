@@ -411,6 +411,93 @@ function wecoop_cv_render_external_template($template, array $vars) {
     return $html;
 }
 
+function wecoop_cv_extract_photo_url(array $payload) {
+    $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+
+    foreach (['photoUrl', 'photo', 'imageUrl', 'profileImage', 'avatarUrl'] as $k) {
+        if (!empty($personal[$k]) && is_string($personal[$k])) {
+            return trim((string) $personal[$k]);
+        }
+    }
+
+    foreach (['photoUrl', 'photo', 'imageUrl', 'profileImage', 'avatarUrl'] as $k) {
+        if (!empty($payload[$k]) && is_string($payload[$k])) {
+            return trim((string) $payload[$k]);
+        }
+    }
+
+    if (!empty($payload['documents']) && is_array($payload['documents'])) {
+        foreach ($payload['documents'] as $document) {
+            if (!is_array($document)) {
+                continue;
+            }
+
+            $mime = strtolower((string) ($document['mimeType'] ?? $document['mime'] ?? ''));
+            $kind = strtolower((string) ($document['type'] ?? $document['category'] ?? ''));
+            $is_image = ($mime !== '' && strpos($mime, 'image/') === 0)
+                || in_array($kind, ['image', 'photo', 'profile-photo', 'avatar'], true);
+
+            if (!$is_image) {
+                continue;
+            }
+
+            foreach (['url', 'fileUrl', 'downloadUrl', 'previewUrl'] as $url_key) {
+                if (!empty($document[$url_key]) && is_string($document[$url_key])) {
+                    return trim((string) $document[$url_key]);
+                }
+            }
+        }
+    }
+
+    return '';
+}
+
+function wecoop_cv_prepare_photo_src($photo_url, $render_mode = 'pdf') {
+    $src = trim((string) $photo_url);
+    if ($src === '') {
+        return '';
+    }
+
+    if (stripos($src, 'data:image/') === 0) {
+        return $src;
+    }
+
+    if ($render_mode !== 'pdf') {
+        return $src;
+    }
+
+    if (!preg_match('#^https?://#i', $src)) {
+        return $src;
+    }
+
+    $response = wp_remote_get($src, [
+        'timeout' => 12,
+        'redirection' => 3,
+    ]);
+
+    if (is_wp_error($response)) {
+        return $src;
+    }
+
+    $status = (int) wp_remote_retrieve_response_code($response);
+    if ($status < 200 || $status >= 300) {
+        return $src;
+    }
+
+    $body = (string) wp_remote_retrieve_body($response);
+    $content_type = strtolower((string) wp_remote_retrieve_header($response, 'content-type'));
+
+    if ($body === '') {
+        return $src;
+    }
+
+    if (strpos($content_type, 'image/') !== 0) {
+        return $src;
+    }
+
+    return 'data:' . $content_type . ';base64,' . base64_encode($body);
+}
+
 function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_mode = 'pdf') {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
     $full_name = trim((string) ($personal['firstName'] ?? '') . ' ' . (string) ($personal['lastName'] ?? ''));
@@ -426,13 +513,8 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_m
     }
 
     $include_photo = !empty($payload['config']['includePhoto']);
-    $photo_url = '';
-    foreach (['photoUrl', 'photo', 'imageUrl', 'profileImage', 'avatarUrl'] as $k) {
-        if (!empty($personal[$k]) && is_string($personal[$k])) {
-            $photo_url = (string) $personal[$k];
-            break;
-        }
-    }
+    $photo_url = wecoop_cv_extract_photo_url($payload);
+    $photo_src = wecoop_cv_prepare_photo_src($photo_url, $render_mode);
 
     $labels = wecoop_cv_i18n_labels($lang);
 
@@ -522,8 +604,8 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_m
     }
 
     $photo_html = '';
-    if ($include_photo && $photo_url !== '') {
-        $photo_html = '<img class="cv-photo" src="' . esc_url($photo_url) . '" alt="photo">';
+    if ($include_photo && $photo_src !== '') {
+        $photo_html = '<img class="cv-photo" src="' . esc_attr($photo_src) . '" alt="photo">';
     }
 
     if ($render_mode === 'preview') {
@@ -544,7 +626,7 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_m
             'languages_list' => ($languages_html !== '' ? '<ul>' . $languages_html . '</ul>' : '<p>' . esc_html($labels['na']) . '</p>'),
             'experience_list' => ($experience_blocks !== '' ? $experience_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
             'education_list' => ($education_blocks !== '' ? $education_blocks : '<p>' . esc_html($labels['na']) . '</p>'),
-            'photo_url' => esc_url($photo_url),
+            'photo_url' => esc_attr($photo_src),
         ]);
 
         if ($external !== '') {
@@ -725,6 +807,11 @@ function wecoop_cv_recursive_sanitize($value) {
 function wecoop_cv_normalize_payload(array $payload) {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
     $config = isset($payload['config']) && is_array($payload['config']) ? $payload['config'] : [];
+
+    $normalized_photo = wecoop_cv_extract_photo_url($payload);
+    if ($normalized_photo !== '' && empty($personal['photoUrl'])) {
+        $personal['photoUrl'] = $normalized_photo;
+    }
 
     if (empty($personal['firstName'])) {
         $personal['firstName'] = (string) ($personal['first_name'] ?? $personal['name'] ?? $personal['givenName'] ?? '');
