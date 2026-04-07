@@ -413,10 +413,56 @@ function wecoop_cv_render_external_template($template, array $vars) {
 
 function wecoop_cv_extract_photo_url(array $payload) {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+    $photo_mime = (string) ($personal['photoMimeType'] ?? $payload['photoMimeType'] ?? 'image/jpeg');
+
+    $to_data_uri = static function ($raw, $mime) {
+        $value = trim((string) $raw);
+        if ($value === '') {
+            return '';
+        }
+
+        if (stripos($value, 'data:image/') === 0) {
+            return $value;
+        }
+
+        $base64 = preg_replace('/\s+/', '', $value);
+        if (!is_string($base64) || $base64 === '') {
+            return '';
+        }
+
+        if (!preg_match('/^[A-Za-z0-9+\/]+=*$/', $base64)) {
+            return '';
+        }
+
+        if (strlen($base64) < 64) {
+            return '';
+        }
+
+        $safe_mime = (strpos($mime, 'image/') === 0) ? $mime : 'image/jpeg';
+        return 'data:' . $safe_mime . ';base64,' . $base64;
+    };
+
+    foreach (['photoBase64', 'photo'] as $k) {
+        if (!empty($personal[$k]) && is_string($personal[$k])) {
+            $data_uri = $to_data_uri((string) $personal[$k], $photo_mime);
+            if ($data_uri !== '') {
+                return $data_uri;
+            }
+        }
+    }
 
     foreach (['photoUrl', 'photo', 'imageUrl', 'profileImage', 'avatarUrl'] as $k) {
         if (!empty($personal[$k]) && is_string($personal[$k])) {
             return trim((string) $personal[$k]);
+        }
+    }
+
+    foreach (['photoBase64', 'photo'] as $k) {
+        if (!empty($payload[$k]) && is_string($payload[$k])) {
+            $data_uri = $to_data_uri((string) $payload[$k], $photo_mime);
+            if ($data_uri !== '') {
+                return $data_uri;
+            }
         }
     }
 
@@ -466,8 +512,12 @@ function wecoop_cv_prepare_photo_src($photo_url, $render_mode = 'pdf') {
         return $src;
     }
 
-    if (!preg_match('#^https?://#i', $src)) {
+    if (stripos($src, 'data:image/') === 0) {
         return $src;
+    }
+
+    if (!preg_match('#^https?://#i', $src)) {
+        return '';
     }
 
     $response = wp_remote_get($src, [
