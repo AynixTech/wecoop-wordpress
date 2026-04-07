@@ -70,11 +70,7 @@ function wecoop_cv_bffe_base_url() {
     }
 
     $url = (string) get_option('wecoop_cv_bffe_base_url', '');
-    if ($url !== '') {
-        return rtrim($url, '/');
-    }
-
-    return rtrim(home_url('/'), '/');
+    return rtrim($url, '/');
 }
 
 function wecoop_cv_bffe_token() {
@@ -93,6 +89,22 @@ function wecoop_cv_bffe_token() {
     }
 
     return (string) get_option('wecoop_cv_bffe_token', '');
+}
+
+function wecoop_cv_upstream_path($resource = '') {
+    $base_url = wecoop_cv_bffe_base_url();
+    $base_path = (string) parse_url($base_url, PHP_URL_PATH);
+    $resource = '/' . ltrim((string) $resource, '/');
+
+    if (preg_match('#/api/v1/cv/?$#', $base_path) === 1) {
+        return $resource === '/' ? '' : $resource;
+    }
+
+    if ($resource === '/') {
+        return '/api/v1/cv';
+    }
+
+    return '/api/v1/cv' . $resource;
 }
 
 function wecoop_cv_client_ip() {
@@ -224,7 +236,7 @@ function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $r
     if ($base_url === '') {
         return new WP_Error(
             'CONFIG_ERROR',
-            'BFFE base URL is not configured. Set WECOOP_CV_BFFE_BASE_URL (or WECOOP_BFFE_BASE_URL) in wp-config.php, or set wecoop_cv_bffe_base_url in Settings > General. If omitted, WordPress home_url is used by default.'
+            'BFFE base URL is not configured. Set WECOOP_CV_BFFE_BASE_URL (or WECOOP_BFFE_BASE_URL) in wp-config.php, or set wecoop_cv_bffe_base_url in Settings > General.'
         );
     }
 
@@ -351,7 +363,7 @@ function wecoop_cv_rest_generate(WP_REST_Request $request) {
     ]);
 
     $ai_start_ts = microtime(true);
-    $response = wecoop_cv_call_bffe('POST', '/api/v1/cv/generate', $payload, [], $request_id);
+    $response = wecoop_cv_call_bffe('POST', wecoop_cv_upstream_path('/generate'), $payload, [], $request_id);
     $ai_duration = (int) round((microtime(true) - $ai_start_ts) * 1000);
 
     if (is_wp_error($response)) {
@@ -394,7 +406,7 @@ function wecoop_cv_rest_get(WP_REST_Request $request) {
         return wecoop_cv_error_response(400, 'INVALID_CV_ID', 'cv_id is required', [], $request_id);
     }
 
-    $response = wecoop_cv_call_bffe('GET', '/api/v1/cv/' . rawurlencode($cv_id), null, [], $request_id);
+    $response = wecoop_cv_call_bffe('GET', wecoop_cv_upstream_path('/' . rawurlencode($cv_id)), null, [], $request_id);
     if (is_wp_error($response)) {
         return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message(), [], $request_id);
     }
@@ -447,7 +459,7 @@ function wecoop_cv_rest_list(WP_REST_Request $request) {
         $query['language'] = $language;
     }
 
-    $response = wecoop_cv_call_bffe('GET', '/api/v1/cv', null, $query, $request_id);
+    $response = wecoop_cv_call_bffe('GET', wecoop_cv_upstream_path(''), null, $query, $request_id);
     if (is_wp_error($response)) {
         return wecoop_cv_error_response(502, 'UPSTREAM_UNAVAILABLE', $response->get_error_message(), [], $request_id);
     }
