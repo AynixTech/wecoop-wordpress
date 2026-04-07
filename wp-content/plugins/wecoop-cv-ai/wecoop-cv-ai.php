@@ -74,6 +74,13 @@ function wecoop_cv_bffe_token() {
         }
     }
 
+    if (defined('OPENAI_API_KEY')) {
+        $openai_token = (string) constant('OPENAI_API_KEY');
+        if ($openai_token !== '') {
+            return $openai_token;
+        }
+    }
+
     return (string) get_option('wecoop_cv_bffe_token', '');
 }
 
