@@ -299,46 +299,6 @@ function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $r
     return $response_obj;
 }
 
-function wecoop_cv_rest_debug(WP_REST_Request $request) {
-    $request_id = wecoop_cv_request_id();
-    $base_url = wecoop_cv_bffe_base_url();
-    $probe_path = '/api/v1/cv';
-    $probe_url = rtrim($base_url, '/') . $probe_path;
-
-    $probe = wp_remote_get($probe_url, [
-        'timeout' => 20,
-        'headers' => [
-            'X-Request-Id' => $request_id,
-        ],
-    ]);
-
-    $probe_data = [
-        'ok' => true,
-        'requestId' => $request_id,
-        'resolvedBaseUrl' => $base_url,
-        'probeUrl' => $probe_url,
-        'note' => 'If probe status is 404 with HTML body, /api/v1/cv is not exposed on this host (missing BFFE route/reverse-proxy).',
-    ];
-
-    if (is_wp_error($probe)) {
-        $probe_data['probe'] = [
-            'ok' => false,
-            'error' => $probe->get_error_message(),
-        ];
-        return new WP_REST_Response($probe_data, 200);
-    }
-
-    $probe_body = (string) wp_remote_retrieve_body($probe);
-    $probe_data['probe'] = [
-        'ok' => true,
-        'statusCode' => (int) wp_remote_retrieve_response_code($probe),
-        'contentType' => (string) wp_remote_retrieve_header($probe, 'content-type'),
-        'bodyPreview' => mb_substr(wp_strip_all_tags($probe_body), 0, 240),
-    ];
-
-    return new WP_REST_Response($probe_data, 200);
-}
-
 function wecoop_cv_rest_generate(WP_REST_Request $request) {
     $request_id = wecoop_cv_request_id();
     $actor_id = wecoop_cv_actor_id();
@@ -430,11 +390,6 @@ function wecoop_cv_rest_get(WP_REST_Request $request) {
     $request_id = wecoop_cv_request_id();
     $cv_id = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $request['cv_id']);
 
-    // Avoid route collision where /cv/debug is matched by /cv/{cv_id}.
-    if ($cv_id === 'debug') {
-        return wecoop_cv_rest_debug($request);
-    }
-
     if ($cv_id === '') {
         return wecoop_cv_error_response(400, 'INVALID_CV_ID', 'cv_id is required', [], $request_id);
     }
@@ -501,12 +456,6 @@ function wecoop_cv_rest_list(WP_REST_Request $request) {
 }
 
 function wecoop_cv_register_rest_routes() {
-    register_rest_route('wecoop/v1', '/cv/debug', [
-        'methods' => WP_REST_Server::READABLE,
-        'callback' => 'wecoop_cv_rest_debug',
-        'permission_callback' => '__return_true',
-    ]);
-
     register_rest_route('wecoop/v1', '/cv/generate', [
         'methods' => WP_REST_Server::CREATABLE,
         'callback' => 'wecoop_cv_rest_generate',
