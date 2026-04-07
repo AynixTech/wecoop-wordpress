@@ -62,8 +62,19 @@ function wecoop_cv_bffe_base_url() {
         }
     }
 
+    if (defined('WECOOP_BFFE_BASE_URL')) {
+        $legacy_const_url = (string) constant('WECOOP_BFFE_BASE_URL');
+        if ($legacy_const_url !== '') {
+            return rtrim($legacy_const_url, '/');
+        }
+    }
+
     $url = (string) get_option('wecoop_cv_bffe_base_url', '');
-    return rtrim($url, '/');
+    if ($url !== '') {
+        return rtrim($url, '/');
+    }
+
+    return rtrim(home_url('/'), '/');
 }
 
 function wecoop_cv_bffe_token() {
@@ -211,7 +222,10 @@ function wecoop_cv_error_response($status, $code, $message, $fields = [], $reque
 function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $request_id = '') {
     $base_url = wecoop_cv_bffe_base_url();
     if ($base_url === '') {
-        return new WP_Error('CONFIG_ERROR', 'BFFE base URL is not configured');
+        return new WP_Error(
+            'CONFIG_ERROR',
+            'BFFE base URL is not configured. Set WECOOP_CV_BFFE_BASE_URL (or WECOOP_BFFE_BASE_URL) in wp-config.php, or set wecoop_cv_bffe_base_url in Settings > General. If omitted, WordPress home_url is used by default.'
+        );
     }
 
     $url = $base_url . $path;
