@@ -1,0 +1,100 @@
+.wecoop-cv-ai {
+  max-width: 980px;
+  margin: 32px auto;
+  padding: 24px;
+  border-radius: 14px;
+  background: #f8fbff;
+  border: 1px solid #d6e1ed;
+}
+
+.wecoop-cv-ai h1 {
+  margin-bottom: 8px;
+}
+
+.wecoop-cv-ai__form {
+  display: grid;
+  gap: 18px;
+}
+
+.wecoop-cv-ai__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wecoop-cv-ai label,
+.wecoop-cv-ai fieldset {
+  display: grid;
+  gap: 6px;
+}
+
+.wecoop-cv-ai input,
+.wecoop-cv-ai textarea,
+.wecoop-cv-ai select,
+.wecoop-cv-ai button {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #c7d2e0;
+}
+
+.wecoop-cv-ai__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.wecoop-cv-ai__row textarea {
+  grid-column: 1 / -1;
+  min-height: 72px;
+}
+
+.wecoop-cv-ai__submit {
+  border: 0;
+  background: #0057a8;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wecoop-cv-ai__status[data-status="loading"] {
+  color: #0057a8;
+}
+
+.wecoop-cv-ai__status[data-status="error"] {
+  color: #9d1d1d;
+}
+
+.wecoop-cv-ai__status[data-status="success"] {
+  color: #0b6c3a;
+}
+
+.wecoop-cv-ai__error {
+  padding: 10px;
+  background: #ffe8e8;
+  border: 1px solid #efb8b8;
+  border-radius: 8px;
+}
+
+.wecoop-cv-ai__result {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.wecoop-cv-ai__download {
+  text-decoration: none;
+  background: #eef5ff;
+  border: 1px solid #95b8df;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .wecoop-cv-ai__grid,
+  .wecoop-cv-ai__row {
+    grid-template-columns: 1fr;
+  }
+}
