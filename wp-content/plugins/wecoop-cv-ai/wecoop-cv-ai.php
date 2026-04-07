@@ -415,6 +415,55 @@ function wecoop_cv_extract_photo_url(array $payload) {
     $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
     $photo_mime = (string) ($personal['photoMimeType'] ?? $payload['photoMimeType'] ?? 'image/jpeg');
 
+    $is_probable_image_url = static function ($value) {
+        $v = trim((string) $value);
+        if ($v === '') {
+            return false;
+        }
+
+        if (stripos($v, 'data:image/') === 0) {
+            return true;
+        }
+
+        if (!preg_match('#^https?://#i', $v)) {
+            return false;
+        }
+
+        $path = (string) parse_url($v, PHP_URL_PATH);
+        return (bool) preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $path);
+    };
+
+    $find_image_in_array = static function ($node) use (&$find_image_in_array, $is_probable_image_url) {
+        if (!is_array($node)) {
+            return '';
+        }
+
+        foreach ($node as $k => $v) {
+            if (is_array($v)) {
+                $nested = $find_image_in_array($v);
+                if ($nested !== '') {
+                    return $nested;
+                }
+                continue;
+            }
+
+            if (!is_string($v)) {
+                continue;
+            }
+
+            $key = strtolower((string) $k);
+            if (!preg_match('/photo|image|avatar|picture/', $key)) {
+                continue;
+            }
+
+            if ($is_probable_image_url($v)) {
+                return trim($v);
+            }
+        }
+
+        return '';
+    };
+
     $to_data_uri = static function ($raw, $mime) {
         $value = trim((string) $raw);
         if ($value === '') {
@@ -495,7 +544,34 @@ function wecoop_cv_extract_photo_url(array $payload) {
         }
     }
 
+    $generic_personal = $find_image_in_array($personal);
+    if ($generic_personal !== '') {
+        return $generic_personal;
+    }
+
+    $generic_payload = $find_image_in_array($payload);
+    if ($generic_payload !== '') {
+        return $generic_payload;
+    }
+
     return '';
+}
+
+function wecoop_cv_to_bool($value) {
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    if (is_numeric($value)) {
+        return ((int) $value) !== 0;
+    }
+
+    if (is_string($value)) {
+        $normalized = strtolower(trim($value));
+        return in_array($normalized, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    return !empty($value);
 }
 
 function wecoop_cv_prepare_photo_src($photo_url, $render_mode = 'pdf') {
@@ -562,9 +638,13 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_m
         $template = 'formal';
     }
 
-    $include_photo = !empty($payload['config']['includePhoto']);
+    $include_photo = wecoop_cv_to_bool($payload['config']['includePhoto'] ?? false);
     $photo_url = wecoop_cv_extract_photo_url($payload);
     $photo_src = wecoop_cv_prepare_photo_src($photo_url, $render_mode);
+
+    if (!$include_photo && !empty($payload['hasPhoto']) && $photo_src !== '') {
+        $include_photo = true;
+    }
 
     $labels = wecoop_cv_i18n_labels($lang);
 
