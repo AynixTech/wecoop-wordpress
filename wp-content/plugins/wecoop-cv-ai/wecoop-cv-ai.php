@@ -55,22 +55,7 @@ function wecoop_cv_allowed_templates() {
 }
 
 function wecoop_cv_bffe_base_url() {
-    if (defined('WECOOP_CV_BFFE_BASE_URL')) {
-        $const_url = (string) constant('WECOOP_CV_BFFE_BASE_URL');
-        if ($const_url !== '') {
-            return rtrim($const_url, '/');
-        }
-    }
-
-    if (defined('WECOOP_BFFE_BASE_URL')) {
-        $legacy_const_url = (string) constant('WECOOP_BFFE_BASE_URL');
-        if ($legacy_const_url !== '') {
-            return rtrim($legacy_const_url, '/');
-        }
-    }
-
-    $url = (string) get_option('wecoop_cv_bffe_base_url', '');
-    return rtrim($url, '/');
+    return 'https://www.wecoop.org/api/v1/cv';
 }
 
 function wecoop_cv_bffe_token() {
@@ -236,7 +221,7 @@ function wecoop_cv_call_bffe($method, $path, $body = null, array $query = [], $r
     if ($base_url === '') {
         return new WP_Error(
             'CONFIG_ERROR',
-            'BFFE base URL is not configured. Set WECOOP_CV_BFFE_BASE_URL (or WECOOP_BFFE_BASE_URL) in wp-config.php, or set wecoop_cv_bffe_base_url in Settings > General.'
+            'BFFE base URL is not configured.'
         );
     }
 
@@ -632,27 +617,11 @@ function wecoop_cv_ai_meta_description() {
 add_action('wp_head', 'wecoop_cv_ai_meta_description');
 
 function wecoop_cv_ai_register_settings() {
-    register_setting('general', 'wecoop_cv_bffe_base_url', [
-        'type' => 'string',
-        'sanitize_callback' => 'esc_url_raw',
-        'default' => '',
-    ]);
-
     register_setting('general', 'wecoop_cv_bffe_token', [
         'type' => 'string',
         'sanitize_callback' => 'sanitize_text_field',
         'default' => '',
     ]);
-
-    add_settings_field(
-        'wecoop_cv_bffe_base_url',
-        'WECOOP CV BFFE Base URL',
-        function () {
-            $value = (string) get_option('wecoop_cv_bffe_base_url', '');
-            echo '<input type="url" class="regular-text" name="wecoop_cv_bffe_base_url" value="' . esc_attr($value) . '" placeholder="https://bffe.example.com" />';
-        },
-        'general'
-    );
 
     add_settings_field(
         'wecoop_cv_bffe_token',
