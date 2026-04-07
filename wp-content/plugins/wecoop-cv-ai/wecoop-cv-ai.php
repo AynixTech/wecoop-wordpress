@@ -720,6 +720,27 @@ function wecoop_cv_build_local_html(array $payload, $enable_ai = true, $render_m
             . '</body></html>';
     }
 
+    if ($template === 'vibrant') {
+        return '<!doctype html><html><head><meta charset="UTF-8"><style>'
+            . 'body{font-family:Arial,sans-serif;font-size:11px;color:#111;margin:0;background:#f2f2f2;}h1{margin:0;color:#f3c623;font-size:32px;}h2{font-size:16px;margin:16px 0 8px;text-transform:uppercase;border-bottom:2px solid #f3c623;padding-bottom:4px;}h3{font-size:14px;margin:0 0 4px;}'
+            . '.layout{width:100%;border-collapse:collapse;} .left{width:34%;background:#1f2a3d;color:#fff;padding:22px;vertical-align:top;} .right{width:66%;background:#fff;padding:22px;vertical-align:top;} .role{margin:6px 0 10px;color:#d4d9e3;} .item{margin-bottom:12px;} .meta{color:#555;margin:0 0 5px;} ul{padding-left:18px;} li{margin-bottom:6px;} .cv-photo{width:120px;height:120px;border-radius:50%;object-fit:cover;border:4px solid #f3c623;display:block;margin:0 auto 14px;} .left p{margin:0 0 6px;} .right h2{border-bottom-color:#d4d9e3;color:#1f2a3d;}'
+            . '</style></head><body>'
+            . '<table class="layout"><tr><td class="left">'
+            . $photo_html
+            . '<h1>' . esc_html($full_name !== '' ? $full_name : 'N/A') . '</h1>'
+            . '<p class="role">' . esc_html($target) . '</p>'
+            . '<h2>' . esc_html($labels['contact']) . '</h2>'
+            . '<p>' . esc_html($email) . '</p><p>' . esc_html($phone) . '</p><p>' . esc_html($address) . '</p>'
+            . '<h2>' . esc_html($labels['skills']) . '</h2><p>' . ($skills !== '' ? $skills : esc_html($labels['na'])) . '</p>'
+            . '<h2>' . esc_html($labels['languages']) . '</h2><ul>' . ($languages_html !== '' ? $languages_html : '<li>' . esc_html($labels['na']) . '</li>') . '</ul>'
+            . '</td><td class="right">'
+            . '<h2>' . esc_html($labels['profile']) . '</h2><p>' . esc_html($profile_summary !== '' ? $profile_summary : $labels['na']) . '</p>'
+            . ($highlight_html !== '' ? '<h2>' . esc_html($labels['highlights']) . '</h2><ul>' . $highlight_html . '</ul>' : '')
+            . '<h2>' . esc_html($labels['experience']) . '</h2>' . ($experience_blocks !== '' ? $experience_blocks : '<p>' . esc_html($labels['na']) . '</p>')
+            . '<h2>' . esc_html($labels['education']) . '</h2>' . ($education_blocks !== '' ? $education_blocks : '<p>' . esc_html($labels['na']) . '</p>')
+            . '</td></tr></table></body></html>';
+    }
+
     if ($template === 'peach') {
         return '<!doctype html><html><head><meta charset="UTF-8"><style>'
             . 'body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;background:#f7f1f2;}h1{font-size:34px;margin:0;color:#f4c6cf;letter-spacing:1px;}h2{font-size:16px;margin:14px 0 8px;text-transform:uppercase;letter-spacing:2px;background:#f1c7cf;padding:6px 8px;}h3{font-size:14px;margin:0 0 4px;}'
