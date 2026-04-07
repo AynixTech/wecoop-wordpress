@@ -92,6 +92,163 @@ function wecoop_cv_upstream_path($resource = '') {
     return '/api/v1/cv' . $resource;
 }
 
+function wecoop_cv_try_load_mpdf() {
+    if (class_exists('Mpdf\\Mpdf')) {
+        return true;
+    }
+
+    $autoload = defined('WECOOP_SERVIZI_FILE')
+        ? dirname((string) constant('WECOOP_SERVIZI_FILE')) . '/vendor/autoload.php'
+        : WP_PLUGIN_DIR . '/wecoop-servizi/vendor/autoload.php';
+
+    wecoop_cv_log_event('cv_pdf_autoload_probe', [
+        'autoload' => $autoload,
+        'exists' => file_exists($autoload),
+    ]);
+
+    if (file_exists($autoload)) {
+        require_once $autoload;
+    }
+
+    $mpdf_exists = class_exists('Mpdf\\Mpdf');
+    wecoop_cv_log_event('cv_pdf_mpdf_class_check', [
+        'exists' => $mpdf_exists,
+    ]);
+
+    return $mpdf_exists;
+}
+
+function wecoop_cv_html_to_pdf($html, $filename) {
+    if (!wecoop_cv_try_load_mpdf()) {
+        return [
+            'success' => false,
+            'message' => 'Libreria mPDF non disponibile',
+        ];
+    }
+
+    try {
+        $mpdf = new \Mpdf\Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 15,
+            'margin_bottom' => 15,
+            'margin_header' => 5,
+            'margin_footer' => 5,
+        ]);
+
+        $mpdf->SetTitle('CV - ' . $filename);
+        $mpdf->SetAuthor('WeCoop');
+        $mpdf->SetDisplayMode('fullpage');
+        $mpdf->WriteHTML($html);
+
+        $upload_dir = wp_upload_dir();
+        $cv_dir = $upload_dir['basedir'] . '/cv-ai';
+        if (!file_exists($cv_dir)) {
+            wp_mkdir_p($cv_dir);
+        }
+
+        $filepath = $cv_dir . '/' . sanitize_file_name($filename) . '.pdf';
+        $url = $upload_dir['baseurl'] . '/cv-ai/' . sanitize_file_name($filename) . '.pdf';
+
+        $mpdf->Output($filepath, 'F');
+
+        return [
+            'success' => true,
+            'filepath' => $filepath,
+            'url' => $url,
+        ];
+    } catch (Exception $e) {
+        return [
+            'success' => false,
+            'message' => 'Errore generazione PDF: ' . $e->getMessage(),
+        ];
+    }
+}
+
+function wecoop_cv_build_local_html(array $payload) {
+    $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+    $full_name = trim((string) ($personal['firstName'] ?? '') . ' ' . (string) ($personal['lastName'] ?? ''));
+    $email = (string) ($personal['email'] ?? '');
+    $phone = (string) ($personal['phone'] ?? '');
+    $job_goal = isset($payload['jobGoal']) && is_array($payload['jobGoal']) ? $payload['jobGoal'] : [];
+    $target = (string) ($job_goal['position'] ?? '');
+
+    $experience_html = '';
+    if (!empty($payload['experience']) && is_array($payload['experience'])) {
+        foreach ($payload['experience'] as $exp) {
+            if (!is_array($exp)) {
+                continue;
+            }
+            $experience_html .= '<li><strong>' . esc_html((string) ($exp['role'] ?? '')) . '</strong> - '
+                . esc_html((string) ($exp['company'] ?? '')) . ' ('
+                . esc_html((string) ($exp['startDate'] ?? '')) . ' - '
+                . esc_html((string) ($exp['endDate'] ?? '')) . ')<br>'
+                . esc_html((string) ($exp['description'] ?? '')) . '</li>';
+        }
+    }
+
+    $education_html = '';
+    if (!empty($payload['education']) && is_array($payload['education'])) {
+        foreach ($payload['education'] as $edu) {
+            if (!is_array($edu)) {
+                continue;
+            }
+            $education_html .= '<li><strong>' . esc_html((string) ($edu['title'] ?? '')) . '</strong> - '
+                . esc_html((string) ($edu['institution'] ?? '')) . ' ('
+                . esc_html((string) ($edu['startDate'] ?? '')) . ' - '
+                . esc_html((string) ($edu['endDate'] ?? '')) . ')<br>'
+                . esc_html((string) ($edu['description'] ?? '')) . '</li>';
+        }
+    }
+
+    $skills = '';
+    if (!empty($payload['skills']) && is_array($payload['skills'])) {
+        $skills = esc_html(implode(', ', array_map('strval', $payload['skills'])));
+    }
+
+    return '<!doctype html><html><head><meta charset="UTF-8"><style>'
+        . 'body{font-family:Arial,sans-serif;font-size:12px;color:#111;}h1{font-size:24px;margin-bottom:6px;}h2{font-size:16px;margin:18px 0 8px;}ul{padding-left:18px;}li{margin-bottom:8px;} .meta{color:#444;}'
+        . '</style></head><body>'
+        . '<h1>' . esc_html($full_name) . '</h1>'
+        . '<p class="meta">Email: ' . esc_html($email) . ' | Telefono: ' . esc_html($phone) . '</p>'
+        . '<p class="meta">Obiettivo: ' . esc_html($target) . '</p>'
+        . '<h2>Esperienza</h2><ul>' . ($experience_html !== '' ? $experience_html : '<li>N/A</li>') . '</ul>'
+        . '<h2>Formazione</h2><ul>' . ($education_html !== '' ? $education_html : '<li>N/A</li>') . '</ul>'
+        . '<h2>Competenze</h2><p>' . ($skills !== '' ? $skills : 'N/A') . '</p>'
+        . '</body></html>';
+}
+
+function wecoop_cv_generate_local_fallback(array $payload, $request_id) {
+    $cv_id = 'cv_local_' . substr(str_replace('-', '', wp_generate_uuid4()), 0, 16);
+    $html = wecoop_cv_build_local_html($payload);
+
+    $pdf = wecoop_cv_html_to_pdf($html, $cv_id);
+    if (empty($pdf['success'])) {
+        return new WP_Error('PDF_GENERATION_FAILED', (string) ($pdf['message'] ?? 'Errore generazione PDF'));
+    }
+
+    wecoop_cv_log_event('cv_generate_local_fallback_completed', [
+        'requestId' => $request_id,
+        'cvId' => $cv_id,
+        'pdfGenerated' => true,
+    ]);
+
+    return [
+        'ok' => true,
+        'requestId' => $request_id,
+        'cvId' => $cv_id,
+        'status' => 'generated',
+        'previewText' => 'CV generato in fallback locale WordPress.',
+        'files' => [
+            'pdfUrl' => (string) $pdf['url'],
+            'docxUrl' => null,
+        ],
+        'createdAt' => gmdate('c'),
+    ];
+}
+
 function wecoop_cv_client_ip() {
     $keys = ['HTTP_CF_CONNECTING_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR'];
 
@@ -356,6 +513,23 @@ function wecoop_cv_rest_generate(WP_REST_Request $request) {
     }
 
     $response_data = $response->get_data();
+    $response_status = $response->get_status();
+
+    if (
+        $response_status === 404
+        && is_array($response_data)
+        && (($response_data['error']['code'] ?? '') === 'UPSTREAM_ERROR')
+    ) {
+        $fallback = wecoop_cv_generate_local_fallback($payload, $request_id);
+        if (is_wp_error($fallback)) {
+            return wecoop_cv_error_response(502, 'LOCAL_FALLBACK_FAILED', $fallback->get_error_message(), [], $request_id);
+        }
+
+        $fallback_response = new WP_REST_Response($fallback, 200);
+        $fallback_response->header('X-Request-Id', $request_id);
+        return $fallback_response;
+    }
+
     $cv_id = is_array($response_data) ? (string) ($response_data['cvId'] ?? '') : '';
 
     wecoop_cv_log_event('cv_generate_ai_request_completed', [
