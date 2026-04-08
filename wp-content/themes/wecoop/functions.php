@@ -495,7 +495,7 @@ function wecoop_ws_page_shell_end() {
                         <h4><?php echo esc_html($tr('frontpage.footer.col3_title', 'Contacto')); ?></h4>
                         <span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano, Italia')); ?></span>
                         <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.it')); ?></span>
-                        <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 02 XXXX XXXX')); ?></span>
+                        <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span>
                     </div>
                 </div>
                 <div class="ws-footer-bottom">

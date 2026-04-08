@@ -627,7 +627,7 @@ export default function App() {
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>Via Populonia 8, Milano</li>
                 <li>info@wecoop.it</li>
-                <li>+39 02 XXXX XXXX</li>
+                <li>+39 351 511 2113</li>
               </ul>
             </div>
           </div>
