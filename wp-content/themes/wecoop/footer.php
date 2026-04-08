@@ -31,7 +31,7 @@
                 <h4>Contacto</h4>
                 <ul class="wecoop-footer__menu">
                     <li>Via Populonia 8, Milano</li>
-                    <li><a href="mailto:info@wecoop.it">info@wecoop.it</a></li>
+                    <li><a href="mailto:info@wecoop.org">info@wecoop.org</a></li>
                     <li><a href="tel:+393515112113">+39 351 511 2113</a></li>
                 </ul>
             </div>

@@ -247,7 +247,7 @@ $operator_url = home_url('/contact/');
                 <ul class="ws-contact-list">
                     <li><strong><?php echo esc_html($tr('frontpage.contact.label_address', 'Dove siamo')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano')); ?></span></li>
                     <li><strong><?php echo esc_html($tr('frontpage.contact.label_hours', 'Orari')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_hours', 'Lunedi - Venerdi')); ?></span></li>
-                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_email', 'Email')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.it')); ?></span></li>
+                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_email', 'Email')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.org')); ?></span></li>
                     <li><strong><?php echo esc_html($tr('frontpage.contact.label_phone', 'Telefono')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span></li>
                 </ul>
             </div>
@@ -288,7 +288,7 @@ $operator_url = home_url('/contact/');
                 <div>
                     <h4><?php echo esc_html($tr('frontpage.footer.col3_title', 'Contacto')); ?></h4>
                     <span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano, Italia')); ?></span>
-                    <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.it')); ?></span>
+                    <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.org')); ?></span>
                     <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span>
                 </div>
             </div>

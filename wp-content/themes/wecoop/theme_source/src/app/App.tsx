@@ -540,7 +540,7 @@ export default function App() {
                   </div>
                   <div>
                     <div className="font-bold text-[#4D4C4C] mb-1">Email</div>
-                    <div className="text-[#7C8788]">info@wecoop.it</div>
+                    <div className="text-[#7C8788]">info@wecoop.org</div>
                   </div>
                 </div>
 
@@ -626,7 +626,7 @@ export default function App() {
               <h4 className="font-bold mb-4">Contacto</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li>Via Populonia 8, Milano</li>
-                <li>info@wecoop.it</li>
+                <li>info@wecoop.org</li>
                 <li>+39 351 511 2113</li>
               </ul>
             </div>
