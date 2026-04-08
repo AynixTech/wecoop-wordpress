@@ -82,26 +82,28 @@ $operator_url = home_url('/contact/');
     <section id="servizi" class="ws-section ws-section--soft-blue">
         <div class="ws-container">
             <h2><?php echo esc_html($tr('frontpage.services.title', 'Servizi')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.services.lead', 'Supporto pratico su lavoro, documenti, orientamento e accesso ai servizi.')); ?></p>
-            <div class="ws-grid-3">
+            <p class="ws-lead"><?php echo esc_html($tr('frontpage.services.lead', 'Supporto specializzato su fiscalita, mediazione e adempimenti per vivere e lavorare in Italia.')); ?></p>
+            <div class="ws-grid-4">
                 <article class="ws-card ws-card--blue">
-                    <span class="ws-icon ws-icon--blue" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.work.title', 'Lavoro')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.work.body', 'Ti supportiamo nella ricerca di opportunita e nella candidatura.')); ?></p>
+                    <span class="ws-icon ws-icon--blue" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
+                    <h3><?php echo esc_html($tr('frontpage.services.service1.title', 'Vivere in Italia')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.services.service1.body', 'Supporto pratico per orientarti nella vita quotidiana e amministrativa in Italia.')); ?></p>
                 </article>
                 <article class="ws-card ws-card--green">
-                    <span class="ws-icon ws-icon--green" aria-hidden="true"><i class="fa-solid fa-file-lines"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.docs.title', 'Documenti')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.docs.body', 'Ti aiutiamo a gestire pratiche e documentazione in modo semplice.')); ?></p>
+                    <span class="ws-icon ws-icon--green" aria-hidden="true"><i class="fa-solid fa-handshake-angle"></i></span>
+                    <h3><?php echo esc_html($tr('frontpage.services.service2.title', 'Mediazione fiscale')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.services.service2.body', 'Mediazione e accompagnamento per comprendere procedure e comunicazioni fiscali.')); ?></p>
                 </article>
                 <article class="ws-card ws-card--pink">
                     <span class="ws-icon ws-icon--pink" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.tax.title', 'Supporto fiscale')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.tax.body', 'Orientamento su adempimenti e bisogni fiscali di base.')); ?></p>
+                    <h3><?php echo esc_html($tr('frontpage.services.service3.title', 'Supporto contabile per P.IVA forfettaria')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.services.service3.body', 'Supporto contabile dedicato a chi opera con partita IVA in regime forfettario.')); ?></p>
                 </article>
-            </div>
-            <div class="ws-actions" style="margin-top:18px;">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.services.cta', 'Hai bisogno di aiuto? Parla con noi')); ?></a>
+                <article class="ws-card ws-card--lime">
+                    <span class="ws-icon ws-icon--lime" aria-hidden="true"><i class="fa-solid fa-circle-info"></i></span>
+                    <h3><?php echo esc_html($tr('frontpage.services.service4.title', 'Orientamenti e chiarimenti fiscali')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.services.service4.body', 'Orientamento e chiarimenti su dubbi fiscali ricorrenti e adempimenti principali.')); ?></p>
+                </article>
             </div>
         </div>
     </section>
@@ -117,10 +119,6 @@ $operator_url = home_url('/contact/');
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><h3><?php echo esc_html($tr('frontpage.how.step4.title', '4. Ti formiamo')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step4.body', 'Sviluppi competenze utili per il lavoro.')); ?></p></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><h3><?php echo esc_html($tr('frontpage.how.step5.title', '5. Ti accompagniamo al lavoro')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step5.body', 'Ti aiutiamo a candidarti e trovare opportunita.')); ?></p></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-globe"></i></span><h3><?php echo esc_html($tr('frontpage.how.model.title', 'Fisico + Digitale')); ?></h3><p><?php echo esc_html($tr('frontpage.how.model.body', 'Sportello sul territorio e piattaforma digitale in un unico percorso.')); ?></p></article>
-            </div>
-            <div class="ws-actions" style="margin-top:18px;">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.how.cta1', 'Inizia il tuo percorso')); ?></a>
-                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.how.cta2', 'Prenota un incontro con un operatore')); ?></a>
             </div>
             <p class="ws-kpi"><?php echo esc_html($tr('frontpage.how.microcopy', 'Ti aiutiamo passo dopo passo')); ?></p>
         </div>
@@ -143,8 +141,7 @@ $operator_url = home_url('/contact/');
                 <article class="ws-mini ws-mini--lime"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-chart-line"></i></span><h3><?php echo esc_html($tr('frontpage.passaparola.impact.title', 'Impacto')); ?></h3><p><?php echo esc_html($tr('frontpage.passaparola.impact.body', 'Inclusion social efectiva, autonomia personal y acceso real al mercado laboral.')); ?></p></article>
             </div>
             <div class="ws-actions" style="margin-top:18px;">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta1', 'Vuoi partecipare al progetto? Contattaci')); ?></a>
-                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta2', 'Collabora con noi')); ?></a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta2', 'Collabora con noi')); ?></a>
             </div>
         </div>
     </section>
@@ -164,7 +161,6 @@ $operator_url = home_url('/contact/');
                     </ul>
                     <div class="ws-actions" style="margin-top:14px;">
                         <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/wecoop-app/')); ?>"><?php echo esc_html($tr('frontpage.platform.cta1', 'Registrati alla piattaforma')); ?></a>
-                        <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.platform.cta2', 'Hai bisogno di aiuto? Scrivici su WhatsApp')); ?></a>
                     </div>
                 </div>
                 <div class="ws-grid-2 ws-media-grid">
@@ -223,10 +219,6 @@ $operator_url = home_url('/contact/');
                     <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card3.title', 'Fundaciones')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card3.body', 'Apoyo a proyectos de inclusion')); ?></p></article>
                     <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card4.title', 'Voluntarios')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card4.body', 'Comparte tu tiempo y talento')); ?></p></article>
                 </div>
-                <div class="ws-actions" style="margin-top:18px;">
-                    <a class="ws-btn ws-btn--light" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.final.cta1', 'Parla con un operatore')); ?></a>
-                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.final.cta2', 'Scrivici su WhatsApp')); ?></a>
-                </div>
                 <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('frontpage.final.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></p>
             </div>
             <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_inspiring_realistic_photo_of_diverse_people_walking_together_in_an_urban_european_env_725555-3.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.collab.image_alt', 'Colaboracion')); ?>">
@@ -241,7 +233,6 @@ $operator_url = home_url('/contact/');
                 <div class="ws-actions" style="margin-bottom:12px;">
                     <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.contact.cta1', 'Scrivici su WhatsApp')); ?></a>
                     <a class="ws-btn ws-btn--ghost" href="tel:+3902XXXXXXX"><?php echo esc_html($tr('frontpage.contact.cta2', 'Chiama ora')); ?></a>
-                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.contact.cta3', 'Prenota un appuntamento')); ?></a>
                 </div>
                 <p class="ws-kpi"><?php echo esc_html($tr('frontpage.contact.microcopy', 'Ti rispondiamo rapidamente')); ?></p>
                 <ul class="ws-contact-list">
