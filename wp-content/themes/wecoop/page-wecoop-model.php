@@ -7,27 +7,33 @@ wecoop_ws_page_shell_start(translate_string('model.aria.page', 'WECOOP model pag
     <div class="ws-container">
     <article class="wecoop-page-content">
         <section class="wecoop-section hero">
-            <h1>The WECOOP Model</h1>
-            <p>An institutional model that connects local territory, technology, and a partner network to improve access to services, education, and work opportunities.</p>
+            <h1>Come funziona WECOOP</h1>
+            <p>Un percorso semplice per aiutarti a risolvere i tuoi bisogni e accedere al lavoro.</p>
         </section>
 
         <section class="wecoop-section">
-            <h2>Model Pillars</h2>
+            <h2>Il percorso</h2>
             <ul>
-                <li>Local physical access point in the community.</li>
-                <li>Digital platform for scalability and case tracking.</li>
-                <li>Collaborative governance with institutions and organizations.</li>
+                <li><strong>Ti ascoltiamo:</strong> capiamo la tua situazione e i tuoi bisogni.</li>
+                <li><strong>Ti orientiamo:</strong> ti spieghiamo le possibilita e da dove iniziare.</li>
+                <li><strong>Ti aiutiamo:</strong> supporto su documenti, servizi e strumenti.</li>
+                <li><strong>Ti formiamo:</strong> sviluppi competenze utili per il lavoro.</li>
+                <li><strong>Ti accompagniamo al lavoro:</strong> candidatura e opportunita concrete.</li>
             </ul>
         </section>
 
         <section class="wecoop-section">
-            <h2>How It Works</h2>
-            <p>People access a WECOOP point, define their need, activate a support path, and continue service management through the app with human guidance.</p>
+            <h2>Un sistema fisico + digitale</h2>
+            <p>WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.</p>
         </section>
 
         <section class="wecoop-section wecoop-cta">
-            <h2>Do you want to activate this model in your area?</h2>
-            <p><a class="wecoop-btn" href="<?php echo esc_url(home_url('/contact')); ?>">Contact us</a></p>
+            <h2>Inizia ora</h2>
+            <p>
+                <a class="wecoop-btn" href="https://wa.me/<?php echo esc_attr(preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'))); ?>?text=<?php echo esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, vorrei iniziare il mio percorso.'))); ?>" target="_blank" rel="noopener">Inizia il tuo percorso</a>
+                <a class="wecoop-btn wecoop-btn-outline" href="<?php echo esc_url(home_url('/contact/')); ?>">Parla con un operatore</a>
+            </p>
+            <p>Ti aiutiamo passo dopo passo</p>
         </section>
     </article>
     </div>

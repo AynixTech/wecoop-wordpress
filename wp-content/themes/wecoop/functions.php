@@ -440,18 +440,20 @@ function wecoop_ws_page_shell_start($aria_label = '') {
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
                 </a>
                 <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
-                    <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Que es WECOOP')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Cos\'e WECOOP')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#servizi"><?php echo esc_html($tr('frontpage.nav.services', 'Servizi')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', 'Come funziona')); ?></a>
                     <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Plataforma Digital')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impacto')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contacto')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Piattaforma Digitale')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impatto')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contatti')); ?></a>
                 </div>
                 <div class="ws-lang-switcher" aria-label="Language switcher">
                     <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
                     <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
                     <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
                 </div>
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Colabora')); ?></a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
             </div>
         </nav>
     <?php
@@ -474,10 +476,13 @@ function wecoop_ws_page_shell_end() {
                     </div>
                     <div>
                         <h4><?php echo esc_html($tr('frontpage.footer.col1_title', 'WECOOP')); ?></h4>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.footer.col1_link1', 'Que es WECOOP')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.footer.col1_link1', 'Cos\'e WECOOP')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#servizi"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Servizi')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#come-funziona"><?php echo esc_html($tr('frontpage.footer.col1_link3', 'Come funziona')); ?></a>
                         <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Passaparola')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.footer.col1_link3', 'Plataforma Digital')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.footer.col1_link4', 'Impacto')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.footer.col1_link4', 'Piattaforma Digitale')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.footer.col1_link5', 'Impatto')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.footer.col1_link6', 'Contatti')); ?></a>
                     </div>
                     <div>
                         <h4><?php echo esc_html($tr('frontpage.footer.col2_title', 'Colabora')); ?></h4>
