@@ -1,8 +1,10 @@
 <?php
 get_header();
+wecoop_ws_page_shell_start(translate_string('contact.aria.page', 'Contact page'));
 ?>
 
-<main class="wecoop-main">
+<section class="ws-section">
+    <div class="ws-container">
     <article class="wecoop-page-content">
         <section class="wecoop-section hero">
             <h1>Contact</h1>
@@ -25,7 +27,9 @@ get_header();
             <?php echo do_shortcode('[wecoop_newsletter]'); ?>
         </section>
     </article>
-</main>
+    </div>
+</section>
 
 <?php
+wecoop_ws_page_shell_end();
 get_footer();

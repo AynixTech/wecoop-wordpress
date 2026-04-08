@@ -414,6 +414,98 @@ function wecoop_theme_security_headers() {
 }
 add_action('send_headers', 'wecoop_theme_security_headers');
 
+function wecoop_ws_page_shell_start($aria_label = '') {
+    $tr = static function($key, $default = '') {
+        return translate_string($key, $default);
+    };
+
+    $current_lang = wecoop_language();
+    $lang_base_url = remove_query_arg('lang');
+    ?>
+    <style>
+        body.page .wecoop-header,
+        body.page .wecoop-footer {
+            display: none !important;
+        }
+
+        body.page .wecoop-site-content {
+            min-height: 0;
+        }
+    </style>
+
+    <main class="ws-site" aria-label="<?php echo esc_attr($aria_label !== '' ? $aria_label : $tr('page.aria.default', 'WECOOP page')); ?>">
+        <nav class="ws-nav">
+            <div class="ws-container ws-nav__inner">
+                <a class="ws-brand" href="<?php echo esc_url(home_url('/')); ?>#inicio">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
+                </a>
+                <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
+                    <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Que es WECOOP')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Plataforma Digital')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impacto')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contacto')); ?></a>
+                </div>
+                <div class="ws-lang-switcher" aria-label="Language switcher">
+                    <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
+                    <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
+                    <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
+                </div>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Colabora')); ?></a>
+            </div>
+        </nav>
+    <?php
+}
+
+function wecoop_ws_page_shell_end() {
+    $tr = static function($key, $default = '') {
+        return translate_string($key, $default);
+    };
+    ?>
+        <footer class="ws-footer">
+            <div class="ws-container">
+                <div class="ws-grid-4">
+                    <div>
+                        <div class="ws-footer-brand">
+                            <img class="ws-footer-logo" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
+                            <span>WECOOP</span>
+                        </div>
+                        <p><?php echo esc_html($tr('frontpage.footer.description', 'Un ecosistema de inclusion y oportunidades para todos.')); ?></p>
+                    </div>
+                    <div>
+                        <h4><?php echo esc_html($tr('frontpage.footer.col1_title', 'WECOOP')); ?></h4>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.footer.col1_link1', 'Que es WECOOP')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Passaparola')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.footer.col1_link3', 'Plataforma Digital')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.footer.col1_link4', 'Impacto')); ?></a>
+                    </div>
+                    <div>
+                        <h4><?php echo esc_html($tr('frontpage.footer.col2_title', 'Colabora')); ?></h4>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link1', 'Empresas')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link2', 'Instituciones')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link3', 'Fundaciones')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link4', 'Voluntarios')); ?></a>
+                    </div>
+                    <div>
+                        <h4><?php echo esc_html($tr('frontpage.footer.col3_title', 'Contacto')); ?></h4>
+                        <span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano, Italia')); ?></span>
+                        <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.it')); ?></span>
+                        <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 02 XXXX XXXX')); ?></span>
+                    </div>
+                </div>
+                <div class="ws-footer-bottom">
+                    <p><?php echo esc_html($tr('frontpage.footer.rights', '© 2026 WECOOP. Todos los derechos reservados.')); ?></p>
+                    <div class="ws-footer-brands">
+                        <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand1_alt', 'Passaparola')); ?>">
+                        <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand2_alt', 'APP WECOOP')); ?>">
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+    <?php
+}
+
 if (file_exists(get_template_directory() . '/inc/custom-functions.php')) {
     require_once get_template_directory() . '/inc/custom-functions.php';
 }

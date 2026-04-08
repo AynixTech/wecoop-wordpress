@@ -5,6 +5,10 @@ $tr = static function($key, $default = '') {
 };
 $current_lang = wecoop_language();
 $lang_base_url = remove_query_arg('lang');
+$wa_phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'));
+$wa_message = rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, vorrei parlare con un operatore.'));
+$whatsapp_url = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
+$operator_url = home_url('/contact/');
 ?>
 
 <main class="ws-site" aria-label="<?php echo esc_attr($tr('frontpage.aria.homepage', 'WECOOP homepage')); ?>">
@@ -14,31 +18,33 @@ $lang_base_url = remove_query_arg('lang');
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
             </a>
             <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
-                <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Que es WECOOP')); ?></a>
+                <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Cos\'e WECOOP')); ?></a>
+                <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', 'Servizi')); ?></a>
+                <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', 'Come funziona')); ?></a>
                 <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
-                <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Plataforma Digital')); ?></a>
-                <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impacto')); ?></a>
-                <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contacto')); ?></a>
+                <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Piattaforma Digitale')); ?></a>
+                <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impatto')); ?></a>
+                <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contatti')); ?></a>
             </div>
             <div class="ws-lang-switcher" aria-label="Language switcher">
                 <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
                 <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
                 <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
             </div>
-            <a class="ws-btn ws-btn--primary" href="#contacto"><?php echo esc_html($tr('frontpage.nav.cta', 'Colabora')); ?></a>
+            <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
         </div>
     </nav>
 
     <section id="inicio" class="ws-hero">
         <div class="ws-container ws-grid-2 ws-hero__grid">
             <div>
-                <h1><?php echo esc_html($tr('frontpage.hero.title_intro', 'Un ecosistema de')); ?> <span><?php echo esc_html($tr('frontpage.hero.title_highlight_1', 'inclusion')); ?></span> <?php echo esc_html($tr('frontpage.hero.title_join', 'y')); ?> <span><?php echo esc_html($tr('frontpage.hero.title_highlight_2', 'oportunidades')); ?></span></h1>
-                <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP integra servicios territoriales, formacion profesional y tecnologia digital para conectar personas vulnerables con oportunidades de empleo y desarrollo personal.')); ?></p>
+                <h1><?php echo esc_html($tr('frontpage.hero.title', 'Un punto di accesso a servizi, formazione e opportunita di lavoro')); ?></h1>
+                <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP ti aiuta a gestire documenti, accedere ai servizi e costruire un percorso verso il lavoro, attraverso un sistema integrato tra sportello fisico e piattaforma digitale.')); ?></p>
                 <div class="ws-actions">
-                    <a class="ws-btn ws-btn--primary" href="#que-es"><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Descubre mas')); ?></a>
-                    <a class="ws-btn ws-btn--ghost" href="#contacto"><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Contactanos')); ?></a>
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>
+                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Scrivici su WhatsApp')); ?></a>
                 </div>
-                <div class="ws-kpi"><strong>400+</strong> <?php echo esc_html($tr('frontpage.hero.kpi_label', 'Beneficiarios')); ?></div>
+                <div class="ws-kpi"><?php echo esc_html($tr('frontpage.hero.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></div>
             </div>
             <div class="ws-hero__media">
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecoop-hero-community.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.hero.image_alt', 'Comunidad WECOOP')); ?>">

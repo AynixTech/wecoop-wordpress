@@ -1,8 +1,10 @@
 <?php
 get_header();
+wecoop_ws_page_shell_start(translate_string('impact.aria.page', 'Social impact page'));
 ?>
 
-<main class="wecoop-main">
+<section class="ws-section">
+    <div class="ws-container">
     <article class="wecoop-page-content">
         <section class="wecoop-section hero">
             <h1>Social Impact</h1>
@@ -29,7 +31,9 @@ get_header();
             <p><a class="wecoop-btn" href="<?php echo esc_url(home_url('/passaparola-project')); ?>">View PASSAPAROLA</a></p>
         </section>
     </article>
-</main>
+    </div>
+</section>
 
 <?php
+wecoop_ws_page_shell_end();
 get_footer();
