@@ -27,7 +27,7 @@ body {
 }
 
 body {
-  font-family: "Poppins", "Trebuchet MS", "Segoe UI", sans-serif;
+  font-family: "Inter", "Trebuchet MS", "Segoe UI", sans-serif;
   color: var(--wecoop-neutral-900);
   background:
     radial-gradient(1200px 500px at 80% -20%, rgba(89, 181, 117, 0.24), transparent 60%),

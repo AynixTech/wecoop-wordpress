@@ -1131,7 +1131,7 @@ body.home .wecoop-whatsapp-button {
     --ws-pink: #e6266b;
     --ws-text: #4d4c4c;
     --ws-muted: #7c8788;
-    font-family: "Poppins", sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 17px;
     color: var(--ws-text);
     background: #fff;
@@ -1317,7 +1317,10 @@ body.home {
 
 .ws-hero {
     padding: 84px 0;
-    background: linear-gradient(130deg, rgba(18, 130, 168, 0.07), #fff 48%, rgba(89, 181, 117, 0.08));
+    background:
+        radial-gradient(980px 460px at 12% 20%, rgba(18, 130, 168, 0.2), transparent 64%),
+        radial-gradient(920px 420px at 92% 78%, rgba(89, 181, 117, 0.2), transparent 62%),
+        linear-gradient(120deg, #d8ecf6 0%, #f3fafc 48%, #e7f4ea 100%);
 }
 
 .ws-hero h1 {
@@ -1350,6 +1353,25 @@ body.home {
     font-size: 1.1rem;
     line-height: 1.6;
     max-width: 72ch;
+}
+
+.ws-hero .ws-btn--primary {
+    background: linear-gradient(135deg, #0f7ea6, #1a8fbc);
+    box-shadow: 0 10px 24px rgba(15, 126, 166, 0.28);
+}
+
+.ws-hero .ws-btn--success {
+    background: linear-gradient(135deg, #1ebb60, #33ce74);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 10px 24px rgba(30, 187, 96, 0.28);
+}
+
+.ws-hero__microcopy {
+    margin-top: 14px;
+    font-size: 0.96rem;
+    color: #7c858d;
+    font-style: italic;
 }
 
 .ws-actions {
@@ -1386,8 +1408,9 @@ body.home {
 .ws-hero__media {
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 16px;
+    position: relative;
 }
 
 .ws-hero__media img {
@@ -1395,6 +1418,44 @@ body.home {
     max-width: 100%;
     height: 100%;
     min-height: 420px;
+}
+
+.ws-kpi-card {
+    position: absolute;
+    left: -22px;
+    bottom: -20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 18px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.14);
+}
+
+.ws-kpi-card__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(89, 181, 117, 0.14);
+    color: #53ae70;
+}
+
+.ws-kpi-card strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+    color: #4d4c4c;
+}
+
+.ws-kpi-card small {
+    display: block;
+    font-size: 1rem;
+    color: #7c8788;
 }
 
 .ws-card,
@@ -1916,6 +1977,13 @@ body.home {
 
     .ws-media-grid .ws-img--wide {
         grid-column: auto;
+    }
+
+    .ws-kpi-card {
+        position: static;
+        margin-top: 12px;
+        left: auto;
+        bottom: auto;
     }
 }
 

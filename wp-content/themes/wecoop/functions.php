@@ -25,7 +25,7 @@ add_action('after_setup_theme', 'wecoop_setup');
 
 function wecoop_enqueue_assets() {
     wp_enqueue_style('wecoop-style', get_stylesheet_uri(), [], filemtime(get_stylesheet_directory() . '/style.css'));
-    wp_enqueue_style('wecoop-fonts', 'https://fonts.googleapis.com/css2?family=Lora:wght@500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap', [], null);
+    wp_enqueue_style('wecoop-fonts', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:wght@500;700&family=Source+Sans+3:wght@400;500;600;700&display=swap', [], null);
     wp_enqueue_style('wecoop-fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', [], '6.5.2');
 
     wp_enqueue_style(
