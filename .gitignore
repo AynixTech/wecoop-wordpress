@@ -1,3 +1,26 @@
+.htaccess
+index.php
+license.txt
+local-xdebuginfo.php
+readme.html
+wp-activate.php
+wp-admin/
+wp-blog-header.php
+wp-comments-post.php
+wp-config-sample.php
+wp-config.php
+wp-content/
+wp-cron.php
+wp-includes/
+wp-links-opml.php
+wp-load.php
+wp-login.php
+wp-mail.php
+wp-settings.php
+wp-signup.php
+wp-trackback.php
+xmlrpc.php
+
 # WordPress locale
 wp-config-local.php
 wp-config-stripe.php
@@ -48,7 +71,7 @@ wp-content/uploads/really-simple-ssl/
 wp-content/uploads/complianz/
 .htaccess
 llms.txt
-# 🔐 Firma Digitale - Generated PDFs and configs
+# Firma Digitale - Generated PDFs and configs
 wp-content/uploads/wecoop-documenti-unici/
 wp-content/uploads/wecoop-ricevute/
 wp-content/plugins/wecoop-servizi/temp_pdf/
@@ -56,12 +79,12 @@ wp-content/plugins/wecoop-servizi/config-sms-*.php
 wp-content/plugins/wecoop-servizi/.env.local
 wp-content/plugins/wecoop-servizi/debug-*.log
 
-# 📊 System logs
+# System logs
 *.log
 wp-content/debug.log
 wp-content/plugins/wecoop-servizi/logs/
 
-# 📋 Temporary files
+# Temporary files
 *.tmp
 *.temp
 .tmp/
