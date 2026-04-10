@@ -1446,6 +1446,14 @@ body.home {
     color: var(--ws-pink);
 }
 
+.ws-icon--lime {
+    background: rgba(140, 193, 99, 0.16);
+}
+
+.ws-icon--lime i {
+    color: #6f9630;
+}
+
 .ws-tile {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -1536,6 +1544,10 @@ body.home {
 
 .ws-card--pink {
     background: linear-gradient(145deg, rgba(230, 38, 107, 0.08), rgba(236, 107, 92, 0.13));
+}
+
+.ws-card--lime {
+    background: linear-gradient(145deg, rgba(140, 193, 99, 0.1), rgba(182, 214, 122, 0.16));
 }
 
 .ws-section--soft {

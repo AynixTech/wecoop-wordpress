@@ -1,12 +1,12 @@
 <?php
 /**
- * Plugin Name: WeCoop CV AI
+ * Plugin Name: WeCoop Lavoro
  * Plugin URI: https://www.wecoop.org
- * Description: Generazione CV con AI tramite integrazione WordPress -> BFFE.
- * Version: 1.0.0
+ * Description: Servizio Lavoro WECOOP: profilo lavoro, CV AI, consensi e attivazione accompagnamento.
+ * Version: 1.1.0
  * Author: WeCoop Team
  * Author URI: https://www.wecoop.org
- * Text Domain: wecoop-cv-ai
+ * Text Domain: wecoop-lavoro
  * Requires at least: 6.0
  * Requires PHP: 7.4
  */
@@ -15,9 +15,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('WECOOP_CV_AI_VERSION', '1.0.0');
+define('WECOOP_CV_AI_VERSION', '1.1.0');
 define('WECOOP_CV_AI_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WECOOP_CV_AI_PLUGIN_URL', plugin_dir_url(__FILE__));
+
+// New plugin naming. Old constants are kept for backward compatibility.
+if (!defined('WECOOP_LAVORO_VERSION')) {
+    define('WECOOP_LAVORO_VERSION', WECOOP_CV_AI_VERSION);
+}
+if (!defined('WECOOP_LAVORO_PLUGIN_DIR')) {
+    define('WECOOP_LAVORO_PLUGIN_DIR', WECOOP_CV_AI_PLUGIN_DIR);
+}
+if (!defined('WECOOP_LAVORO_PLUGIN_URL')) {
+    define('WECOOP_LAVORO_PLUGIN_URL', WECOOP_CV_AI_PLUGIN_URL);
+}
 
 function wecoop_cv_request_id() {
     $incoming = isset($_SERVER['HTTP_X_REQUEST_ID']) ? sanitize_text_field((string) $_SERVER['HTTP_X_REQUEST_ID']) : '';
@@ -1646,3 +1657,612 @@ function wecoop_cv_ai_enqueue_assets() {
     ]);
 }
 add_action('wp_enqueue_scripts', 'wecoop_cv_ai_enqueue_assets');
+
+function wecoop_lavoro_store_get() {
+    $store = get_option('wecoop_lavoro_store', []);
+    if (!is_array($store)) {
+        $store = [];
+    }
+
+    if (!isset($store['profiles']) || !is_array($store['profiles'])) {
+        $store['profiles'] = [];
+    }
+    if (!isset($store['jobs']) || !is_array($store['jobs'])) {
+        $store['jobs'] = [];
+    }
+    if (!isset($store['consents']) || !is_array($store['consents'])) {
+        $store['consents'] = [];
+    }
+    if (!isset($store['messages']) || !is_array($store['messages'])) {
+        $store['messages'] = [];
+    }
+    if (!isset($store['nextProfileId'])) {
+        $store['nextProfileId'] = 1;
+    }
+
+    return $store;
+}
+
+function wecoop_lavoro_store_save(array $store) {
+    update_option('wecoop_lavoro_store', $store, false);
+}
+
+function wecoop_lavoro_next_profile_id(array &$store) {
+    $next = max(1, (int) ($store['nextProfileId'] ?? 1));
+    $store['nextProfileId'] = $next + 1;
+    return $next;
+}
+
+function wecoop_lavoro_allowed_job_statuses() {
+    return [
+        'profilo_creato',
+        'cv_generato',
+        'servizio_attivato',
+        'consenso_firmato',
+        'in_revisione',
+        'pronto_invio',
+        'inviato',
+        'in_valutazione',
+        'colloquio',
+        'chiuso',
+        'non_selezionato',
+    ];
+}
+
+function wecoop_lavoro_validate_profile(array $payload, $partial = false) {
+    $errors = [];
+
+    $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+    $required_personal = ['firstName', 'lastName', 'birthDate', 'nationality', 'address', 'phone', 'email'];
+
+    foreach ($required_personal as $field) {
+        $value = trim((string) ($personal[$field] ?? ''));
+        if (!$partial && $value === '') {
+            $errors['personalInfo.' . $field] = 'Field is required';
+        }
+    }
+
+    $email = trim((string) ($personal['email'] ?? ''));
+    if ($email !== '' && !is_email($email)) {
+        $errors['personalInfo.email'] = 'Invalid email format';
+    }
+
+    $education = isset($payload['education']) && is_array($payload['education']) ? $payload['education'] : [];
+    $experience = isset($payload['experience']) && is_array($payload['experience']) ? $payload['experience'] : [];
+
+    if (!$partial && count($education) < 1 && count($experience) < 1) {
+        $errors['experience'] = 'At least one education or experience entry is required';
+    }
+
+    $job_goal = isset($payload['jobGoal']) && is_array($payload['jobGoal']) ? $payload['jobGoal'] : [];
+    $required_goal = ['position', 'country', 'availability', 'industry'];
+    foreach ($required_goal as $field) {
+        $value = trim((string) ($job_goal[$field] ?? ''));
+        if (!$partial && $value === '') {
+            $errors['jobGoal.' . $field] = 'Field is required';
+        }
+    }
+
+    return $errors;
+}
+
+function wecoop_lavoro_profile_completeness(array $profile_data) {
+    $errors = wecoop_lavoro_validate_profile($profile_data, false);
+
+    return [
+        'isComplete' => empty($errors),
+        'missing' => array_keys($errors),
+    ];
+}
+
+function wecoop_lavoro_rest_create_profile(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $payload = wecoop_cv_recursive_sanitize($payload);
+    $payload = wecoop_cv_normalize_payload($payload);
+
+    $errors = wecoop_lavoro_validate_profile($payload, false);
+    if (!empty($errors)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+    }
+
+    $store = wecoop_lavoro_store_get();
+    $profile_id = wecoop_lavoro_next_profile_id($store);
+    $now = gmdate('c');
+
+    $record = [
+        'id' => $profile_id,
+        'userId' => get_current_user_id() ?: 0,
+        'status' => 'profilo_creato',
+        'personalInfo' => $payload['personalInfo'] ?? [],
+        'education' => $payload['education'] ?? [],
+        'experience' => $payload['experience'] ?? [],
+        'languages' => $payload['languages'] ?? [],
+        'skills' => $payload['skills'] ?? [],
+        'competencies' => $payload['competencies'] ?? [],
+        'jobGoal' => $payload['jobGoal'] ?? [],
+        'documents' => $payload['documents'] ?? [],
+        'createdAt' => $now,
+        'updatedAt' => $now,
+    ];
+
+    $store['profiles'][(string) $profile_id] = $record;
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'profileId' => $profile_id,
+        'status' => 'profilo_creato',
+        'profile' => $record,
+    ], 201);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_get_profile(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $profile_id = (string) ((int) $request['id']);
+    $store = wecoop_lavoro_store_get();
+
+    if (!isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+
+    $profile = $store['profiles'][$profile_id];
+    $completeness = wecoop_lavoro_profile_completeness($profile);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'profile' => $profile,
+        'validation' => [
+            'status' => $completeness['isComplete'] ? 'listo' : 'incompleto',
+            'missing' => $completeness['missing'],
+        ],
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_update_profile(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $profile_id = (string) ((int) $request['id']);
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $store = wecoop_lavoro_store_get();
+    if (!isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+
+    $payload = wecoop_cv_recursive_sanitize($payload);
+    $payload = wecoop_cv_normalize_payload($payload);
+
+    $current = $store['profiles'][$profile_id];
+    $updated = array_replace_recursive($current, $payload);
+    $updated['updatedAt'] = gmdate('c');
+
+    $errors = wecoop_lavoro_validate_profile($updated, false);
+    if (!empty($errors)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+    }
+
+    $store['profiles'][$profile_id] = $updated;
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'profileId' => (int) $profile_id,
+        'profile' => $updated,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_generate_mandate_pdf($profile_id, $consent_id) {
+    $html = '<h1>Mandato Servizio Lavoro WECOOP</h1>'
+        . '<p>Profile ID: ' . esc_html((string) $profile_id) . '</p>'
+        . '<p>Consent ID: ' . esc_html((string) $consent_id) . '</p>'
+        . '<p>Created at: ' . esc_html(gmdate('c')) . '</p>';
+
+    $filename = 'wecoop-mandato-' . (int) $profile_id . '-' . (int) $consent_id;
+    $pdf = wecoop_cv_html_to_pdf($html, $filename);
+    if (is_wp_error($pdf)) {
+        return '';
+    }
+
+    return (string) ($pdf['url'] ?? '');
+}
+
+function wecoop_lavoro_rest_consent(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $profile_id = (string) ((int) ($payload['profileId'] ?? 0));
+    $store = wecoop_lavoro_store_get();
+    if ($profile_id === '0' || !isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+
+    $required_flags = [
+        'gdprAccepted',
+        'shareCvAccepted',
+        'whatsappAccepted',
+        'termsAccepted',
+    ];
+
+    $fields = [];
+    foreach ($required_flags as $flag) {
+        if (!wecoop_cv_to_bool($payload[$flag] ?? false)) {
+            $fields[$flag] = 'Must be accepted';
+        }
+    }
+
+    $signature = trim((string) ($payload['digitalSignature'] ?? ''));
+    if ($signature === '') {
+        $fields['digitalSignature'] = 'Digital signature is required';
+    }
+
+    if (!empty($fields)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid consent payload', $fields, $request_id);
+    }
+
+    $consent_id = count($store['consents']) + 1;
+    $mandate_url = wecoop_lavoro_generate_mandate_pdf((int) $profile_id, $consent_id);
+
+    $consent = [
+        'id' => $consent_id,
+        'profileId' => (int) $profile_id,
+        'gdprAccepted' => true,
+        'shareCvAccepted' => true,
+        'whatsappAccepted' => true,
+        'termsAccepted' => true,
+        'digitalSignature' => $signature,
+        'mandatePdfUrl' => $mandate_url,
+        'createdAt' => gmdate('c'),
+    ];
+
+    $store['consents'][(string) $consent_id] = $consent;
+    $store['profiles'][$profile_id]['status'] = 'consenso_firmato';
+    $store['profiles'][$profile_id]['updatedAt'] = gmdate('c');
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'consent' => $consent,
+    ], 201);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_push_message(array &$store, $profile_id, $type, $message) {
+    $entry = [
+        'id' => count($store['messages']) + 1,
+        'profileId' => (int) $profile_id,
+        'type' => sanitize_key((string) $type),
+        'message' => sanitize_textarea_field((string) $message),
+        'createdAt' => gmdate('c'),
+    ];
+    $store['messages'][] = $entry;
+    return $entry;
+}
+
+function wecoop_lavoro_rest_job_activate(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $profile_id = (string) ((int) ($payload['profileId'] ?? 0));
+    $store = wecoop_lavoro_store_get();
+    if ($profile_id === '0' || !isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+
+    $profile = $store['profiles'][$profile_id];
+    $completeness = wecoop_lavoro_profile_completeness($profile);
+    if (!$completeness['isComplete']) {
+        return wecoop_cv_error_response(422, 'PROFILE_INCOMPLETE', 'Profile is incomplete', ['missing' => implode(',', $completeness['missing'])], $request_id);
+    }
+
+    $has_consent = false;
+    foreach ($store['consents'] as $consent) {
+        if ((int) ($consent['profileId'] ?? 0) === (int) $profile_id) {
+            $has_consent = true;
+            break;
+        }
+    }
+    if (!$has_consent) {
+        return wecoop_cv_error_response(422, 'CONSENT_REQUIRED', 'Consent must be signed before activation', [], $request_id);
+    }
+
+    $job = [
+        'profileId' => (int) $profile_id,
+        'status' => 'servizio_attivato',
+        'history' => [
+            ['status' => 'servizio_attivato', 'at' => gmdate('c')],
+            ['status' => 'in_revisione', 'at' => gmdate('c')],
+        ],
+        'updatedAt' => gmdate('c'),
+    ];
+
+    $store['jobs'][$profile_id] = $job;
+    $store['profiles'][$profile_id]['status'] = 'servizio_attivato';
+    $store['profiles'][$profile_id]['updatedAt'] = gmdate('c');
+
+    $message = wecoop_lavoro_push_message(
+        $store,
+        (int) $profile_id,
+        'confirmation',
+        'Abbiamo ricevuto la tua richiesta. Il servizio lavoro e stato attivato.'
+    );
+
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'job' => $job,
+        'wachatbotMessage' => $message,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_job_status_get(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $profile_id = (string) ((int) $request['id']);
+    $store = wecoop_lavoro_store_get();
+
+    if (!isset($store['jobs'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'JOB_NOT_FOUND', 'Job service status not found', [], $request_id);
+    }
+
+    $messages = array_values(array_filter($store['messages'], static function ($row) use ($profile_id) {
+        return (int) ($row['profileId'] ?? 0) === (int) $profile_id;
+    }));
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'job' => $store['jobs'][$profile_id],
+        'messages' => $messages,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_job_status_update(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $profile_id = (string) ((int) $request['id']);
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $store = wecoop_lavoro_store_get();
+    if (!isset($store['jobs'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'JOB_NOT_FOUND', 'Job service status not found', [], $request_id);
+    }
+
+    $status = sanitize_key((string) ($payload['status'] ?? ''));
+    if ($status === '' || !in_array($status, wecoop_lavoro_allowed_job_statuses(), true)) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Status not allowed', ['status' => 'Status not allowed'], $request_id);
+    }
+
+    $note = sanitize_textarea_field((string) ($payload['note'] ?? ''));
+    $job = $store['jobs'][$profile_id];
+    $job['status'] = $status;
+    $job['updatedAt'] = gmdate('c');
+    $job['history'][] = [
+        'status' => $status,
+        'at' => gmdate('c'),
+        'note' => $note,
+    ];
+
+    $store['jobs'][$profile_id] = $job;
+    $store['profiles'][$profile_id]['status'] = $status;
+    $store['profiles'][$profile_id]['updatedAt'] = gmdate('c');
+
+    if ($note !== '') {
+        wecoop_lavoro_push_message($store, (int) $profile_id, 'status_update', $note);
+    }
+
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'job' => $job,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_wachatbot_send(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $profile_id = (string) ((int) ($payload['profileId'] ?? 0));
+    $message = sanitize_textarea_field((string) ($payload['message'] ?? ''));
+    $type = sanitize_key((string) ($payload['type'] ?? 'manual'));
+
+    $store = wecoop_lavoro_store_get();
+    if ($profile_id === '0' || !isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+    if ($message === '') {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Message is required', ['message' => 'Message is required'], $request_id);
+    }
+
+    $entry = wecoop_lavoro_push_message($store, (int) $profile_id, $type, $message);
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'queued' => $entry,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_rest_wachatbot_trigger(WP_REST_Request $request) {
+    $request_id = wecoop_cv_request_id();
+    $payload = $request->get_json_params();
+    if (!is_array($payload)) {
+        return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
+    }
+
+    $profile_id = (string) ((int) ($payload['profileId'] ?? 0));
+    $event = sanitize_key((string) ($payload['event'] ?? 'confirmation'));
+
+    $templates = [
+        'confirmation' => 'Conferma ricezione: il tuo profilo lavoro e stato preso in carico.',
+        'document_request' => 'Per favore carica i documenti mancanti per completare il profilo.',
+        'reminder' => 'Promemoria: aggiorna i dati del profilo per accelerare la revisione.',
+        'status_update' => 'Aggiornamento stato candidatura disponibile nell\'app WECOOP.',
+    ];
+
+    if (!isset($templates[$event])) {
+        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Event not supported', ['event' => 'Event not supported'], $request_id);
+    }
+
+    $store = wecoop_lavoro_store_get();
+    if ($profile_id === '0' || !isset($store['profiles'][$profile_id])) {
+        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
+    }
+
+    $entry = wecoop_lavoro_push_message($store, (int) $profile_id, $event, $templates[$event]);
+    wecoop_lavoro_store_save($store);
+
+    $response = new WP_REST_Response([
+        'ok' => true,
+        'requestId' => $request_id,
+        'triggered' => $entry,
+    ], 200);
+    $response->header('X-Request-Id', $request_id);
+    return $response;
+}
+
+function wecoop_lavoro_register_rest_routes() {
+    register_rest_route('wecoop/v1', '/lavoro/profile', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_create_profile',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/profile/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_lavoro_rest_get_profile',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/profile/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::EDITABLE,
+        'callback' => 'wecoop_lavoro_rest_update_profile',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/consent', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_consent',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/job/activate', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_job_activate',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/job/status/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_lavoro_rest_job_status_get',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/job/status/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::EDITABLE,
+        'callback' => 'wecoop_lavoro_rest_job_status_update',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/wachatbot/send', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_wachatbot_send',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/wachatbot/trigger', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_wachatbot_trigger',
+        'permission_callback' => '__return_true',
+    ]);
+
+    // Compatibility aliases requested by app flow draft.
+    register_rest_route('wecoop/v1', '/profile', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_create_profile',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/profile/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_lavoro_rest_get_profile',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/profile/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::EDITABLE,
+        'callback' => 'wecoop_lavoro_rest_update_profile',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/consent', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_consent',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/job/activate', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_job_activate',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/job/status/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_lavoro_rest_job_status_get',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/job/status/(?P<id>\d+)', [
+        'methods' => WP_REST_Server::EDITABLE,
+        'callback' => 'wecoop_lavoro_rest_job_status_update',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/wachatbot/send', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_wachatbot_send',
+        'permission_callback' => '__return_true',
+    ]);
+    register_rest_route('wecoop/v1', '/wachatbot/trigger', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_lavoro_rest_wachatbot_trigger',
+        'permission_callback' => '__return_true',
+    ]);
+}
+add_action('rest_api_init', 'wecoop_lavoro_register_rest_routes');
+
+add_shortcode('wecoop_lavoro_generator', 'wecoop_cv_generator_shortcode');
