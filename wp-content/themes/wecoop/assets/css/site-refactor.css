@@ -1325,12 +1325,23 @@ body.home {
     line-height: 1.05;
 }
 
-.ws-hero h1 span:first-of-type {
-    color: var(--ws-blue);
+.ws-hero h1 .ws-grad {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
 }
 
-.ws-hero h1 span:last-of-type {
-    color: var(--ws-green);
+.ws-hero h1 .ws-grad--green {
+    background-image: linear-gradient(130deg, #4fa968, #9ecf57);
+}
+
+.ws-hero h1 .ws-grad--blue {
+    background-image: linear-gradient(130deg, #0e7fa7, #38a7d8);
+}
+
+.ws-hero h1 .ws-grad--orange {
+    background-image: linear-gradient(130deg, #f0832a, #f6b73a);
 }
 
 .ws-hero p,

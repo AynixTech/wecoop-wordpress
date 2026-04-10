@@ -38,7 +38,13 @@ $operator_url = home_url('/contact/');
     <section id="inicio" class="ws-hero">
         <div class="ws-container ws-grid-2 ws-hero__grid">
             <div>
-                <h1><?php echo esc_html($tr('frontpage.hero.title', 'Un punto di accesso a servizi, formazione e opportunita di lavoro')); ?></h1>
+                <h1>
+                    <?php echo esc_html($tr('frontpage.hero.title.prefix', 'Un punto di accesso a')); ?>
+                    <span class="ws-grad ws-grad--green"><?php echo esc_html($tr('frontpage.hero.word.services', 'servizi')); ?></span>,
+                    <span class="ws-grad ws-grad--blue"><?php echo esc_html($tr('frontpage.hero.word.training', 'formazione')); ?></span>
+                    <?php echo esc_html($tr('frontpage.hero.title_join', 'e')); ?>
+                    <span class="ws-grad ws-grad--orange"><?php echo esc_html($tr('frontpage.hero.word.job_opportunities', 'opportunita di lavoro')); ?></span>
+                </h1>
                 <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP ti aiuta a gestire documenti, accedere ai servizi e costruire un percorso verso il lavoro, attraverso un sistema integrato tra sportello fisico e piattaforma digitale.')); ?></p>
                 <div class="ws-actions">
                     <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>

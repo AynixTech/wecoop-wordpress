@@ -274,6 +274,13 @@ Aliases de compatibilidad:
 - GET `/cv/templates`
 - POST `/cv/preview`
 
+Aliases de compatibilidad:
+- POST `/lavoro/cv/generate`
+- GET `/lavoro/cv/{cv_id}`
+- GET `/lavoro/cv`
+- GET `/lavoro/cv/templates`
+- POST `/lavoro/cv/preview`
+
 ## Consent
 - POST `/lavoro/consent`
 - Alias: POST `/consent`

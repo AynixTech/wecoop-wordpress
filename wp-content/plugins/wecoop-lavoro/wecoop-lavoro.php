@@ -1457,6 +1457,49 @@ function wecoop_cv_register_rest_routes() {
         'callback' => 'wecoop_cv_rest_list',
         'permission_callback' => '__return_true',
     ]);
+
+    // Compatibility aliases when app prefixes CV routes with /lavoro.
+    register_rest_route('wecoop/v1', '/lavoro/cv/generate', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_cv_rest_generate',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/cv/templates', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_cv_rest_templates',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'default' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+        ],
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/cv/preview', [
+        'methods' => WP_REST_Server::CREATABLE,
+        'callback' => 'wecoop_cv_rest_preview',
+        'permission_callback' => '__return_true',
+        'args' => [
+            'template' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+        ],
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/cv/(?P<cv_id>[A-Za-z0-9_-]+)', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_cv_rest_get',
+        'permission_callback' => '__return_true',
+    ]);
+
+    register_rest_route('wecoop/v1', '/lavoro/cv', [
+        'methods' => WP_REST_Server::READABLE,
+        'callback' => 'wecoop_cv_rest_list',
+        'permission_callback' => '__return_true',
+    ]);
 }
 add_action('rest_api_init', 'wecoop_cv_register_rest_routes');
 
