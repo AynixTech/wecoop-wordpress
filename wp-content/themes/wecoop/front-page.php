@@ -47,8 +47,8 @@ $operator_url = home_url('/contact/');
                 </h1>
                 <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP ti aiuta a gestire documenti, accedere ai servizi e costruire un percorso verso il lavoro, attraverso un sistema integrato tra sportello fisico e piattaforma digitale.')); ?></p>
                 <div class="ws-actions">
-                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>
-                    <a class="ws-btn ws-btn--success" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Scrivici su WhatsApp')); ?></a>
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><i class="fa-solid fa-headset" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>
+                    <a class="ws-btn ws-btn--success" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Scrivici su WhatsApp')); ?></a>
                 </div>
                 <p class="ws-hero__microcopy"><?php echo esc_html($tr('frontpage.hero.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></p>
             </div>
@@ -85,6 +85,23 @@ $operator_url = home_url('/contact/');
                     <h3><?php echo esc_html($tr('frontpage.about.card3.title', 'Plataforma Digital')); ?></h3>
                     <p><?php echo esc_html($tr('frontpage.about.card3.body', 'Tecnologia accesible que permite gestionar citas, acceder a formacion, comunicarse con operadores y hacer seguimiento del recorrido personal.')); ?></p>
                 </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="modello-sistema" class="ws-section ws-section--soft">
+        <div class="ws-container">
+            <div class="ws-model-intro">
+                <h2><?php echo esc_html($tr('frontpage.model.title', 'Un sistema fisico + digitale')); ?></h2>
+                <p class="ws-lead"><?php echo esc_html($tr('frontpage.model.lead', 'WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.')); ?></p>
+            </div>
+            <div class="ws-grid-3 ws-model-grid">
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile1.title', 'Territorio')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile1.body', 'Presenza locale e comunitaria')); ?></p></div></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile2.title', 'Persone')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile2.body', 'Al centro del sistema')); ?></p></div></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-regular fa-heart"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile3.title', 'Servizi')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile3.body', 'Orientamento e accompagnamento')); ?></p></div></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile4.title', 'Formazione')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile4.body', 'Sviluppo di competenze')); ?></p></div></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile5.title', 'Opportunita')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile5.body', 'Accesso al lavoro')); ?></p></div></article>
+                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-diagram-project"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile6.title', 'Piattaforma Digitale')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile6.body', 'Tecnologia inclusiva')); ?></p></div></article>
             </div>
         </div>
     </section>
@@ -128,11 +145,100 @@ $operator_url = home_url('/contact/');
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-hand-holding-heart"></i></span><h3><?php echo esc_html($tr('frontpage.how.step3.title', '3. Ti aiutiamo')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step3.body', 'Ti supportiamo con documenti, servizi e strumenti.')); ?></p></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><h3><?php echo esc_html($tr('frontpage.how.step4.title', '4. Ti formiamo')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step4.body', 'Sviluppi competenze utili per il lavoro.')); ?></p></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><h3><?php echo esc_html($tr('frontpage.how.step5.title', '5. Ti accompagniamo al lavoro')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step5.body', 'Ti aiutiamo a candidarti e trovare opportunita.')); ?></p></article>
-                <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-globe"></i></span><h3><?php echo esc_html($tr('frontpage.how.model.title', 'Fisico + Digitale')); ?></h3><p><?php echo esc_html($tr('frontpage.how.model.body', 'Sportello sul territorio e piattaforma digitale in un unico percorso.')); ?></p></article>
             </div>
-            <p class="ws-kpi"><?php echo esc_html($tr('frontpage.how.microcopy', 'Ti aiutiamo passo dopo passo')); ?></p>
         </div>
     </section>
+
+    <section id="sistema-fisico-digitale" class="ws-section ws-section--soft">
+        <div class="ws-container">
+            <h2><?php echo esc_html($tr('frontpage.phygital.title', 'Un sistema fisico + digitale')); ?></h2>
+            <p class="ws-lead"><?php echo esc_html($tr('frontpage.phygital.lead', 'WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.')); ?></p>
+            <div class="ws-grid-2 ws-phygital-grid">
+                <article class="ws-phygital-card ws-phygital-card--physical">
+                    <span class="ws-phygital-card__icon" aria-hidden="true"><i class="fa-regular fa-building"></i></span>
+                    <h3><?php echo esc_html($tr('frontpage.phygital.physical.title', 'Sportello fisico')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.phygital.physical.lead', 'Un luogo dove puoi venire di persona per:')); ?></p>
+                    <ul class="ws-phygital-list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item1', 'Parlare con un operatore')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item2', 'Ricevere assistenza personalizzata')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item3', 'Gestire documenti e pratiche')); ?></li>
+                    </ul>
+                </article>
+                <article class="ws-phygital-card ws-phygital-card--digital">
+                    <span class="ws-phygital-card__icon" aria-hidden="true"><i class="fa-solid fa-mobile-screen-button"></i></span>
+                    <h3><?php echo esc_html($tr('frontpage.phygital.digital.title', 'Piattaforma digitale')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.phygital.digital.lead', 'Accedi ai servizi online quando vuoi:')); ?></p>
+                    <ul class="ws-phygital-list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item1', 'Prenota appuntamenti')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item2', 'Segui la tua formazione')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item3', 'Monitora il tuo percorso')); ?></li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <section id="servizi-modulari" class="ws-section">
+        <div class="ws-container">
+            <h2><?php echo esc_html($tr('frontpage.detailservices.title', 'I nostri servizi')); ?></h2>
+            <div class="ws-services-stack">
+                <article class="ws-service-band ws-service-band--blue">
+                    <h3><?php echo esc_html($tr('frontpage.detailservices.block1.title', 'Vivere in Italia')); ?></h3>
+                    <ul class="ws-service-band__list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item1', 'Permesso di soggiorno')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item2', 'Cittadinanza')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item3', 'Ricongiungimento familiare')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item4', 'Asilo politico')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item5', 'Visto per turismo')); ?></li>
+                    </ul>
+                </article>
+
+                <article class="ws-service-band ws-service-band--green">
+                    <h3><?php echo esc_html($tr('frontpage.detailservices.block2.title', 'Servizi fiscali')); ?></h3>
+                    <ul class="ws-service-band__list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item1', 'Modello 730')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item2', 'Modello PF (ex Unico)')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item3', 'Dichiarazioni redditi')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item4', 'Tasse e contributi (IMU, TARI, ecc.)')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item5', 'Consulenza fiscale')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item6', 'Chiarimenti personalizzati')); ?></li>
+                    </ul>
+                </article>
+
+                <article class="ws-service-band ws-service-band--pink">
+                    <h3><?php echo esc_html($tr('frontpage.detailservices.block3.title', 'Partita IVA e contabilita')); ?></h3>
+                    <ul class="ws-service-band__list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item1', 'Apertura Partita IVA (regime forfettario)')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item2', 'Gestione contabile')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item3', 'Fatturazione')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item4', 'Chiusura o modifica attivita')); ?></li>
+                    </ul>
+                </article>
+
+                <article class="ws-service-band ws-service-band--lime">
+                    <h3><?php echo esc_html($tr('frontpage.detailservices.block4.title', 'Lavoro e orientamento')); ?></h3>
+                    <ul class="ws-service-band__list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item1', 'Creazione CV')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item2', 'Ricerca lavoro')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item3', 'Preparazione colloqui')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item4', 'Orientamento professionale')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item5', 'Supporto candidature')); ?></li>
+                    </ul>
+                </article>
+
+                <article class="ws-service-band ws-service-band--blue">
+                    <h3><?php echo esc_html($tr('frontpage.detailservices.block5.title', 'Educazione finanziaria e accesso al credito')); ?></h3>
+                    <ul class="ws-service-band__list">
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item1', 'Educazione finanziaria di base')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item2', 'Supporto gestione del denaro')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item3', 'Orientamento al credito')); ?></li>
+                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item4', 'Supporto accesso a finanziamenti')); ?></li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+    </section>
+    
 
     <section id="passaparola" class="ws-section">
         <div class="ws-container">

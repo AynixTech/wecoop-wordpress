@@ -22,18 +22,30 @@ define('RSSSL_KEY', 'kj2WK1xyB8AlcXSg2HdhcO0PFfsuvpt9WtAWw3PwFTrcdX97yLSf6rvcD1l
  * @package WordPress
  */
 
+if ( file_exists( __DIR__ . '/wp-config-local.php' ) ) {
+	require_once __DIR__ . '/wp-config-local.php';
+}
+
 // ** Database settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
-define( 'DB_NAME', 'u703617904_4qtmg' );
+if ( ! defined( 'DB_NAME' ) ) {
+	define( 'DB_NAME', 'u703617904_4qtmg' );
+}
 
 /** Database username */
-define( 'DB_USER', 'u703617904_CsAZC' );
+if ( ! defined( 'DB_USER' ) ) {
+	define( 'DB_USER', 'u703617904_CsAZC' );
+}
 
 /** Database password */
-define( 'DB_PASSWORD', 'GMD4BMbeTd' );
+if ( ! defined( 'DB_PASSWORD' ) ) {
+	define( 'DB_PASSWORD', 'GMD4BMbeTd' );
+}
 
 /** Database hostname */
-define( 'DB_HOST', '127.0.0.1' );
+if ( ! defined( 'DB_HOST' ) ) {
+	define( 'DB_HOST', '127.0.0.1' );
+}
 
 /** Database charset to use in creating database tables. */
 define( 'DB_CHARSET', 'utf8' );
