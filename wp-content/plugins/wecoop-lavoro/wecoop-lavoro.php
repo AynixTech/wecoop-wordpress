@@ -2030,9 +2030,18 @@ function wecoop_lavoro_rest_consent(WP_REST_Request $request) {
         return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid consent payload', $fields, $request_id);
     }
 
-    $consent_id = count($store['consents']) + 1;
+    $existing_consent_id = null;
+    foreach ($store['consents'] as $cid => $row) {
+        if ((int) ($row['profileId'] ?? 0) === (int) $profile_id) {
+            $existing_consent_id = (int) $cid;
+            break;
+        }
+    }
+
+    $consent_id = $existing_consent_id !== null ? $existing_consent_id : (count($store['consents']) + 1);
     $mandate_url = wecoop_lavoro_generate_mandate_pdf((int) $profile_id, $consent_id);
 
+    $current = $existing_consent_id !== null ? ($store['consents'][(string) $consent_id] ?? []) : [];
     $consent = [
         'id' => $consent_id,
         'profileId' => (int) $profile_id,
@@ -2042,7 +2051,8 @@ function wecoop_lavoro_rest_consent(WP_REST_Request $request) {
         'termsAccepted' => true,
         'digitalSignature' => $signature,
         'mandatePdfUrl' => $mandate_url,
-        'createdAt' => gmdate('c'),
+        'createdAt' => (string) ($current['createdAt'] ?? gmdate('c')),
+        'updatedAt' => gmdate('c'),
     ];
 
     $store['consents'][(string) $consent_id] = $consent;
@@ -2054,6 +2064,7 @@ function wecoop_lavoro_rest_consent(WP_REST_Request $request) {
         'ok' => true,
         'requestId' => $request_id,
         'consent' => $consent,
+        'upserted' => $existing_consent_id !== null,
     ], 201);
     $response->header('X-Request-Id', $request_id);
     return $response;
@@ -2086,9 +2097,6 @@ function wecoop_lavoro_rest_job_activate(WP_REST_Request $request) {
 
     $profile = $store['profiles'][$profile_id];
     $completeness = wecoop_lavoro_profile_completeness($profile);
-    if (!$completeness['isComplete']) {
-        return wecoop_cv_error_response(422, 'PROFILE_INCOMPLETE', 'Profile is incomplete', ['missing' => implode(',', $completeness['missing'])], $request_id);
-    }
 
     $has_consent = false;
     foreach ($store['consents'] as $consent) {
@@ -2104,6 +2112,10 @@ function wecoop_lavoro_rest_job_activate(WP_REST_Request $request) {
     $job = [
         'profileId' => (int) $profile_id,
         'status' => 'servizio_attivato',
+        'profileValidation' => [
+            'isComplete' => $completeness['isComplete'],
+            'missing' => $completeness['missing'],
+        ],
         'history' => [
             ['status' => 'servizio_attivato', 'at' => gmdate('c')],
             ['status' => 'in_revisione', 'at' => gmdate('c')],
@@ -2115,21 +2127,39 @@ function wecoop_lavoro_rest_job_activate(WP_REST_Request $request) {
     $store['profiles'][$profile_id]['status'] = 'servizio_attivato';
     $store['profiles'][$profile_id]['updatedAt'] = gmdate('c');
 
+    $activation_text = $completeness['isComplete']
+        ? 'Abbiamo ricevuto la tua richiesta. Il servizio lavoro e stato attivato.'
+        : 'Abbiamo ricevuto la tua richiesta. Il servizio lavoro e stato attivato: completa il profilo per accelerare la revisione.';
+
     $message = wecoop_lavoro_push_message(
         $store,
         (int) $profile_id,
         'confirmation',
-        'Abbiamo ricevuto la tua richiesta. Il servizio lavoro e stato attivato.'
+        $activation_text
     );
 
     wecoop_lavoro_store_save($store);
 
-    $response = new WP_REST_Response([
+    $response_payload = [
         'ok' => true,
         'requestId' => $request_id,
         'job' => $job,
         'wachatbotMessage' => $message,
-    ], 200);
+    ];
+
+    if (!$completeness['isComplete']) {
+        $response_payload['warnings'] = [
+            [
+                'code' => 'PROFILE_INCOMPLETE_ACCEPTED',
+                'message' => 'Job service activated with incomplete profile',
+                'fields' => [
+                    'missing' => $completeness['missing'],
+                ],
+            ],
+        ];
+    }
+
+    $response = new WP_REST_Response($response_payload, 200);
     $response->header('X-Request-Id', $request_id);
     return $response;
 }
