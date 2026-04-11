@@ -1798,6 +1798,67 @@ function wecoop_lavoro_profile_completeness(array $profile_data) {
     ];
 }
 
+function wecoop_lavoro_payload_is_empty(array $payload) {
+    $sections = [
+        'personalInfo',
+        'education',
+        'experience',
+        'languages',
+        'skills',
+        'competencies',
+        'jobGoal',
+        'documents',
+    ];
+
+    foreach ($sections as $section) {
+        if (!isset($payload[$section])) {
+            continue;
+        }
+
+        $value = $payload[$section];
+
+        if (is_array($value) && !empty($value)) {
+            return false;
+        }
+
+        if (!is_array($value) && trim((string) $value) !== '') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function wecoop_lavoro_build_profile_record($profile_id, $user_id, array $payload, $status = 'profilo_creato', $created_at = '') {
+    $now = $created_at !== '' ? $created_at : gmdate('c');
+
+    return [
+        'id' => (int) $profile_id,
+        'userId' => (int) $user_id,
+        'status' => $status,
+        'personalInfo' => isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [],
+        'education' => isset($payload['education']) && is_array($payload['education']) ? $payload['education'] : [],
+        'experience' => isset($payload['experience']) && is_array($payload['experience']) ? $payload['experience'] : [],
+        'languages' => isset($payload['languages']) && is_array($payload['languages']) ? $payload['languages'] : [],
+        'skills' => isset($payload['skills']) && is_array($payload['skills']) ? $payload['skills'] : [],
+        'competencies' => isset($payload['competencies']) && is_array($payload['competencies']) ? $payload['competencies'] : [],
+        'jobGoal' => isset($payload['jobGoal']) && is_array($payload['jobGoal']) ? $payload['jobGoal'] : [],
+        'documents' => isset($payload['documents']) && is_array($payload['documents']) ? $payload['documents'] : [],
+        'createdAt' => $now,
+        'updatedAt' => gmdate('c'),
+    ];
+}
+
+function wecoop_lavoro_store_claim_profile_id(array &$store, $requested_id = 0) {
+    $requested = (int) $requested_id;
+    if ($requested > 0 && !isset($store['profiles'][(string) $requested])) {
+        $store['nextProfileId'] = max((int) ($store['nextProfileId'] ?? 1), $requested + 1);
+        return $requested;
+    }
+
+    return wecoop_lavoro_next_profile_id($store);
+}
+
 function wecoop_lavoro_rest_create_profile(WP_REST_Request $request) {
     $request_id = wecoop_cv_request_id();
     $payload = $request->get_json_params();
@@ -1808,33 +1869,22 @@ function wecoop_lavoro_rest_create_profile(WP_REST_Request $request) {
     $payload = wecoop_cv_recursive_sanitize($payload);
     $payload = wecoop_cv_normalize_payload($payload);
 
-    $errors = wecoop_lavoro_validate_profile($payload, false);
-    if (!empty($errors)) {
-        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+    $is_draft_payload = wecoop_lavoro_payload_is_empty($payload);
+    if (!$is_draft_payload) {
+        $errors = wecoop_lavoro_validate_profile($payload, false);
+        if (!empty($errors)) {
+            return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+        }
     }
 
     $store = wecoop_lavoro_store_get();
-    $profile_id = wecoop_lavoro_next_profile_id($store);
-    $now = gmdate('c');
-
-    $record = [
-        'id' => $profile_id,
-        'userId' => get_current_user_id() ?: 0,
-        'status' => 'profilo_creato',
-        'personalInfo' => $payload['personalInfo'] ?? [],
-        'education' => $payload['education'] ?? [],
-        'experience' => $payload['experience'] ?? [],
-        'languages' => $payload['languages'] ?? [],
-        'skills' => $payload['skills'] ?? [],
-        'competencies' => $payload['competencies'] ?? [],
-        'jobGoal' => $payload['jobGoal'] ?? [],
-        'documents' => $payload['documents'] ?? [],
-        'createdAt' => $now,
-        'updatedAt' => $now,
-    ];
+    $profile_id = wecoop_lavoro_store_claim_profile_id($store, 0);
+    $record = wecoop_lavoro_build_profile_record($profile_id, get_current_user_id() ?: 0, $payload, 'profilo_creato');
 
     $store['profiles'][(string) $profile_id] = $record;
     wecoop_lavoro_store_save($store);
+
+    $completeness = wecoop_lavoro_profile_completeness($record);
 
     $response = new WP_REST_Response([
         'ok' => true,
@@ -1842,6 +1892,11 @@ function wecoop_lavoro_rest_create_profile(WP_REST_Request $request) {
         'profileId' => $profile_id,
         'status' => 'profilo_creato',
         'profile' => $record,
+        'validation' => [
+            'status' => $completeness['isComplete'] ? 'listo' : 'incompleto',
+            'missing' => $completeness['missing'],
+        ],
+        'draft' => $is_draft_payload,
     ], 201);
     $response->header('X-Request-Id', $request_id);
     return $response;
@@ -1880,31 +1935,45 @@ function wecoop_lavoro_rest_update_profile(WP_REST_Request $request) {
         return wecoop_cv_error_response(400, 'INVALID_BODY', 'Request body must be JSON', [], $request_id);
     }
 
-    $store = wecoop_lavoro_store_get();
-    if (!isset($store['profiles'][$profile_id])) {
-        return wecoop_cv_error_response(404, 'PROFILE_NOT_FOUND', 'Profile not found', [], $request_id);
-    }
-
     $payload = wecoop_cv_recursive_sanitize($payload);
     $payload = wecoop_cv_normalize_payload($payload);
 
-    $current = $store['profiles'][$profile_id];
-    $updated = array_replace_recursive($current, $payload);
-    $updated['updatedAt'] = gmdate('c');
+    $store = wecoop_lavoro_store_get();
+    $existing = isset($store['profiles'][$profile_id]) ? $store['profiles'][$profile_id] : null;
+    $is_draft_payload = wecoop_lavoro_payload_is_empty($payload);
 
-    $errors = wecoop_lavoro_validate_profile($updated, false);
-    if (!empty($errors)) {
-        return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+    if (is_array($existing)) {
+        $updated = array_replace_recursive($existing, $payload);
+        $updated['updatedAt'] = gmdate('c');
+    } else {
+        $claimed_id = wecoop_lavoro_store_claim_profile_id($store, (int) $profile_id);
+        $profile_id = (string) $claimed_id;
+        $updated = wecoop_lavoro_build_profile_record($claimed_id, get_current_user_id() ?: 0, $payload, 'profilo_creato');
+    }
+
+    if (!$is_draft_payload) {
+        $errors = wecoop_lavoro_validate_profile($updated, true);
+        if (!empty($errors)) {
+            return wecoop_cv_error_response(422, 'VALIDATION_ERROR', 'Invalid profile payload', $errors, $request_id);
+        }
     }
 
     $store['profiles'][$profile_id] = $updated;
     wecoop_lavoro_store_save($store);
+
+    $completeness = wecoop_lavoro_profile_completeness($updated);
 
     $response = new WP_REST_Response([
         'ok' => true,
         'requestId' => $request_id,
         'profileId' => (int) $profile_id,
         'profile' => $updated,
+        'validation' => [
+            'status' => $completeness['isComplete'] ? 'listo' : 'incompleto',
+            'missing' => $completeness['missing'],
+        ],
+        'upserted' => !is_array($existing),
+        'draft' => $is_draft_payload,
     ], 200);
     $response->header('X-Request-Id', $request_id);
     return $response;
