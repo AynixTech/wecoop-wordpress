@@ -41,6 +41,18 @@ class WeCoop_Offerte_Lavoro_REST {
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route('wecoop/v1', '/lavoro/annunci/miei', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_my_submissions'],
+            'permission_callback' => [__CLASS__, 'ensure_authenticated_user'],
+        ]);
+
+        register_rest_route('wecoop/v1', '/lavoro/annunci/miei/(?P<id>\d+)', [
+            'methods' => WP_REST_Server::DELETABLE,
+            'callback' => [__CLASS__, 'delete_my_submission'],
+            'permission_callback' => [__CLASS__, 'ensure_authenticated_user'],
+        ]);
+
         register_rest_route('wecoop/v1', '/lavoro/annunci/suggest-category', [
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => [__CLASS__, 'suggest_category'],
@@ -124,6 +136,106 @@ class WeCoop_Offerte_Lavoro_REST {
                 'ai_description' => $improved,
                 'source' => 'openai',
             ],
+        ], 200);
+    }
+
+    public static function ensure_authenticated_user() {
+        return is_user_logged_in();
+    }
+
+    public static function get_my_submissions(WP_REST_Request $request) {
+        $user_id = (int) get_current_user_id();
+        if ($user_id <= 0) {
+            return new WP_Error('forbidden', 'Utente non autenticato', ['status' => 401]);
+        }
+
+        $direction = sanitize_text_field((string) $request->get_param('category_direction'));
+
+        $meta_query = [
+            [
+                'key' => 'submitted_from_app',
+                'value' => '1',
+                'compare' => '=',
+            ],
+            [
+                'relation' => 'OR',
+                [
+                    'key' => 'submitted_user_id',
+                    'value' => (string) $user_id,
+                    'compare' => '=',
+                ],
+                [
+                    'key' => 'submitted_user_id',
+                    'value' => $user_id,
+                    'compare' => '=',
+                    'type' => 'NUMERIC',
+                ],
+            ],
+        ];
+
+        if ($direction !== '' && in_array($direction, ['seek', 'offer'], true)) {
+            $meta_query[] = [
+                'key' => 'category_direction',
+                'value' => $direction,
+                'compare' => '=',
+            ];
+        }
+
+        $query = new WP_Query([
+            'post_type' => [WeCoop_Offerte_Lavoro_CPT::OFFER_CPT, 'post'],
+            'post_status' => ['publish', 'pending', 'draft'],
+            'posts_per_page' => 50,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => $meta_query,
+        ]);
+
+        $items = [];
+        foreach ($query->posts as $post) {
+            $items[] = self::serialize_offer($post);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'data' => $items,
+        ], 200);
+    }
+
+    public static function delete_my_submission(WP_REST_Request $request) {
+        $user_id = (int) get_current_user_id();
+        if ($user_id <= 0) {
+            return new WP_Error('forbidden', 'Utente non autenticato', ['status' => 401]);
+        }
+
+        $post_id = (int) $request['id'];
+        $post = get_post($post_id);
+        if (!$post) {
+            return new WP_Error('not_found', 'Annuncio non trovato', ['status' => 404]);
+        }
+
+        $is_from_app = (string) get_post_meta($post_id, 'submitted_from_app', true) === '1';
+        if (!$is_from_app) {
+            return new WP_Error('forbidden', 'Annuncio non eliminabile da app', ['status' => 403]);
+        }
+
+        $owner_meta = (int) get_post_meta($post_id, 'submitted_user_id', true);
+        $post_author = (int) $post->post_author;
+        $is_owner = ($owner_meta > 0 && $owner_meta === $user_id)
+            || ($post_author > 0 && $post_author === $user_id);
+
+        if (!$is_owner) {
+            return new WP_Error('forbidden', 'Puoi eliminare solo i tuoi annunci', ['status' => 403]);
+        }
+
+        $deleted = wp_trash_post($post_id);
+        if (!$deleted) {
+            return new WP_Error('delete_failed', 'Impossibile eliminare annuncio', ['status' => 500]);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Annuncio eliminato con successo',
+            'data' => ['id' => $post_id],
         ], 200);
     }
 
@@ -615,12 +727,15 @@ class WeCoop_Offerte_Lavoro_REST {
             return new WP_Error('rate_limited', 'Troppi annunci inviati. Riprova piu tardi.', ['status' => 429]);
         }
 
+        $user_id = (int) get_current_user_id();
+
         $post_args = [
             'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
             'post_status' => 'publish',
             'post_title' => $title_offer,
             'post_content' => $description,
             'post_excerpt' => wp_trim_words($description, 28),
+            'post_author' => $user_id > 0 ? $user_id : 0,
         ];
 
         // Create the offer directly so it is immediately visible in app listings.
@@ -675,6 +790,7 @@ class WeCoop_Offerte_Lavoro_REST {
         update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
         update_post_meta($submission_id, 'status', 'published');
         update_post_meta($submission_id, 'submitted_from_app', 1);
+        update_post_meta($submission_id, 'submitted_user_id', $user_id > 0 ? $user_id : 0);
         if (!empty($image_url)) {
             update_post_meta($submission_id, 'image_url', $image_url);
         }
