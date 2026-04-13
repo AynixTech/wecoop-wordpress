@@ -96,6 +96,8 @@ class WeCoop_Offerte_Lavoro_CPT {
 
     public static function register_meta_fields() {
         $offer_fields = [
+            'category_scope' => 'string',
+            'category_direction' => 'string',
             'company_name' => 'string',
             'city' => 'string',
             'province' => 'string',
@@ -151,6 +153,8 @@ class WeCoop_Offerte_Lavoro_CPT {
 
         $submission_fields = [
             'submission_type' => 'string',
+            'category_scope' => 'string',
+            'category_direction' => 'string',
             'category_macro' => 'string',
             'category_slug' => 'string',
             'title_offer' => 'string',

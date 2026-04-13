@@ -88,6 +88,54 @@ class WeCoop_Offerte_Lavoro_REST {
             }
         }
 
+        $category_scope = sanitize_text_field((string) $request->get_param('category_scope'));
+        if ($category_scope !== '') {
+            if ($category_scope === 'job') {
+                $meta_query[] = [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'category_scope',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'category_scope',
+                        'value' => 'job',
+                        'compare' => '=',
+                    ],
+                ];
+            } else {
+                $meta_query[] = [
+                    'key' => 'category_scope',
+                    'value' => $category_scope,
+                    'compare' => '=',
+                ];
+            }
+        }
+
+        $category_direction = sanitize_text_field((string) $request->get_param('category_direction'));
+        if ($category_direction !== '') {
+            if ($category_direction === 'offer') {
+                $meta_query[] = [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'category_direction',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'category_direction',
+                        'value' => 'offer',
+                        'compare' => '=',
+                    ],
+                ];
+            } else {
+                $meta_query[] = [
+                    'key' => 'category_direction',
+                    'value' => $category_direction,
+                    'compare' => '=',
+                ];
+            }
+        }
+
         $args['meta_query'] = $meta_query;
 
         $category = sanitize_text_field((string) $request->get_param('categoria'));
@@ -239,9 +287,19 @@ class WeCoop_Offerte_Lavoro_REST {
         $contact_phone = sanitize_text_field((string) ($payload['contact_phone'] ?? ''));
         $contact_email = sanitize_email((string) ($payload['contact_email'] ?? ''));
         $description = sanitize_textarea_field((string) ($payload['description'] ?? ''));
+        $category_scope = sanitize_text_field((string) ($payload['category_scope'] ?? ''));
+        $category_direction = sanitize_text_field((string) ($payload['category_direction'] ?? ''));
         $category_macro = sanitize_text_field((string) ($payload['category_macro'] ?? ''));
         $category_slug = sanitize_text_field((string) ($payload['category_slug'] ?? ''));
         $consent_privacy = !empty($payload['consent_privacy']);
+
+        if (!in_array($category_scope, ['job', 'service'], true)) {
+            $category_scope = strtolower($submission_type) === 'servizio' ? 'service' : 'job';
+        }
+
+        if (!in_array($category_direction, ['seek', 'offer'], true)) {
+            $category_direction = 'offer';
+        }
 
         // Validazione campi obbligatori
         if (empty($submission_type) || empty($title_offer) || empty($city) || empty($contact_phone) || empty($description)) {
@@ -297,6 +355,8 @@ class WeCoop_Offerte_Lavoro_REST {
 
         // Salva i metadati
         update_post_meta($submission_id, 'submission_type', $submission_type);
+        update_post_meta($submission_id, 'category_scope', $category_scope);
+        update_post_meta($submission_id, 'category_direction', $category_direction);
         update_post_meta($submission_id, 'title_offer', $title_offer);
         update_post_meta($submission_id, 'city', $city);
         update_post_meta($submission_id, 'contact_phone', $contact_phone);
@@ -314,6 +374,8 @@ class WeCoop_Offerte_Lavoro_REST {
         // Notifica admin
         do_action('wecoop_job_submission_created', $submission_id, [
             'submission_type' => $submission_type,
+            'category_scope' => $category_scope,
+            'category_direction' => $category_direction,
             'title_offer' => $title_offer,
             'city' => $city,
             'contact_phone' => $contact_phone,
@@ -357,6 +419,8 @@ class WeCoop_Offerte_Lavoro_REST {
             'expires_at' => (string) get_post_meta($id, 'expires_at', true),
             'is_featured' => (bool) get_post_meta($id, 'is_featured', true),
             'is_active' => (bool) get_post_meta($id, 'is_active', true),
+            'category_scope' => (string) (get_post_meta($id, 'category_scope', true) ?: 'job'),
+            'category_direction' => (string) (get_post_meta($id, 'category_direction', true) ?: 'offer'),
             'published_at' => get_post_time('c', true, $post),
             'categories' => self::get_offer_categories($id),
         ];
