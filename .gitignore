@@ -9,7 +9,6 @@ wp-blog-header.php
 wp-comments-post.php
 wp-config-sample.php
 wp-config.php
-wp-content/
 wp-cron.php
 wp-includes/
 wp-links-opml.php
@@ -35,6 +34,23 @@ composer.lock
 *.sql.gz
 *.sql.zip
 
+# File pesanti (archivi, backup, media)
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+*.wpress
+*.mp4
+*.mov
+*.avi
+*.webm
+*.mkv
+*.mp3
+*.wav
+*.ogg
+
 # Docker volumes
 db_data/
 
@@ -52,10 +68,7 @@ package-lock.json
 # Logs
 *.log
 
-# WordPress Plugins (ignore all except wecoop-*)
-wp-content/plugins/*
-!wp-content/plugins/wecoop-*
-!wp-content/plugins/custom-facebook-feed-pro/
+
 
 # WordPress Core files (updated via backoffice)
 wp-admin/
@@ -69,6 +82,12 @@ wp-content/uploads/
 wp-content/uploads/.htaccess
 wp-content/uploads/really-simple-ssl/
 wp-content/uploads/complianz/
+
+# Cartelle pesanti WordPress
+wp-content/ai1wm-backups/
+wp-content/upgrade/
+wp-content/cache/
+wp-content/jetpack-waf/
 .htaccess
 llms.txt
 # Firma Digitale - Generated PDFs and configs
@@ -78,6 +97,15 @@ wp-content/plugins/wecoop-servizi/temp_pdf/
 wp-content/plugins/wecoop-servizi/config-sms-*.php
 wp-content/plugins/wecoop-servizi/.env.local
 wp-content/plugins/wecoop-servizi/debug-*.log
+
+# WordPress Plugins (solo i plugin wecoop- sono tracciati)
+wp-content/plugins/*
+!wp-content/plugins/wecoop-*/
+
+# Vendor e dipendenze pesanti dentro i plugin wecoop-
+/wp-content/plugins/wecoop-servizi/vendor/
+wp-content/plugins/wecoop-*/vendor/
+wp-content/plugins/wecoop-*/node_modules/
 
 # System logs
 *.log
@@ -89,3 +117,6 @@ wp-content/plugins/wecoop-servizi/logs/
 *.temp
 .tmp/
 temp/
+
+# Local WordPress backups
+wp-content/ai1wm-backups/*.wpress
