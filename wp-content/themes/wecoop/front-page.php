@@ -9,6 +9,16 @@ $wa_phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_nu
 $wa_message = rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, vorrei parlare con un operatore.'));
 $whatsapp_url = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
 $operator_url = home_url('/contact/');
+$job_offers_url = home_url('/annunci-lavoro-wecoop/');
+$lang_default = static function($it, $en, $es) use ($current_lang) {
+    if ($current_lang === 'en') {
+        return $en;
+    }
+    if ($current_lang === 'es') {
+        return $es;
+    }
+    return $it;
+};
 ?>
 
 <main class="ws-site" aria-label="<?php echo esc_attr($tr('frontpage.aria.homepage', 'WECOOP homepage')); ?>">
@@ -18,13 +28,14 @@ $operator_url = home_url('/contact/');
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
             </a>
             <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
-                <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Cos\'e WECOOP')); ?></a>
-                <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', 'Servizi')); ?></a>
-                <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', 'Come funziona')); ?></a>
-                <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
-                <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Piattaforma Digitale')); ?></a>
-                <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impatto')); ?></a>
-                <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contatti')); ?></a>
+                <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', $lang_default('Cos\'e WECOOP', 'What is WECOOP', 'Que es WECOOP'))); ?></a>
+                <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', $lang_default('Servizi', 'Services', 'Servicios'))); ?></a>
+                <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', $lang_default('Come funziona', 'How it works', 'Como funciona'))); ?></a>
+                <a href="<?php echo esc_url($job_offers_url); ?>"><?php echo esc_html($tr('frontpage.nav.jobs', $lang_default('Offerte di lavoro', 'Job Offers', 'Ofertas de trabajo'))); ?></a>
+                <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', $lang_default('Passaparola', 'Passaparola', 'Passaparola'))); ?></a>
+                <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', $lang_default('Piattaforma Digitale', 'Digital Platform', 'Plataforma Digital'))); ?></a>
+                <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', $lang_default('Impatto', 'Impact', 'Impacto'))); ?></a>
+                <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
             <div class="ws-lang-switcher" aria-label="Language switcher">
                 <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
@@ -49,6 +60,7 @@ $operator_url = home_url('/contact/');
                 <div class="ws-actions">
                     <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><i class="fa-solid fa-headset" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>
                     <a class="ws-btn ws-btn--success" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Scrivici su WhatsApp')); ?></a>
+                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($job_offers_url); ?>"><i class="fa-solid fa-briefcase" aria-hidden="true" style="margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_jobs', 'Vedi offerte di lavoro')); ?></a>
                 </div>
                 <p class="ws-hero__microcopy"><?php echo esc_html($tr('frontpage.hero.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></p>
             </div>
