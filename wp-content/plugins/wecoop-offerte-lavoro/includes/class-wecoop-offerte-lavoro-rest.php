@@ -321,13 +321,14 @@ class WeCoop_Offerte_Lavoro_REST {
         }
 
         $post_args = [
-            'post_type' => WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
-            'post_status' => 'pending',
-            'post_title' => sprintf('[App] Proposta: %s (%s)', $title_offer, $submission_type),
+            'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            'post_status' => 'publish',
+            'post_title' => $title_offer,
             'post_content' => $description,
+            'post_excerpt' => wp_trim_words($description, 28),
         ];
 
-        // Crea il submission post (primary target: dedicated CPT)
+        // Create the offer directly so it is immediately visible in app listings.
         $submission_id = wp_insert_post($post_args, true);
 
         // Fallback for restrictive environments where the custom type cannot be inserted.
@@ -357,16 +358,29 @@ class WeCoop_Offerte_Lavoro_REST {
         update_post_meta($submission_id, 'submission_type', $submission_type);
         update_post_meta($submission_id, 'category_scope', $category_scope);
         update_post_meta($submission_id, 'category_direction', $category_direction);
+        update_post_meta($submission_id, 'company_name', 'Annuncio dalla community');
         update_post_meta($submission_id, 'title_offer', $title_offer);
         update_post_meta($submission_id, 'city', $city);
+        update_post_meta($submission_id, 'phone_whatsapp', $contact_phone);
+        update_post_meta($submission_id, 'email_contact', $contact_email);
+        update_post_meta($submission_id, 'requirements', $description);
         update_post_meta($submission_id, 'contact_phone', $contact_phone);
         update_post_meta($submission_id, 'contact_email', $contact_email);
         update_post_meta($submission_id, 'description', $description);
         update_post_meta($submission_id, 'category_macro', $category_macro);
         update_post_meta($submission_id, 'category_slug', $category_slug);
+        update_post_meta($submission_id, 'is_active', 1);
+        update_post_meta($submission_id, 'is_featured', 0);
         update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
-        update_post_meta($submission_id, 'status', 'pending_review');
+        update_post_meta($submission_id, 'status', 'published');
         update_post_meta($submission_id, 'submitted_from_app', 1);
+
+        if (!empty($category_slug)) {
+            $term = get_term_by('slug', $category_slug, WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX);
+            if ($term && !is_wp_error($term)) {
+                wp_set_post_terms($submission_id, [(int) $term->term_id], WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX, false);
+            }
+        }
 
         // Incrementa il limite rate
         set_transient($rate_key, ((int) get_transient($rate_key)) + 1, DAY_IN_SECONDS);
@@ -387,10 +401,10 @@ class WeCoop_Offerte_Lavoro_REST {
 
         return new WP_REST_Response([
             'success' => true,
-            'message' => 'Annuncio inviato con successo! Verrà revisionato dal nostro team.',
+            'message' => 'Annuncio pubblicato con successo!',
             'data' => [
                 'submission_id' => (int) $submission_id,
-                'status' => 'pending_review',
+                'status' => 'published',
             ],
         ], 201);
     }
