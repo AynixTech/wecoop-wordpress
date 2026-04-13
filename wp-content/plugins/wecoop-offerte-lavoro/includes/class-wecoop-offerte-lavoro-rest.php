@@ -228,6 +228,11 @@ class WeCoop_Offerte_Lavoro_REST {
             $payload = $request->get_params();
         }
 
+        // Ensure CPT registration exists also in edge bootstrapping cases.
+        if (!post_type_exists(WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT)) {
+            WeCoop_Offerte_Lavoro_CPT::register_post_types();
+        }
+
         $submission_type = sanitize_text_field((string) ($payload['submission_type'] ?? ''));
         $title_offer = sanitize_text_field((string) ($payload['title_offer'] ?? ''));
         $city = sanitize_text_field((string) ($payload['city'] ?? ''));
@@ -255,15 +260,37 @@ class WeCoop_Offerte_Lavoro_REST {
             return new WP_Error('rate_limited', 'Troppi annunci inviati. Riprova piu tardi.', ['status' => 429]);
         }
 
-        // Crea il submission post
-        $submission_id = wp_insert_post([
+        $post_args = [
             'post_type' => WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
-            'post_status' => 'private',
+            'post_status' => 'pending',
             'post_title' => sprintf('[App] Proposta: %s (%s)', $title_offer, $submission_type),
-        ], true);
+            'post_content' => $description,
+        ];
+
+        // Crea il submission post (primary target: dedicated CPT)
+        $submission_id = wp_insert_post($post_args, true);
+
+        // Fallback for restrictive environments where the custom type cannot be inserted.
+        if (is_wp_error($submission_id)) {
+            $fallback_args = $post_args;
+            $fallback_args['post_type'] = 'post';
+            $submission_id = wp_insert_post($fallback_args, true);
+        }
 
         if (is_wp_error($submission_id)) {
-            return new WP_Error('save_error', 'Impossibile salvare l\'annuncio', ['status' => 500]);
+            $error_message = $submission_id->get_error_message();
+            if (!empty($error_message)) {
+                error_log('wecoop_offerte_lavoro save_error: ' . $error_message);
+            }
+
+            return new WP_Error(
+                'save_error',
+                'Impossibile salvare l\'annuncio. Riprova tra qualche minuto.',
+                [
+                    'status' => 500,
+                    'details' => $error_message,
+                ]
+            );
         }
 
         // Salva i metadati
