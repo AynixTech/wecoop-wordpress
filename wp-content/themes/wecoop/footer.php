@@ -7,9 +7,12 @@
                 <p>Un ecosistema de inclusion y oportunidades para todos.</p>
                 <ul class="wecoop-footer__menu">
                     <li><a href="<?php echo esc_url(home_url('/#que-es')); ?>">Que es WECOOP</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#servizi')); ?>">Servizi</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/annunci-lavoro-wecoop/')); ?>">Offerte di lavoro</a></li>
                     <li><a href="<?php echo esc_url(home_url('/#passaparola')); ?>">Passaparola</a></li>
                     <li><a href="<?php echo esc_url(home_url('/#plataforma')); ?>">Plataforma Digital</a></li>
                     <li><a href="<?php echo esc_url(home_url('/#impacto')); ?>">Impacto</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/#contacto')); ?>">Contacto</a></li>
                 </ul>
                 <div class="wecoop-footer__brand-logos">
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">

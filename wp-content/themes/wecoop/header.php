@@ -11,6 +11,11 @@
 $current_request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '/';
 $current_url_no_lang = remove_query_arg('lang', home_url($current_request_uri));
 $current_lang = wecoop_language();
+$is_front = is_front_page();
+
+$section_url = static function ($anchor) use ($is_front) {
+    return $is_front ? '#' . $anchor : home_url('/#' . $anchor);
+};
 ?>
 
 <header class="wecoop-header">
@@ -25,34 +30,23 @@ $current_lang = wecoop_language();
         </button>
 
         <nav id="wecoop-main-nav" class="wecoop-nav" aria-label="Main Navigation">
-            <?php
-            if (is_front_page()) {
-                ?>
-                <ul class="wecoop-nav__list">
-                    <li><a href="#inicio">Inicio</a></li>
-                    <li><a href="#que-es">Que es WECOOP</a></li>
-                    <li><a href="#passaparola">Passaparola</a></li>
-                    <li><a href="#plataforma">Plataforma Digital</a></li>
-                    <li><a href="#impacto">Impacto</a></li>
-                    <li><a href="#contacto">Contacto</a></li>
-                </ul>
-                <?php
-            } else {
-                wp_nav_menu([
-                    'theme_location' => 'main-menu',
-                    'container' => false,
-                    'menu_class' => 'wecoop-nav__list',
-                    'fallback_cb' => false,
-                ]);
-            }
-            ?>
+            <ul class="wecoop-nav__list">
+                <li><a href="<?php echo esc_url($section_url('inicio')); ?>">Inicio</a></li>
+                <li><a href="<?php echo esc_url($section_url('que-es')); ?>">Que es WECOOP</a></li>
+                <li><a href="<?php echo esc_url($section_url('servizi')); ?>">Servizi</a></li>
+                <li><a href="<?php echo esc_url(home_url('/annunci-lavoro-wecoop/')); ?>">Offerte di lavoro</a></li>
+                <li><a href="<?php echo esc_url($section_url('passaparola')); ?>">Passaparola</a></li>
+                <li><a href="<?php echo esc_url($section_url('plataforma')); ?>">Plataforma Digital</a></li>
+                <li><a href="<?php echo esc_url($section_url('impacto')); ?>">Impacto</a></li>
+                <li><a href="<?php echo esc_url($section_url('contacto')); ?>">Contacto</a></li>
+            </ul>
         </nav>
 
         <div class="wecoop-header__actions">
             <a class="wecoop-lang <?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $current_url_no_lang)); ?>" aria-label="Switch to English">EN</a>
             <a class="wecoop-lang <?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $current_url_no_lang)); ?>" aria-label="Passa a Italiano">IT</a>
             <a class="wecoop-lang <?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $current_url_no_lang)); ?>" aria-label="Cambiar a Español">ES</a>
-            <a class="wecoop-contact-btn" href="<?php echo esc_url(is_front_page() ? '#contacto' : home_url('/contact')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
+            <a class="wecoop-contact-btn" href="<?php echo esc_url($section_url('contacto')); ?>"><?php echo esc_html(wecoop_t('Contactar', 'Contatti')); ?></a>
         </div>
     </div>
 </header>
