@@ -15,6 +15,20 @@ class WeCoop_Offerte_Lavoro_CPT {
         add_action('init', [__CLASS__, 'register_post_types']);
         add_action('init', [__CLASS__, 'register_taxonomies']);
         add_action('init', [__CLASS__, 'register_meta_fields']);
+        add_action('init', [__CLASS__, 'maybe_seed_default_terms'], 20);
+    }
+
+    public static function maybe_seed_default_terms() {
+        $seed_version = '2';
+        $option_key = 'wecoop_offerte_lavoro_terms_seed_version';
+        $current_version = (string) get_option($option_key, '0');
+
+        if ($current_version === $seed_version) {
+            return;
+        }
+
+        self::seed_default_terms();
+        update_option($option_key, $seed_version);
     }
 
     public static function register_post_types() {
@@ -193,6 +207,28 @@ class WeCoop_Offerte_Lavoro_CPT {
             'DJ / Musica Eventi' => 'dj',
             'Animatori / Animatrici' => 'animatori',
             'Pulizie / Limpieza' => 'pulizie-limpieza',
+            'Lavapiatti' => 'lavapiatti',
+            'Aiuto cucina' => 'aiuto-cucina',
+            'Cameriere / Cameriera' => 'cameriere',
+            'Pizzaiolo / Pizzaiola' => 'pizzaiolo',
+            'Magazziniere' => 'magazziniere',
+            'Rider / Consegne' => 'rider-consegne',
+            'Autista' => 'autista',
+            'Operaio generico' => 'operaio-generico',
+            'Confezionamento' => 'confezionamento',
+            'Saldatore' => 'saldatore',
+            'Bracciante agricolo' => 'agricoltura-bracciante',
+            'Raccolta frutta' => 'raccolta-frutta',
+            'Giardiniere' => 'giardiniere',
+            'Elettricista' => 'elettricista',
+            'Idraulico' => 'idraulico',
+            'Imbianchino' => 'imbianchino',
+            'Portiere / Sicurezza' => 'portiere-sicurezza',
+            'Cucito / Sartoria' => 'cucito-sartoria',
+            'Parrucchiera / Estetista' => 'parrucchiera-estetista',
+            'Operatore call center' => 'call-center',
+            'Commesso / Cassa' => 'commesso-cassa',
+            'Scaffalista' => 'scaffalista',
         ];
 
         foreach ($terms as $name => $slug) {
