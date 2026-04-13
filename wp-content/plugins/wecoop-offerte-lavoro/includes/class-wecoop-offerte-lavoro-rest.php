@@ -46,6 +46,85 @@ class WeCoop_Offerte_Lavoro_REST {
             'callback' => [__CLASS__, 'suggest_category'],
             'permission_callback' => '__return_true',
         ]);
+
+        register_rest_route('wecoop/v1', '/lavoro/annunci/improve-description', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'improve_description'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public static function improve_description(WP_REST_Request $request) {
+        $payload = $request->get_json_params();
+        if (!is_array($payload)) {
+            $payload = $request->get_params();
+        }
+
+        $title_offer = sanitize_text_field((string) ($payload['title_offer'] ?? ''));
+        $city = sanitize_text_field((string) ($payload['city'] ?? ''));
+        $contact_phone = sanitize_text_field((string) ($payload['contact_phone'] ?? ''));
+        $description = sanitize_textarea_field((string) ($payload['description'] ?? ''));
+        $category_scope = sanitize_text_field((string) ($payload['category_scope'] ?? 'job'));
+        $category_direction = sanitize_text_field((string) ($payload['category_direction'] ?? 'offer'));
+
+        if (strlen($description) < 12) {
+            return new WP_Error('short_description', 'Inserisci una descrizione piu dettagliata per generare il testo AI', ['status' => 400]);
+        }
+
+        $api_key = self::openai_api_key();
+        if ($api_key === '') {
+            return new WP_REST_Response([
+                'success' => true,
+                'data' => [
+                    'ai_description' => self::fallback_improved_description([
+                        'title_offer' => $title_offer,
+                        'city' => $city,
+                        'contact_phone' => $contact_phone,
+                        'description' => $description,
+                        'category_scope' => $category_scope,
+                        'category_direction' => $category_direction,
+                    ]),
+                    'source' => 'template_fallback',
+                    'note' => 'OPENAI_API_KEY non configurata: usato template locale',
+                ],
+            ], 200);
+        }
+
+        $improved = self::openai_improve_description([
+            'api_key' => $api_key,
+            'title_offer' => $title_offer,
+            'city' => $city,
+            'contact_phone' => $contact_phone,
+            'description' => $description,
+            'category_scope' => $category_scope,
+            'category_direction' => $category_direction,
+        ]);
+
+        if (is_wp_error($improved)) {
+            return new WP_REST_Response([
+                'success' => true,
+                'data' => [
+                    'ai_description' => self::fallback_improved_description([
+                        'title_offer' => $title_offer,
+                        'city' => $city,
+                        'contact_phone' => $contact_phone,
+                        'description' => $description,
+                        'category_scope' => $category_scope,
+                        'category_direction' => $category_direction,
+                    ]),
+                    'source' => 'template_fallback',
+                    'note' => 'Fallback usato per errore AI: ' . $improved->get_error_message(),
+                ],
+            ], 200);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'data' => [
+                'ai_description' => $improved,
+                'source' => 'openai',
+            ],
+        ], 200);
     }
 
     public static function suggest_category(WP_REST_Request $request) {
@@ -810,6 +889,101 @@ class WeCoop_Offerte_Lavoro_REST {
             'confidence' => $confidence,
             'reason' => sanitize_text_field((string) ($parsed['reason'] ?? 'Suggerimento AI')), 
         ];
+    }
+
+    private static function openai_improve_description(array $args) {
+        $model = apply_filters('wecoop_offerte_lavoro_openai_model', 'gpt-4o-mini');
+
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => 'Sei un assistente editoriale per annunci lavoro/servizi. Scrivi testi chiari, inclusivi e concreti. Restituisci solo JSON valido.',
+            ],
+            [
+                'role' => 'user',
+                'content' => "Migliora questa bozza annuncio mantenendo il significato e i dati reali.\n"
+                    . "Titolo: " . (string) $args['title_offer'] . "\n"
+                    . "Citta: " . (string) $args['city'] . "\n"
+                    . "Contatto: " . (string) $args['contact_phone'] . "\n"
+                    . "Scope: " . (string) $args['category_scope'] . "\n"
+                    . "Direzione: " . (string) $args['category_direction'] . "\n"
+                    . "Testo originale: " . (string) $args['description'] . "\n"
+                    . "Regole: massimo 1300 caratteri, frasi brevi, include mansione/servizio, attivita principali, disponibilita/orari se presenti, zona (citta), modalita di contatto. Non inventare dati mancanti.\n"
+                    . "Rispondi solo con JSON: {\"ai_description\":\"testo migliorato\"}",
+            ],
+        ];
+
+        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+            'timeout' => 25,
+            'headers' => [
+                'Authorization' => 'Bearer ' . (string) $args['api_key'],
+                'Content-Type' => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'model' => $model,
+                'temperature' => 0.2,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => $messages,
+            ]),
+        ]);
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $status = (int) wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $decoded = json_decode($body, true);
+
+        if ($status < 200 || $status >= 300 || !is_array($decoded)) {
+            return new WP_Error('openai_http_error', 'Errore chiamata OpenAI');
+        }
+
+        $content = (string) ($decoded['choices'][0]['message']['content'] ?? '');
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed)) {
+            return new WP_Error('openai_parse_error', 'Risposta AI non leggibile');
+        }
+
+        $ai_description = trim((string) ($parsed['ai_description'] ?? ''));
+        if ($ai_description === '') {
+            return new WP_Error('openai_empty_description', 'Descrizione AI vuota');
+        }
+
+        $ai_description = preg_replace('/\s+/', ' ', $ai_description);
+        if (!is_string($ai_description)) {
+            return new WP_Error('openai_invalid_description', 'Descrizione AI non valida');
+        }
+
+        return trim($ai_description);
+    }
+
+    private static function fallback_improved_description(array $args) {
+        $direction_label = ((string) ($args['category_direction'] ?? 'offer')) === 'seek'
+            ? 'Cerco'
+            : 'Offro';
+        $title = trim((string) ($args['title_offer'] ?? ''));
+        $city = trim((string) ($args['city'] ?? ''));
+        $phone = trim((string) ($args['contact_phone'] ?? ''));
+        $raw = trim((string) ($args['description'] ?? ''));
+
+        $intro = $direction_label . ' ' . ($title !== '' ? $title : 'supporto professionale') . '.';
+        $location = $city !== '' ? ' Zona: ' . $city . '.' : '';
+        $contact = $phone !== '' ? ' Contatti: ' . $phone . '.' : '';
+
+        $clean_raw = preg_replace('/\s+/', ' ', $raw);
+        if (!is_string($clean_raw)) {
+            $clean_raw = $raw;
+        }
+
+        $text = $intro
+            . ' Descrizione: '
+            . trim($clean_raw)
+            . $location
+            . ' Disponibilita e dettagli da concordare.'
+            . $contact;
+
+        return trim($text);
     }
 
     private static function heuristic_category_suggestion($title_offer, $description, array $terms) {
