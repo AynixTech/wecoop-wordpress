@@ -40,6 +40,85 @@ class WeCoop_Offerte_Lavoro_REST {
             'callback' => [__CLASS__, 'create_job_submission'],
             'permission_callback' => '__return_true',
         ]);
+
+        register_rest_route('wecoop/v1', '/lavoro/annunci/suggest-category', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'suggest_category'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public static function suggest_category(WP_REST_Request $request) {
+        $payload = $request->get_json_params();
+        if (!is_array($payload)) {
+            $payload = $request->get_params();
+        }
+
+        $description = sanitize_textarea_field((string) ($payload['description'] ?? ''));
+        $title_offer = sanitize_text_field((string) ($payload['title_offer'] ?? ''));
+        $category_scope = sanitize_text_field((string) ($payload['category_scope'] ?? 'job'));
+        $category_direction = sanitize_text_field((string) ($payload['category_direction'] ?? 'offer'));
+
+        if (strlen($description) < 12) {
+            return new WP_Error('short_description', 'Inserisci una descrizione piu dettagliata per il suggerimento AI', ['status' => 400]);
+        }
+
+        if (!taxonomy_exists(WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX)) {
+            WeCoop_Offerte_Lavoro_CPT::register_taxonomies();
+        }
+
+        $terms = get_terms([
+            'taxonomy' => WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX,
+            'hide_empty' => false,
+        ]);
+
+        if (is_wp_error($terms) || empty($terms)) {
+            return new WP_Error('categories_unavailable', 'Categorie non disponibili per il suggerimento', ['status' => 500]);
+        }
+
+        $category_catalog = array_map(static function ($term) {
+            return [
+                'slug' => (string) $term->slug,
+                'name' => (string) $term->name,
+            ];
+        }, $terms);
+
+        $api_key = self::openai_api_key();
+        if ($api_key === '') {
+            $fallback = self::heuristic_category_suggestion($title_offer, $description, $terms);
+            return new WP_REST_Response([
+                'success' => true,
+                'data' => array_merge($fallback, [
+                    'source' => 'heuristic',
+                    'note' => 'OPENAI_API_KEY non configurata: usato suggerimento locale',
+                ]),
+            ], 200);
+        }
+
+        $ai_result = self::openai_category_suggestion([
+            'api_key' => $api_key,
+            'title_offer' => $title_offer,
+            'description' => $description,
+            'category_scope' => $category_scope,
+            'category_direction' => $category_direction,
+            'categories' => $category_catalog,
+        ]);
+
+        if (is_wp_error($ai_result)) {
+            $fallback = self::heuristic_category_suggestion($title_offer, $description, $terms);
+            return new WP_REST_Response([
+                'success' => true,
+                'data' => array_merge($fallback, [
+                    'source' => 'heuristic_fallback',
+                    'note' => 'Fallback usato per errore AI: ' . $ai_result->get_error_message(),
+                ]),
+            ], 200);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'data' => array_merge($ai_result, ['source' => 'openai']),
+        ], 200);
     }
 
     public static function get_offers(WP_REST_Request $request) {
@@ -629,6 +708,194 @@ class WeCoop_Offerte_Lavoro_REST {
             error_log('wecoop_offerte_lavoro: Errore gestione immagine: ' . $e->getMessage());
             return '';
         }
+    }
+
+    private static function openai_api_key() {
+        if (defined('OPENAI_API_KEY')) {
+            $key = (string) constant('OPENAI_API_KEY');
+            if ($key !== '') {
+                return $key;
+            }
+        }
+
+        $env_key = getenv('OPENAI_API_KEY');
+        return is_string($env_key) ? trim($env_key) : '';
+    }
+
+    private static function openai_category_suggestion(array $args) {
+        $categories_json = wp_json_encode($args['categories'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!is_string($categories_json) || $categories_json === '') {
+            return new WP_Error('invalid_categories', 'Catalogo categorie non valido');
+        }
+
+        $model = apply_filters('wecoop_offerte_lavoro_openai_model', 'gpt-4o-mini');
+
+        $messages = [
+            [
+                'role' => 'system',
+                'content' => 'Sei un classificatore per annunci lavoro/servizi WECOOP. Rispondi solo con JSON valido.',
+            ],
+            [
+                'role' => 'user',
+                'content' => "Classifica il seguente annuncio scegliendo UNA categoria tra quelle permesse.\n"
+                    . "Titolo: " . (string) $args['title_offer'] . "\n"
+                    . "Descrizione: " . (string) $args['description'] . "\n"
+                    . "Scope: " . (string) $args['category_scope'] . "\n"
+                    . "Direction: " . (string) $args['category_direction'] . "\n"
+                    . "Categorie disponibili (JSON): " . $categories_json . "\n"
+                    . "Rispondi solo con questo JSON: "
+                    . '{"category_slug":"slug_valido","confidence":0.0,"reason":"motivo breve"}',
+            ],
+        ];
+
+        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
+            'timeout' => 25,
+            'headers' => [
+                'Authorization' => 'Bearer ' . (string) $args['api_key'],
+                'Content-Type' => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'model' => $model,
+                'temperature' => 0.1,
+                'response_format' => ['type' => 'json_object'],
+                'messages' => $messages,
+            ]),
+        ]);
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $status = (int) wp_remote_retrieve_response_code($response);
+        $body = wp_remote_retrieve_body($response);
+        $decoded = json_decode($body, true);
+
+        if ($status < 200 || $status >= 300 || !is_array($decoded)) {
+            return new WP_Error('openai_http_error', 'Errore chiamata OpenAI');
+        }
+
+        $content = (string) ($decoded['choices'][0]['message']['content'] ?? '');
+        $parsed = json_decode($content, true);
+        if (!is_array($parsed)) {
+            return new WP_Error('openai_parse_error', 'Risposta AI non leggibile');
+        }
+
+        $slug = sanitize_title((string) ($parsed['category_slug'] ?? ''));
+        if ($slug === '') {
+            return new WP_Error('openai_invalid_slug', 'Categoria suggerita non valida');
+        }
+
+        $allowed = [];
+        foreach ((array) $args['categories'] as $item) {
+            if (is_array($item) && !empty($item['slug'])) {
+                $allowed[] = (string) $item['slug'];
+            }
+        }
+
+        if (!in_array($slug, $allowed, true)) {
+            return new WP_Error('openai_slug_not_allowed', 'Categoria suggerita fuori catalogo');
+        }
+
+        $confidence = (float) ($parsed['confidence'] ?? 0.6);
+        if ($confidence < 0) {
+            $confidence = 0;
+        }
+        if ($confidence > 1) {
+            $confidence = 1;
+        }
+
+        return [
+            'category_slug' => $slug,
+            'category_macro' => self::infer_macro_from_slug($slug),
+            'confidence' => $confidence,
+            'reason' => sanitize_text_field((string) ($parsed['reason'] ?? 'Suggerimento AI')), 
+        ];
+    }
+
+    private static function heuristic_category_suggestion($title_offer, $description, array $terms) {
+        $text = strtolower(trim((string) $title_offer . ' ' . (string) $description));
+
+        $keywords_by_slug = [
+            'baby-sitter' => ['baby', 'bambin', 'babysitter', 'nanny'],
+            'badante' => ['badante', 'anzian', 'caregiver', 'assistenza'],
+            'colf' => ['colf', 'domestic', 'pulizie casa', 'stiro'],
+            'oss-osa' => ['oss', 'osa', 'sanitari', 'infermier'],
+            'aso' => ['aso', 'dentale', 'studio odontoiatrico'],
+            'pulizie-limpieza' => ['pulizie', 'limpieza', 'cleaning'],
+            'cameriere' => ['camerier', 'sala', 'ristorante'],
+            'aiuto-cucina' => ['aiuto cucina', 'cucina', 'prep'],
+            'magazziniere' => ['magazzino', 'logistica', 'scaffale'],
+            'autista' => ['autista', 'patente', 'guida'],
+            'call-center' => ['call center', 'telefono', 'customer care'],
+            'commesso-cassa' => ['commesso', 'cassa', 'negozio', 'vendita'],
+        ];
+
+        $best_slug = '';
+        $best_score = -1;
+        foreach ($keywords_by_slug as $slug => $keywords) {
+            $score = 0;
+            foreach ($keywords as $keyword) {
+                if (strpos($text, $keyword) !== false) {
+                    $score++;
+                }
+            }
+            if ($score > $best_score) {
+                $best_score = $score;
+                $best_slug = $slug;
+            }
+        }
+
+        $allowed_slugs = array_map(static function ($term) {
+            return (string) $term->slug;
+        }, $terms);
+
+        if ($best_slug === '' || !in_array($best_slug, $allowed_slugs, true)) {
+            $best_slug = isset($terms[0]) ? (string) $terms[0]->slug : '';
+        }
+
+        return [
+            'category_slug' => $best_slug,
+            'category_macro' => self::infer_macro_from_slug($best_slug),
+            'confidence' => $best_score > 0 ? 0.62 : 0.35,
+            'reason' => 'Suggerimento basato su parole chiave principali della descrizione',
+        ];
+    }
+
+    private static function infer_macro_from_slug($slug) {
+        $map = [
+            'baby-sitter' => 'personal-care',
+            'badante' => 'personal-care',
+            'colf' => 'personal-care',
+            'oss-osa' => 'health-wellbeing',
+            'aso' => 'health-wellbeing',
+            'dentista' => 'health-wellbeing',
+            'massaggi' => 'health-wellbeing',
+            'lavapiatti' => 'food-hospitality',
+            'aiuto-cucina' => 'food-hospitality',
+            'cameriere' => 'food-hospitality',
+            'pizzaiolo' => 'food-hospitality',
+            'fotografo' => 'events-creativity',
+            'dj' => 'events-creativity',
+            'animatori' => 'events-creativity',
+            'elettricista' => 'construction-logistics',
+            'idraulico' => 'construction-logistics',
+            'imbianchino' => 'construction-logistics',
+            'magazziniere' => 'construction-logistics',
+            'rider-consegne' => 'construction-logistics',
+            'autista' => 'construction-logistics',
+            'operaio-generico' => 'industry-manufacturing',
+            'confezionamento' => 'industry-manufacturing',
+            'saldatore' => 'industry-manufacturing',
+            'agricoltura-bracciante' => 'agriculture-green',
+            'raccolta-frutta' => 'agriculture-green',
+            'giardiniere' => 'agriculture-green',
+            'call-center' => 'retail-customer-service',
+            'commesso-cassa' => 'retail-customer-service',
+            'scaffalista' => 'retail-customer-service',
+        ];
+
+        $normalized_slug = sanitize_title((string) $slug);
+        return $map[$normalized_slug] ?? 'other';
     }
 
     private static function serialize_offer(WP_Post $post, $full = false) {
