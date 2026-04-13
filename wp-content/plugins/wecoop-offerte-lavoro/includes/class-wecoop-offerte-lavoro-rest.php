@@ -572,6 +572,8 @@ class WeCoop_Offerte_Lavoro_REST {
             'is_active' => (bool) get_post_meta($id, 'is_active', true),
             'category_scope' => (string) (get_post_meta($id, 'category_scope', true) ?: 'job'),
             'category_direction' => (string) (get_post_meta($id, 'category_direction', true) ?: 'offer'),
+            'category_macro' => (string) get_post_meta($id, 'category_macro', true),
+            'category_sub' => (string) get_post_meta($id, 'category_sub', true),
             'published_at' => get_post_time('c', true, $post),
             'categories' => self::get_offer_categories($id),
         ];

@@ -385,6 +385,8 @@ class WeCoop_Offerte_Lavoro_Admin {
 
     private static function fields() {
         return [
+            'category_macro' => 'Macrocategoria',
+            'category_sub' => 'Sottocategoria',
             'company_name' => 'Azienda',
             'city' => 'Citta',
             'province' => 'Provincia',
