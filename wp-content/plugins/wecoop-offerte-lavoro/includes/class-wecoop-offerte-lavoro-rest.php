@@ -239,6 +239,8 @@ class WeCoop_Offerte_Lavoro_REST {
         $contact_phone = sanitize_text_field((string) ($payload['contact_phone'] ?? ''));
         $contact_email = sanitize_email((string) ($payload['contact_email'] ?? ''));
         $description = sanitize_textarea_field((string) ($payload['description'] ?? ''));
+        $category_macro = sanitize_text_field((string) ($payload['category_macro'] ?? ''));
+        $category_slug = sanitize_text_field((string) ($payload['category_slug'] ?? ''));
         $consent_privacy = !empty($payload['consent_privacy']);
 
         // Validazione campi obbligatori
@@ -300,6 +302,8 @@ class WeCoop_Offerte_Lavoro_REST {
         update_post_meta($submission_id, 'contact_phone', $contact_phone);
         update_post_meta($submission_id, 'contact_email', $contact_email);
         update_post_meta($submission_id, 'description', $description);
+        update_post_meta($submission_id, 'category_macro', $category_macro);
+        update_post_meta($submission_id, 'category_slug', $category_slug);
         update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
         update_post_meta($submission_id, 'status', 'pending_review');
         update_post_meta($submission_id, 'submitted_from_app', 1);
@@ -315,6 +319,8 @@ class WeCoop_Offerte_Lavoro_REST {
             'contact_phone' => $contact_phone,
             'contact_email' => $contact_email,
             'description' => $description,
+            'category_macro' => $category_macro,
+            'category_slug' => $category_slug,
         ]);
 
         return new WP_REST_Response([

@@ -137,6 +137,8 @@ class WeCoop_Offerte_Lavoro_CPT {
 
         $submission_fields = [
             'submission_type' => 'string',
+            'category_macro' => 'string',
+            'category_slug' => 'string',
             'title_offer' => 'string',
             'city' => 'string',
             'contact_phone' => 'string',
