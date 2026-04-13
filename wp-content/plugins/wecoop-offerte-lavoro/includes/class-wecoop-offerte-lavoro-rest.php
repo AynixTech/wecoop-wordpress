@@ -34,6 +34,12 @@ class WeCoop_Offerte_Lavoro_REST {
             'callback' => [__CLASS__, 'create_application'],
             'permission_callback' => '__return_true',
         ]);
+
+        register_rest_route('wecoop/v1', '/lavoro/annunci', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'create_job_submission'],
+            'permission_callback' => '__return_true',
+        ]);
     }
 
     public static function get_offers(WP_REST_Request $request) {
@@ -212,6 +218,84 @@ class WeCoop_Offerte_Lavoro_REST {
                 'application_id' => (int) $application_id,
                 'offer_id' => $offer_id,
                 'status' => 'new',
+            ],
+        ], 201);
+    }
+
+    public static function create_job_submission(WP_REST_Request $request) {
+        $payload = $request->get_json_params();
+        if (!is_array($payload)) {
+            $payload = $request->get_params();
+        }
+
+        $submission_type = sanitize_text_field((string) ($payload['submission_type'] ?? ''));
+        $title_offer = sanitize_text_field((string) ($payload['title_offer'] ?? ''));
+        $city = sanitize_text_field((string) ($payload['city'] ?? ''));
+        $contact_phone = sanitize_text_field((string) ($payload['contact_phone'] ?? ''));
+        $contact_email = sanitize_email((string) ($payload['contact_email'] ?? ''));
+        $description = sanitize_textarea_field((string) ($payload['description'] ?? ''));
+        $consent_privacy = !empty($payload['consent_privacy']);
+
+        // Validazione campi obbligatori
+        if (empty($submission_type) || empty($title_offer) || empty($city) || empty($contact_phone) || empty($description)) {
+            return new WP_Error('missing_fields', 'Tutti i campi sono obbligatori', ['status' => 400]);
+        }
+
+        if (strlen($description) < 20) {
+            return new WP_Error('short_description', 'La descrizione deve avere almeno 20 caratteri', ['status' => 400]);
+        }
+
+        if (!$consent_privacy) {
+            return new WP_Error('privacy_required', 'Consenso privacy obbligatorio', ['status' => 400]);
+        }
+
+        // Rate limiting
+        $rate_key = 'wecoop_job_submission_' . md5((string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+        if ((int) get_transient($rate_key) >= 3) {
+            return new WP_Error('rate_limited', 'Troppi annunci inviati. Riprova piu tardi.', ['status' => 429]);
+        }
+
+        // Crea il submission post
+        $submission_id = wp_insert_post([
+            'post_type' => WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
+            'post_status' => 'private',
+            'post_title' => sprintf('[App] Proposta: %s (%s)', $title_offer, $submission_type),
+        ], true);
+
+        if (is_wp_error($submission_id)) {
+            return new WP_Error('save_error', 'Impossibile salvare l\'annuncio', ['status' => 500]);
+        }
+
+        // Salva i metadati
+        update_post_meta($submission_id, 'submission_type', $submission_type);
+        update_post_meta($submission_id, 'title_offer', $title_offer);
+        update_post_meta($submission_id, 'city', $city);
+        update_post_meta($submission_id, 'contact_phone', $contact_phone);
+        update_post_meta($submission_id, 'contact_email', $contact_email);
+        update_post_meta($submission_id, 'description', $description);
+        update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
+        update_post_meta($submission_id, 'status', 'pending_review');
+        update_post_meta($submission_id, 'submitted_from_app', 1);
+
+        // Incrementa il limite rate
+        set_transient($rate_key, ((int) get_transient($rate_key)) + 1, DAY_IN_SECONDS);
+
+        // Notifica admin
+        do_action('wecoop_job_submission_created', $submission_id, [
+            'submission_type' => $submission_type,
+            'title_offer' => $title_offer,
+            'city' => $city,
+            'contact_phone' => $contact_phone,
+            'contact_email' => $contact_email,
+            'description' => $description,
+        ]);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Annuncio inviato con successo! Verrà revisionato dal nostro team.',
+            'data' => [
+                'submission_id' => (int) $submission_id,
+                'status' => 'pending_review',
             ],
         ], 201);
     }

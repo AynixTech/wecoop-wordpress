@@ -8,6 +8,7 @@ class WeCoop_Offerte_Lavoro_CPT {
 
     public const OFFER_CPT = 'wecoop_job_offer';
     public const APPLICATION_CPT = 'wecoop_job_application';
+    public const SUBMISSION_CPT = 'wecoop_job_submission';
     public const CATEGORY_TAX = 'wecoop_job_category';
 
     public static function init() {
@@ -43,6 +44,21 @@ class WeCoop_Offerte_Lavoro_CPT {
             'show_in_menu' => true,
             'show_in_rest' => false,
             'menu_icon' => 'dashicons-id',
+            'supports' => ['title'],
+            'capability_type' => 'post',
+            'map_meta_cap' => true,
+        ]);
+
+        register_post_type(self::SUBMISSION_CPT, [
+            'labels' => [
+                'name' => __('Annunci Proposti', 'wecoop-offerte-lavoro'),
+                'singular_name' => __('Annuncio Proposto', 'wecoop-offerte-lavoro'),
+            ],
+            'public' => false,
+            'show_ui' => true,
+            'show_in_menu' => true,
+            'show_in_rest' => false,
+            'menu_icon' => 'dashicons-megaphone',
             'supports' => ['title'],
             'capability_type' => 'post',
             'map_meta_cap' => true,
@@ -109,6 +125,30 @@ class WeCoop_Offerte_Lavoro_CPT {
 
         foreach ($application_fields as $field => $type) {
             register_post_meta(self::APPLICATION_CPT, $field, [
+                'type' => $type,
+                'single' => true,
+                'show_in_rest' => false,
+                'sanitize_callback' => [__CLASS__, 'sanitize_meta_value'],
+                'auth_callback' => function () {
+                    return current_user_can('edit_posts');
+                },
+            ]);
+        }
+
+        $submission_fields = [
+            'submission_type' => 'string',
+            'title_offer' => 'string',
+            'city' => 'string',
+            'contact_phone' => 'string',
+            'contact_email' => 'string',
+            'description' => 'string',
+            'consent_privacy' => 'boolean',
+            'status' => 'string',
+            'submitted_from_app' => 'boolean',
+        ];
+
+        foreach ($submission_fields as $field => $type) {
+            register_post_meta(self::SUBMISSION_CPT, $field, [
                 'type' => $type,
                 'single' => true,
                 'show_in_rest' => false,
