@@ -427,6 +427,7 @@ class WeCoop_Offerte_Lavoro_REST {
         $category_direction = sanitize_text_field((string) ($payload['category_direction'] ?? ''));
         $category_macro = sanitize_text_field((string) ($payload['category_macro'] ?? ''));
         $category_slug = sanitize_text_field((string) ($payload['category_slug'] ?? ''));
+        $image_base64 = isset($payload['image_base64']) ? (string) $payload['image_base64'] : '';
         $consent_privacy = !empty($payload['consent_privacy']);
 
         if (!in_array($category_scope, ['job', 'service'], true)) {
@@ -490,6 +491,12 @@ class WeCoop_Offerte_Lavoro_REST {
             );
         }
 
+        // Gestisci l'immagine se presente
+        $image_url = '';
+        if (!empty($image_base64)) {
+            $image_url = self::handle_base64_image($submission_id, $image_base64);
+        }
+
         // Salva i metadati
         update_post_meta($submission_id, 'submission_type', $submission_type);
         update_post_meta($submission_id, 'category_scope', $category_scope);
@@ -510,6 +517,9 @@ class WeCoop_Offerte_Lavoro_REST {
         update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
         update_post_meta($submission_id, 'status', 'published');
         update_post_meta($submission_id, 'submitted_from_app', 1);
+        if (!empty($image_url)) {
+            update_post_meta($submission_id, 'image_url', $image_url);
+        }
 
         if (!empty($category_slug)) {
             $term = get_term_by('slug', $category_slug, WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX);
@@ -543,6 +553,82 @@ class WeCoop_Offerte_Lavoro_REST {
                 'status' => 'published',
             ],
         ], 201);
+    }
+
+    private static function handle_base64_image($post_id, $image_base64) {
+        try {
+            // Decodifica il base64
+            $image_data = base64_decode($image_base64, true);
+            if ($image_data === false) {
+                error_log('wecoop_offerte_lavoro: Fallita decodifica base64');
+                return '';
+            }
+
+            // Rileva il tipo di immagine
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime_type = finfo_buffer($finfo, $image_data);
+            finfo_close($finfo);
+
+            // Valida il tipo MIME
+            $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!in_array($mime_type, $allowed_types, true)) {
+                error_log('wecoop_offerte_lavoro: Tipo MIME non supportato: ' . $mime_type);
+                return '';
+            }
+
+            // Ricava l'estensione
+            $ext_map = [
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'image/gif' => 'gif',
+                'image/webp' => 'webp',
+            ];
+            $file_ext = $ext_map[$mime_type] ?? 'jpg';
+
+            // Crea un nome file unico
+            $filename = 'wecoop-offer-' . $post_id . '-' . time() . '.' . $file_ext;
+
+            // Ottieni la directory uploads
+            $upload_dir = wp_upload_dir();
+            $file_path = $upload_dir['path'] . '/' . $filename;
+
+            // Salva il file
+            if (file_put_contents($file_path, $image_data) === false) {
+                error_log('wecoop_offerte_lavoro: Fallita scrittura file immagine');
+                return '';
+            }
+
+            // Crea un attachment post
+            $attachment = [
+                'post_mime_type' => $mime_type,
+                'post_title' => preg_replace('/\.[^.]+$/', '', basename($filename)),
+                'post_content' => '',
+                'post_status' => 'inherit',
+                'post_parent' => (int) $post_id,
+            ];
+
+            $attachment_id = wp_insert_attachment($attachment, $file_path, (int) $post_id);
+
+            if ($attachment_id && !is_wp_error($attachment_id)) {
+                // Genera metadati e set come featured image
+                require_once ABSPATH . 'wp-admin/includes/image.php';
+                $attach_data = wp_generate_attachment_metadata($attachment_id, $file_path);
+                wp_update_attachment_metadata($attachment_id, $attach_data);
+                set_post_thumbnail((int) $post_id, $attachment_id);
+
+                // Ritorna l'URL dell'immagine
+                $image_url = wp_get_attachment_image_url($attachment_id, 'large');
+                if ($image_url) {
+                    return $image_url;
+                }
+            }
+
+            // Se l'attachment non funziona, ritorna l'URL diretto
+            return $upload_dir['url'] . '/' . $filename;
+        } catch (Exception $e) {
+            error_log('wecoop_offerte_lavoro: Errore gestione immagine: ' . $e->getMessage());
+            return '';
+        }
     }
 
     private static function serialize_offer(WP_Post $post, $full = false) {
