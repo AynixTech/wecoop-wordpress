@@ -2,26 +2,63 @@
 
 # WeCoop
 
+WordPress Description
+
 ## Sitemaps
 
 - [XML Sitemap](http://localhost:10013/sitemap.xml): Contains all public & indexable URLs for this website.
 
 ## Articoli
 
-- [Ciao mondo!](http://localhost:10013/2026/04/10/ciao-mondo/) - Ti diamo il benvenuto in WordPress. Questo è il tuo primo articolo. Modificalo o eliminalo e quindi inizia a scrivere!
+- [News](http://localhost:10013/news/) - NewsInstitutional updates and blog content.
+- [Decreto Flussi 2026–2028: una strategia per l’immigrazione regolare e lo sviluppo economico](http://localhost:10013/decreto-flussi-2026-2028-una-strategia-per-limmigrazione-regolare-e-lo-sviluppo-economico/) - Introduzione Nel contesto di una demografia stagnante e di un mercato del lavoro sempre più bisognoso di manodopera, il governo italiano ha approvato il nuovo Decreto Flussi per il triennio 2026–2028. Il provvedimento autorizza l’ingresso di 497.550 lavoratori stranieri regolari, con l’obiettivo di sostenere settori chiave dell’economia e contrastare l’immigrazione irregolare. Un piano ambizioso che
+- [Italia che accoglie: sfide, storie e prospettive dell’integrazione migrante](http://localhost:10013/italia-che-accoglie-sfide-storie-e-prospettive-dellintegrazione-migrante/) - Introduzione L’Italia, da sempre terra di passaggio e incontro tra culture, si trova oggi al centro di una sfida cruciale: trasformare l’accoglienza dei migranti in un processo di integrazione reale e duraturo. Tra politiche frammentate, iniziative locali e testimonianze personali, il Paese cerca di costruire un modello inclusivo capace di valorizzare le diversità e promuovere
 
 ## Pagine
 
+- [Home](http://localhost:10013/) - WECOOP: access to services, education, and work in networkA model that combines physical local presence with a digital platform to generate real opportunities.Contact usThe problemMany people struggle to access services, guidance, and opportunities due to language, digital, and network barriers.The solution: The WECOOP modelA local access point + WECOOP App + partner network supporting people,
 - [Generador de CV con AI](http://localhost:10013/generador-cv-ai/)
+- [The WECOOP Model](http://localhost:10013/wecoop-model/) - The WECOOP ModelTerritorial + digital model, scalable and impact-oriented.
+- [PASSAPAROLA Project](http://localhost:10013/passaparola-project/) - PASSAPAROLA ProjectCommunity activation and network-based guidance program.
+- [WECOOP App](http://localhost:10013/wecoop-app/) - WECOOP AppDigital platform for services, tracking, and future integrations.
+- [Social Impact](http://localhost:10013/social-impact/) - Social ImpactIndicators, outcomes, and continuous improvement.
+- [Partners](http://localhost:10013/partners/) - PartnersNetwork of WECOOP allied organizations.
+- [Collaborate with Us](http://localhost:10013/collaborate-with-us/) - Collaborate with UsSpace for organizations, institutions, and professionals who want to contribute.
+- [Contact](http://localhost:10013/contact/) - ContactWrite to us and we will reply as soon as possible.
 - [Login Customizer](http://localhost:10013/login-customizer/) - This page is used for Login Customizer plugin. It will not be visible to your readers. Do not delete it.
-- [Pagina di esempio](http://localhost:10013/pagina-di-esempio/) - Questa è una pagina di esempio. Differisce da un articolo di un blog perché rimane sempre allo stesso posto e (in molti temi) appare nel menu di navigazione. Molte persone iniziano con una pagina di Informazioni che li presentano ai visitatori del sito. Potrebbe apparire una presentazione del tipo: Ciao! Sono un fattorino ciclista di
+- [Shop](http://localhost:10013/negozio/)
+- [Richiesta Eliminazione Dati](http://localhost:10013/richiesta-eliminazione-dati/)
+- [Termini del Servizio di WeCoop](http://localhost:10013/termini-del-servizio-di-wecoop/) - Data di entrata in vigore: 09 dicembre 2025 Benvenuto su WeCoop.org (“Sito”). Utilizzando il Sito e i nostri servizi, accetti di rispettare i presenti Termini del Servizio (“Termini”). Se non accetti questi Termini, ti invitiamo a non utilizzare il Sito. 1. Accettazione dei Termini Accedendo e utilizzando il Sito, dichiari di avere almeno 18 anni
+- [Privacy Policy di WeCoop](http://localhost:10013/privacy-policy-di-wecoop/) - Data di entrata in vigore: 09 dicembre 2025 WeCoop (“noi”, “nostro/a/i/e”) si impegna a proteggere la privacy dei visitatori del nostro sito web wecoop.org (“Sito”). La presente Privacy Policy descrive quali informazioni raccogliamo, come le utilizziamo e quali diritti hai riguardo ai tuoi dati personali. 1. Tipologie di dati raccolti Possiamo raccogliere le seguenti informazioni:
+- [Cookie Policy (UE)](http://localhost:10013/cookie-policy-ue/)
+- [Tessera Socio](http://localhost:10013/card-socio/)
+- [Contatti](http://localhost:10013/contatti/) - Contatta subito il team di WeCoop per assistenza. Questa sezione illustra la missione di WeCoop, sottolineando i valori che ispirano il nostro lavoro e il nostro impegno verso il benessere e la cooperazione. Mary Delgado Presidenta +39 334 1390175 info@localhost
+- [Iniziative](http://localhost:10013/iniziative/) - Le nostre iniziative nascono per rispondere a bisogni diversi della comunità, con progetti che spaziano dall’assistenza amministrativa all’aggregazione sociale e allo sport educativo. CONCAF Concaf è un CAF che offre un’ampia gamma di servizi di utilità quotidiana: sportello immigrazione, patronato, biglietteria, rilascio SPID e centro di mediazione linguistica. Un punto di riferimento unico per chi
+- [Progetti](http://localhost:10013/progetti/) - I nostri progetti nascono per rispondere ai bisogni concreti del territorio e delle persone che lo abitano, con un'attenzione particolare a chi si trova in situazioni di fragilità sociale, economica o culturale. Ogni progetto ha un'identità specifica, ma tutti condividono lo stesso approccio: prossimità, ascolto, professionalità e costruzione di percorsi di autonomia. WE – FOCUS
+- [WE WORK](http://localhost:10013/we-work-2/) - Nome progetto: WE-WORKAttività: Inclusione economicaPartner: Kinti srls, Roseland ECBeneficiari: mamme singole e vittime di violenza Obiettivo del progetto: Favorire l’inclusione lavorativa degli immigrati adulti attraverso lo sviluppo delle competenze linguistiche legate al lavoro, riconoscendo che lingua e occupazione sono strettamente connesse. Cosa sono le competenze linguistiche per il lavoro? Si tratta di abilità necessarie per:
+- [WE FOCUS](http://localhost:10013/we-focus/) - Descrizione generaleWE – FOCUS è uno sportello di ascolto e orientamento multilingue rivolto a cittadini di paesi terzi. Nasce come spazio fisico e relazionale in cui le persone possono trovare accoglienza, informazioni, consulenze e accompagnamento nei percorsi di integrazione. Il progetto si concentra sull’accesso ai servizi territoriali, la regolarizzazione amministrativa, il contrasto alla disinformazione, e
+- [WE EDUCATE](http://localhost:10013/we-educate/) - Nome progetto: WE-EDUCATEAttività: Integrazione linguistica e interculturaleParole chiave: Identità culturali, cittadinanza, educazione interculturale, repertorio linguistico Obiettivo del progetto: Promuovere l’integrazione linguistica e culturale dei cittadini stranieri, con particolare attenzione alla lingua italiana come strumento per l’inclusione sociale, lavorativa, formativa e relazionale. L’insegnamento della lingua è inteso non solo come mezzo di comunicazione, ma come veicolo
+- [Servizi](http://localhost:10013/servizi/) - I nostri Servizi Offriamo una gamma di servizi pensati per supportare cittadini, giovani, associazioni e scuole in un’ottica di inclusione, partecipazione e crescita personale e collettiva. 🧭 Sportelli di Orientamento Accogliamo e ascoltiamo le persone offrendo informazioni e orientamento su tematiche legate a lavoro, formazione, diritti e cittadinanza. Un primo punto di riferimento per chi
+- [Hai un’idea? Falla vivere con WECOOP!](http://localhost:10013/hai-un-idea/) - 🌟 Proponi il tuo corso o evento 🌟WECOOP è sempre alla ricerca di nuove idee per arricchire la nostra offerta culturale e sociale. Se hai un progetto, un corso, o un evento che vorresti realizzare, siamo qui per aiutarti a trasformarlo in realtà! Cosa cerchiamo Corsi formativi e laboratori creativi. Eventi culturali, artistici o musicali.
+- [Sostieni WECOOP: unisciti alla nostra missione con il crowdfunding!](http://localhost:10013/sostienici/) - WECOOP è molto più di un’associazione: è un luogo dove cultura, solidarietà e inclusione si incontrano per costruire una comunità più forte e unita. Per continuare a crescere e offrire i nostri servizi e progetti, abbiamo bisogno anche del tuo supporto! Perché donare?Il tuo contributo ci aiuterà a: Organizzare eventi culturali, corsi e laboratori per
+- [Diventa volontario](http://localhost:10013/diventa-volontario/) - Entra a far parte di una comunità attiva e solidale che lavora per promuovere cultura, inclusione e sostegno sociale. Diventare volontario di WECOOP significa contribuire attivamente ai nostri progetti e fare la differenza nella vita delle persone. Chi cerchiamoCerchiamo persone motivate, con spirito di collaborazione e voglia di mettersi in gioco. Non importa l’età o
+- [Chi siamo](http://localhost:10013/chi-siamo/) - WECOOP è un vivace centro culturale dedicato alla promozione dell’arte, della cultura e della comunità. Organizziamo un’ampia gamma di attività, tra cui concerti, corsi e laboratori creativi per adulti e bambini, cene a tema, proiezioni cinematografiche, presentazioni di libri, mostre fotografiche, concorsi e festival. La nostra missione è quella di creare uno spazio accogliente dove
 
 ## MailPoet Page
 
 - [MailPoet Page](http://localhost:10013/?mailpoet_page=subscriptions) - [mailpoet_page]
 - [MailPoet Page](http://localhost:10013/?mailpoet_page=captcha) - [mailpoet_page]
 
+## Eventi
+
+- [Corso di italiano](http://localhost:10013/eventi/corso-di-italiano/) - riassunto
+- [Giorno internazionale del migrante 25 dicembre](http://localhost:10013/eventi/giorno-del-migrante-25-dicembre/) - Il Giorno dei Migranti, celebrato il 25 dicembre, è un momento di riflessione, incontro e condivisione dedicato alle persone migranti e rifugiate. In una data simbolica come il Natale, che richiama accoglienza, speranza e fraternità, la comunità si riunisce per riconoscere il valore della diversità culturale e promuovere una convivenza fondata sul rispetto, sulla solidarietà
+
 ## Categorie
 
-- [Senza categoria](http://localhost:10013/category/senza-categoria/)
+- [news](http://localhost:10013/category/news/)
+
+## Tag
+
+- [casaditutti](http://localhost:10013/tag/casaditutti/)
 
