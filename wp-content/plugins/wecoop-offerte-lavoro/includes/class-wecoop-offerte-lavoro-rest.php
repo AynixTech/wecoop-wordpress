@@ -55,9 +55,16 @@ class WeCoop_Offerte_Lavoro_REST {
             'meta_key' => 'is_featured',
             'meta_query' => [
                 [
-                    'key' => 'is_active',
-                    'value' => '1',
-                    'compare' => '=',
+                    'relation' => 'OR',
+                    [
+                        'key' => 'is_active',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'is_active',
+                        'value' => '1',
+                        'compare' => '=',
+                    ],
                 ],
             ],
         ];
