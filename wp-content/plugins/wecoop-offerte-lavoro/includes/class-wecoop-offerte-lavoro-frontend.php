@@ -75,20 +75,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
             $ambito = 'all';
         }
 
-        $meta_query = [
-            [
-                'relation' => 'OR',
-                [
-                    'key' => 'is_active',
-                    'compare' => 'NOT EXISTS',
-                ],
-                [
-                    'key' => 'is_active',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
-            ],
-        ];
+        $meta_query = [];
 
         if ($ambito === 'seek') {
             $meta_query[] = [
@@ -120,14 +107,20 @@ class WeCoop_Offerte_Lavoro_Frontend {
         }
 
         $args = [
-            'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            'post_type' => [
+                WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+                WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
+            ],
             'post_status' => 'publish',
             'posts_per_page' => 12,
             'paged' => $paged,
             'orderby' => ['meta_value_num' => 'DESC', 'date' => 'DESC'],
             'meta_key' => 'is_featured',
-            'meta_query' => $meta_query,
         ];
+
+        if (!empty($meta_query)) {
+            $args['meta_query'] = $meta_query;
+        }
 
         if ($search !== '') {
             $args['s'] = $search;
@@ -224,6 +217,10 @@ class WeCoop_Offerte_Lavoro_Frontend {
                         $badge_text = $direction === 'seek' ? 'Cerco' : 'Offro';
                         $city = (string) get_post_meta($id, 'city', true);
                         $contract_type = (string) get_post_meta($id, 'contract_type', true);
+                        $excerpt = get_the_excerpt();
+                        if (trim((string) $excerpt) === '') {
+                            $excerpt = (string) get_post_meta($id, 'description', true);
+                        }
                         ?>
                         <article class="wecoop-annuncio-card">
                             <div class="wecoop-annuncio-head">
@@ -238,7 +235,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                                     <span> · <?php echo esc_html($contract_type); ?></span>
                                 <?php endif; ?>
                             </div>
-                            <p class="wecoop-annuncio-excerpt"><?php echo esc_html(wp_trim_words(wp_strip_all_tags(get_the_excerpt()), 30)); ?></p>
+                            <p class="wecoop-annuncio-excerpt"><?php echo esc_html(wp_trim_words(wp_strip_all_tags($excerpt), 30)); ?></p>
                             <div class="wecoop-annuncio-actions">
                                 <a class="wecoop-btn-dettagli" href="<?php echo esc_url(get_permalink($id)); ?>">Dettagli annuncio</a>
                             </div>

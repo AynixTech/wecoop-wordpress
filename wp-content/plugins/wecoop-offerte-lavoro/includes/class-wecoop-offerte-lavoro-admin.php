@@ -7,10 +7,167 @@ if (!defined('ABSPATH')) {
 class WeCoop_Offerte_Lavoro_Admin {
 
     public static function init() {
+        add_action('admin_menu', [__CLASS__, 'register_admin_pages']);
         add_action('add_meta_boxes', [__CLASS__, 'add_meta_boxes']);
         add_action('save_post_' . WeCoop_Offerte_Lavoro_CPT::OFFER_CPT, [__CLASS__, 'save_offer_meta']);
         add_action('manage_' . WeCoop_Offerte_Lavoro_CPT::OFFER_CPT . '_posts_columns', [__CLASS__, 'offer_columns']);
         add_action('manage_' . WeCoop_Offerte_Lavoro_CPT::OFFER_CPT . '_posts_custom_column', [__CLASS__, 'render_offer_columns'], 10, 2);
+    }
+
+    public static function register_admin_pages() {
+        add_submenu_page(
+            'edit.php?post_type=' . WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            __('Annunci Inseriti', 'wecoop-offerte-lavoro'),
+            __('Annunci Inseriti', 'wecoop-offerte-lavoro'),
+            'edit_posts',
+            'wecoop-annunci-inseriti',
+            [__CLASS__, 'render_annunci_inseriti_page']
+        );
+    }
+
+    public static function render_annunci_inseriti_page() {
+        if (!current_user_can('edit_posts')) {
+            wp_die(esc_html__('Non autorizzato', 'wecoop-offerte-lavoro'));
+        }
+
+        self::handle_delete_action();
+
+        $offers = get_posts([
+            'post_type' => [
+                WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+                WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
+            ],
+            'post_status' => ['publish', 'pending', 'draft', 'private'],
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ]);
+
+        $fallback_posts = get_posts([
+            'post_type' => 'post',
+            'post_status' => ['publish', 'pending', 'draft', 'private'],
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'submitted_from_app',
+                    'value' => '1',
+                    'compare' => '=',
+                ],
+            ],
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ]);
+
+        $all_posts = [];
+        foreach (array_merge($offers, $fallback_posts) as $post) {
+            $all_posts[$post->ID] = $post;
+        }
+
+        usort($all_posts, static function ($a, $b) {
+            return strtotime((string) $b->post_date_gmt) <=> strtotime((string) $a->post_date_gmt);
+        });
+
+        $notice = isset($_GET['wecoop_notice']) ? sanitize_text_field(wp_unslash($_GET['wecoop_notice'])) : '';
+
+        echo '<div class="wrap">';
+        echo '<h1>' . esc_html__('Annunci Inseriti', 'wecoop-offerte-lavoro') . '</h1>';
+        echo '<p>' . esc_html__('Qui puoi vedere tutti gli annunci inseriti (offerte, proposte e annunci da app) ed eliminarli.', 'wecoop-offerte-lavoro') . '</p>';
+
+        if ($notice === 'deleted') {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Annuncio eliminato con successo.', 'wecoop-offerte-lavoro') . '</p></div>';
+        }
+
+        echo '<table class="widefat striped">';
+        echo '<thead><tr>';
+        echo '<th>ID</th>';
+        echo '<th>' . esc_html__('Titolo', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Tipo', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Ambito', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Direzione', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Citta', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Stato', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Data', 'wecoop-offerte-lavoro') . '</th>';
+        echo '<th>' . esc_html__('Azioni', 'wecoop-offerte-lavoro') . '</th>';
+        echo '</tr></thead><tbody>';
+
+        if (empty($all_posts)) {
+            echo '<tr><td colspan="9">' . esc_html__('Nessun annuncio trovato.', 'wecoop-offerte-lavoro') . '</td></tr>';
+        } else {
+            foreach ($all_posts as $post) {
+                $post_id = (int) $post->ID;
+                $city = (string) get_post_meta($post_id, 'city', true);
+                $scope = (string) get_post_meta($post_id, 'category_scope', true);
+                $direction = (string) get_post_meta($post_id, 'category_direction', true);
+
+                if ($scope === '') {
+                    $scope = 'job';
+                }
+                if ($direction === '') {
+                    $direction = 'offer';
+                }
+
+                $type_label = $post->post_type;
+                if ($post->post_type === WeCoop_Offerte_Lavoro_CPT::OFFER_CPT) {
+                    $type_label = 'Offerta';
+                } elseif ($post->post_type === WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT) {
+                    $type_label = 'Proposta';
+                } elseif ($post->post_type === 'post') {
+                    $type_label = 'Post (app)';
+                }
+
+                $delete_url = wp_nonce_url(
+                    add_query_arg([
+                        'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+                        'page' => 'wecoop-annunci-inseriti',
+                        'wecoop_action' => 'delete',
+                        'post_id' => $post_id,
+                    ], admin_url('edit.php')),
+                    'wecoop_delete_annuncio_' . $post_id
+                );
+
+                echo '<tr>';
+                echo '<td>' . esc_html((string) $post_id) . '</td>';
+                echo '<td><strong>' . esc_html((string) $post->post_title) . '</strong></td>';
+                echo '<td>' . esc_html($type_label) . '</td>';
+                echo '<td>' . esc_html($scope) . '</td>';
+                echo '<td>' . esc_html($direction) . '</td>';
+                echo '<td>' . esc_html($city) . '</td>';
+                echo '<td>' . esc_html((string) $post->post_status) . '</td>';
+                echo '<td>' . esc_html(get_date_from_gmt((string) $post->post_date_gmt, 'd/m/Y H:i')) . '</td>';
+                echo '<td>';
+                echo '<a class="button button-small" href="' . esc_url(get_edit_post_link($post_id)) . '">Modifica</a> ';
+                echo '<a class="button button-small button-link-delete" href="' . esc_url($delete_url) . '" onclick="return confirm(\'Eliminare questo annuncio?\');">Elimina</a>';
+                echo '</td>';
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+        echo '</div>';
+    }
+
+    private static function handle_delete_action() {
+        $action = isset($_GET['wecoop_action']) ? sanitize_text_field(wp_unslash($_GET['wecoop_action'])) : '';
+        $post_id = isset($_GET['post_id']) ? (int) $_GET['post_id'] : 0;
+
+        if ($action !== 'delete' || $post_id <= 0) {
+            return;
+        }
+
+        check_admin_referer('wecoop_delete_annuncio_' . $post_id);
+
+        if (!current_user_can('delete_post', $post_id)) {
+            wp_die(esc_html__('Non autorizzato a eliminare questo annuncio.', 'wecoop-offerte-lavoro'));
+        }
+
+        wp_trash_post($post_id);
+
+        wp_safe_redirect(add_query_arg([
+            'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            'page' => 'wecoop-annunci-inseriti',
+            'wecoop_notice' => 'deleted',
+        ], admin_url('edit.php')));
+        exit;
     }
 
     public static function add_meta_boxes() {

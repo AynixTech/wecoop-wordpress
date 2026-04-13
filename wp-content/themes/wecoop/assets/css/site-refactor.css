@@ -1553,6 +1553,8 @@ body.home {
 .ws-stat {
     border-radius: 16px;
     padding: 24px;
+    box-shadow: 0 10px 28px rgba(17, 34, 53, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .ws-icon,
@@ -1762,7 +1764,7 @@ body.home {
 
 .ws-tile {
     background: #fff;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 24px rgba(17, 34, 53, 0.1);
 }
 
 .ws-logo-app {
@@ -1772,7 +1774,7 @@ body.home {
 }
 
 .ws-mini {
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 22px rgba(17, 34, 53, 0.1);
 }
 
 .ws-mini--pink {
@@ -1882,8 +1884,8 @@ body.home {
 .ws-service-band {
     background: #fff;
     border-radius: 16px;
-    border: 1px solid rgba(0, 0, 0, 0.07);
-    box-shadow: 0 10px 24px rgba(17, 34, 53, 0.1);
+    border: none;
+    box-shadow: 0 14px 30px rgba(17, 34, 53, 0.12);
     padding: 18px 18px 16px;
 }
 
@@ -2000,7 +2002,8 @@ body.home {
 
 .ws-stat {
     background: linear-gradient(180deg, #fff, #f7fbfd);
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: none;
+    box-shadow: 0 12px 28px rgba(17, 34, 53, 0.12);
     text-align: center;
     display: flex;
     flex-direction: column;
@@ -2073,7 +2076,8 @@ body.home {
     gap: 16px;
     background: #fff;
     border-radius: 18px;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: none;
+    box-shadow: 0 12px 28px rgba(17, 34, 53, 0.1);
     padding: 24px;
 }
 
