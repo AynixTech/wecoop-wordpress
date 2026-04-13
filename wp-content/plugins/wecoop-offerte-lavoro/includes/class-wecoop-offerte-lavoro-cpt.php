@@ -98,6 +98,8 @@ class WeCoop_Offerte_Lavoro_CPT {
         $offer_fields = [
             'category_scope' => 'string',
             'category_direction' => 'string',
+            'category_macro' => 'string',
+            'category_sub' => 'string',
             'company_name' => 'string',
             'city' => 'string',
             'province' => 'string',

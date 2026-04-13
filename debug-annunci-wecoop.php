@@ -184,13 +184,15 @@ $terms = get_terms([
     <strong>Ultimi 50 record utili</strong>
     <table>
       <tr>
-        <th>ID</th><th>Titolo</th><th>Tipo</th><th>Stato</th><th>City</th><th>Scope</th><th>Direction</th><th>submitted_from_app</th><th>Data</th>
+        <th>ID</th><th>Titolo</th><th>Tipo</th><th>Stato</th><th>City</th><th>Scope</th><th>Direction</th><th>Macro</th><th>Sub</th><th>submitted_from_app</th><th>Data</th>
       </tr>
       <?php foreach ($recent as $p) :
         $id = (int) $p->ID;
         $city = (string) get_post_meta($id, 'city', true);
         $scope = (string) get_post_meta($id, 'category_scope', true);
         $direction = (string) get_post_meta($id, 'category_direction', true);
+        $macro = (string) get_post_meta($id, 'category_macro', true);
+        $sub = (string) get_post_meta($id, 'category_sub', true);
         $from_app = (string) get_post_meta($id, 'submitted_from_app', true);
       ?>
       <tr>
@@ -201,6 +203,8 @@ $terms = get_terms([
         <td><?php echo esc($city); ?></td>
         <td><?php echo esc($scope); ?></td>
         <td><?php echo esc($direction); ?></td>
+        <td><?php echo esc($macro); ?></td>
+        <td><?php echo esc($sub); ?></td>
         <td><?php echo esc($from_app); ?></td>
         <td><?php echo esc(get_date_from_gmt((string) $p->post_date_gmt, 'd/m/Y H:i')); ?></td>
       </tr>
