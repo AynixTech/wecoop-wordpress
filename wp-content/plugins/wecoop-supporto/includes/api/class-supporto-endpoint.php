@@ -46,6 +46,159 @@ class WeCoop_Supporto_Endpoint {
             'callback' => [__CLASS__, 'get_mie_richieste'],
             'permission_callback' => [__CLASS__, 'check_user_logged_in'],
         ]);
+
+        // Assistente chat (Sportello)
+        register_rest_route('wecoop/v1', '/supporto/assistant', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'assistant_reply'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    /**
+     * Risposta assistente per chat Sportello.
+     * Ritorna sempre JSON standard:
+     * - reply: testo risposta
+     * - action_key: chiave azione opzionale (open_work/open_credit/...)
+     * - action_label: label bottone opzionale
+     */
+    public static function assistant_reply($request) {
+        $params = $request->get_json_params();
+        if (!is_array($params)) {
+            $params = $request->get_params();
+        }
+
+        $message = sanitize_textarea_field((string) ($params['message'] ?? ''));
+        $language = sanitize_text_field((string) ($params['language'] ?? 'it'));
+
+        if (trim($message) === '') {
+            return new WP_Error('missing_message', 'Messaggio mancante', ['status' => 400]);
+        }
+
+        $result = self::assistant_rule_based_reply($message, $language);
+
+        return rest_ensure_response([
+            'success' => true,
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Motore di risposta "AI-like" deterministico lato server.
+     */
+    private static function assistant_rule_based_reply($message, $language) {
+        $lang = in_array($language, ['it', 'en', 'es'], true) ? $language : 'it';
+        $text = mb_strtolower((string) $message);
+
+        $contains_any = static function($haystack, $needles) {
+            foreach ($needles as $needle) {
+                if ($needle !== '' && strpos($haystack, $needle) !== false) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        if ($contains_any($text, ['lavoro', 'stage', 'tirocin', 'agenzi', 'job', 'work'])) {
+            return [
+                'reply' => self::i18n_text($lang, [
+                    'it' => 'Perfetto, ti accompagno su Accesso al lavoro: candidature, orientamento e attivazione supporto.',
+                    'en' => 'Great, I can guide you to Access to Work for applications, orientation and activation support.',
+                    'es' => 'Perfecto, te acompano a Acceso al trabajo para candidaturas, orientacion y activacion del soporte.',
+                ]),
+                'action_key' => 'open_work',
+                'action_label' => self::i18n_text($lang, [
+                    'it' => 'Apri Accesso al lavoro',
+                    'en' => 'Open Access to Work',
+                    'es' => 'Abrir Acceso al trabajo',
+                ]),
+            ];
+        }
+
+        if ($contains_any($text, ['microcredito', 'credito', 'finanzi', 'azienda', 'impresa', 'business'])) {
+            return [
+                'reply' => self::i18n_text($lang, [
+                    'it' => 'Ottimo, per microcredito e finanziamento piccole aziende ti porto nel percorso dedicato.',
+                    'en' => 'Great, for microcredit and small business financing I can open the dedicated path.',
+                    'es' => 'Genial, para microcredito y financiacion de pequenas empresas te llevo al recorrido dedicado.',
+                ]),
+                'action_key' => 'open_credit',
+                'action_label' => self::i18n_text($lang, [
+                    'it' => 'Apri Educazione finanziaria + credito',
+                    'en' => 'Open Financial Education + Credit',
+                    'es' => 'Abrir Educacion financiera + credito',
+                ]),
+            ];
+        }
+
+        if ($contains_any($text, ['partita iva', 'contabil', 'fattur', 'iva', 'accounting'])) {
+            return [
+                'reply' => self::i18n_text($lang, [
+                    'it' => 'Perfetto, ti guido su Partita IVA e contabilita per avvio e gestione attivita.',
+                    'en' => 'Perfect, I can guide you to VAT and accounting for business setup and management.',
+                    'es' => 'Perfecto, te guio a IVA y contabilidad para apertura y gestion de actividad.',
+                ]),
+                'action_key' => 'open_accounting',
+                'action_label' => self::i18n_text($lang, [
+                    'it' => 'Apri Partita IVA e contabilita',
+                    'en' => 'Open VAT and Accounting',
+                    'es' => 'Abrir IVA y contabilidad',
+                ]),
+            ];
+        }
+
+        if ($contains_any($text, ['vivere in italia', 'integrazione', 'permesso', 'soggiorno', 'migranti', 'documenti'])) {
+            return [
+                'reply' => self::i18n_text($lang, [
+                    'it' => 'Ti aiuto volentieri. Per documenti e integrazione in Italia apri il servizio Vivere in Italia.',
+                    'en' => 'Happy to help. For documents and integration in Italy, open Living in Italy service.',
+                    'es' => 'Con gusto te ayudo. Para documentos e integracion en Italia, abre Vivir en Italia.',
+                ]),
+                'action_key' => 'open_welcome',
+                'action_label' => self::i18n_text($lang, [
+                    'it' => 'Apri Vivere in Italia',
+                    'en' => 'Open Living in Italy',
+                    'es' => 'Abrir Vivir en Italia',
+                ]),
+            ];
+        }
+
+        if ($contains_any($text, ['appuntamento', 'prenot', 'cita', 'appointment', 'book'])) {
+            return [
+                'reply' => self::i18n_text($lang, [
+                    'it' => 'Perfetto, possiamo prenotare subito un appuntamento con il team WECOOP.',
+                    'en' => 'Perfect, we can book an appointment with the WECOOP team right away.',
+                    'es' => 'Perfecto, podemos reservar una cita con el equipo WECOOP ahora mismo.',
+                ]),
+                'action_key' => 'open_booking',
+                'action_label' => self::i18n_text($lang, [
+                    'it' => 'Prenota appuntamento',
+                    'en' => 'Book appointment',
+                    'es' => 'Reservar cita',
+                ]),
+            ];
+        }
+
+        return [
+            'reply' => self::i18n_text($lang, [
+                'it' => 'Capito. Ti posso guidare su lavoro, credito, partita IVA, vivere in Italia o prenotazione appuntamenti. Dimmi cosa preferisci.',
+                'en' => 'Got it. I can guide you on work, credit, VAT, living in Italy, or booking. Tell me what you prefer.',
+                'es' => 'Entendido. Te puedo guiar sobre trabajo, credito, IVA, vivir en Italia o reservas. Dime que prefieres.',
+            ]),
+            'action_key' => 'open_hub',
+            'action_label' => self::i18n_text($lang, [
+                'it' => 'Mostra percorsi',
+                'en' => 'Show paths',
+                'es' => 'Mostrar rutas',
+            ]),
+        ];
+    }
+
+    private static function i18n_text($lang, $map) {
+        if (isset($map[$lang]) && $map[$lang] !== '') {
+            return $map[$lang];
+        }
+        return isset($map['it']) ? $map['it'] : '';
     }
     
     /**
