@@ -108,6 +108,7 @@ class WeCoop_Offerte_Lavoro_CPT {
             'language_requirement' => 'string',
             'phone_whatsapp' => 'string',
             'email_contact' => 'string',
+            'image_url' => 'string',
             'source_url' => 'string',
             'requirements' => 'string',
             'schedule' => 'string',

@@ -154,10 +154,120 @@ class WeCoop_Offerte_Lavoro_REST {
             ]];
         }
 
-        $query = new WP_Query($args);
-        $items = [];
+        $query = new WP_Query(array_merge($args, ['posts_per_page' => -1, 'paged' => 1]));
 
-        foreach ($query->posts as $post) {
+        $fallback_meta_query = [
+            [
+                'key' => 'submitted_from_app',
+                'value' => '1',
+                'compare' => '=',
+            ],
+        ];
+
+        foreach ($filters as $param => $meta_key) {
+            $value = sanitize_text_field((string) $request->get_param($param));
+            if ($value !== '') {
+                $fallback_meta_query[] = [
+                    'key' => $meta_key,
+                    'value' => $value,
+                    'compare' => 'LIKE',
+                ];
+            }
+        }
+
+        if ($category_scope !== '') {
+            if ($category_scope === 'job') {
+                $fallback_meta_query[] = [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'category_scope',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'category_scope',
+                        'value' => 'job',
+                        'compare' => '=',
+                    ],
+                ];
+            } else {
+                $fallback_meta_query[] = [
+                    'key' => 'category_scope',
+                    'value' => $category_scope,
+                    'compare' => '=',
+                ];
+            }
+        }
+
+        if ($category_direction !== '') {
+            if ($category_direction === 'offer') {
+                $fallback_meta_query[] = [
+                    'relation' => 'OR',
+                    [
+                        'key' => 'category_direction',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key' => 'category_direction',
+                        'value' => 'offer',
+                        'compare' => '=',
+                    ],
+                ];
+            } else {
+                $fallback_meta_query[] = [
+                    'key' => 'category_direction',
+                    'value' => $category_direction,
+                    'compare' => '=',
+                ];
+            }
+        }
+
+        if ($category !== '') {
+            $fallback_meta_query[] = [
+                'key' => 'category_slug',
+                'value' => $category,
+                'compare' => '=',
+            ];
+        }
+
+        $fallback_args = [
+            'post_type' => 'post',
+            'post_status' => ['publish', 'pending'],
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => $fallback_meta_query,
+        ];
+
+        if ($search !== '') {
+            $fallback_args['s'] = $search;
+        }
+
+        $fallback_query = new WP_Query($fallback_args);
+
+        $all_posts = [];
+        foreach (array_merge($query->posts, $fallback_query->posts) as $post) {
+            $all_posts[$post->ID] = $post;
+        }
+
+        $all_posts = array_values($all_posts);
+        usort($all_posts, static function ($a, $b) {
+            $a_featured = (int) get_post_meta((int) $a->ID, 'is_featured', true);
+            $b_featured = (int) get_post_meta((int) $b->ID, 'is_featured', true);
+            if ($a_featured !== $b_featured) {
+                return $b_featured <=> $a_featured;
+            }
+
+            return strtotime((string) $b->post_date_gmt) <=> strtotime((string) $a->post_date_gmt);
+        });
+
+        $total_items = count($all_posts);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $paged = min($paged, $total_pages);
+        $offset = ($paged - 1) * $per_page;
+        $page_posts = array_slice($all_posts, $offset, $per_page);
+
+        $items = [];
+        foreach ($page_posts as $post) {
             $items[] = self::serialize_offer($post);
         }
 
@@ -167,8 +277,8 @@ class WeCoop_Offerte_Lavoro_REST {
             'pagination' => [
                 'page' => $paged,
                 'per_page' => $per_page,
-                'total_items' => (int) $query->found_posts,
-                'total_pages' => (int) $query->max_num_pages,
+                'total_items' => $total_items,
+                'total_pages' => $total_pages,
             ],
         ], 200);
     }
@@ -177,7 +287,18 @@ class WeCoop_Offerte_Lavoro_REST {
         $id = (int) $request['id'];
         $post = get_post($id);
 
-        if (!$post || $post->post_type !== WeCoop_Offerte_Lavoro_CPT::OFFER_CPT || $post->post_status !== 'publish') {
+        if (!$post) {
+            return new WP_Error('not_found', 'Offerta non trovata', ['status' => 404]);
+        }
+
+        $is_offer_type = in_array($post->post_type, [
+            WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
+        ], true);
+        $is_fallback_post = $post->post_type === 'post' && (string) get_post_meta($id, 'submitted_from_app', true) === '1';
+        $is_allowed_status = in_array($post->post_status, ['publish', 'pending'], true);
+
+        if ((!$is_offer_type && !$is_fallback_post) || !$is_allowed_status) {
             return new WP_Error('not_found', 'Offerta non trovata', ['status' => 404]);
         }
 
@@ -227,7 +348,15 @@ class WeCoop_Offerte_Lavoro_REST {
         $origin = sanitize_text_field((string) ($payload['origin'] ?? 'Latinoamerica'));
         $consent_privacy = !empty($payload['consent_privacy']);
 
-        if ($offer_id <= 0 || get_post_type($offer_id) !== WeCoop_Offerte_Lavoro_CPT::OFFER_CPT) {
+        $offer_post = $offer_id > 0 ? get_post($offer_id) : null;
+        $offer_type = $offer_post ? $offer_post->post_type : '';
+        $is_offer_type = in_array($offer_type, [
+            WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
+        ], true);
+        $is_fallback_post = $offer_type === 'post' && (string) get_post_meta($offer_id, 'submitted_from_app', true) === '1';
+
+        if ($offer_id <= 0 || (!$is_offer_type && !$is_fallback_post)) {
             return new WP_Error('invalid_offer', 'Offerta non valida', ['status' => 400]);
         }
 
@@ -433,6 +562,7 @@ class WeCoop_Offerte_Lavoro_REST {
             'language_requirement' => (string) get_post_meta($id, 'language_requirement', true),
             'phone_whatsapp' => (string) get_post_meta($id, 'phone_whatsapp', true),
             'email_contact' => (string) get_post_meta($id, 'email_contact', true),
+            'image_url' => (string) (get_post_meta($id, 'image_url', true) ?: get_the_post_thumbnail_url($id, 'large') ?: ''),
             'source_url' => (string) get_post_meta($id, 'source_url', true),
             'requirements' => (string) get_post_meta($id, 'requirements', true),
             'schedule' => (string) get_post_meta($id, 'schedule', true),

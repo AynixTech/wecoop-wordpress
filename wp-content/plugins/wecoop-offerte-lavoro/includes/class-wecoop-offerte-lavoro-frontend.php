@@ -106,35 +106,116 @@ class WeCoop_Offerte_Lavoro_Frontend {
             ];
         }
 
-        $args = [
+        $base_offer_args = [
             'post_type' => [
                 WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
                 WeCoop_Offerte_Lavoro_CPT::SUBMISSION_CPT,
             ],
             'post_status' => 'publish',
-            'posts_per_page' => 12,
-            'paged' => $paged,
-            'orderby' => ['meta_value_num' => 'DESC', 'date' => 'DESC'],
-            'meta_key' => 'is_featured',
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
         ];
 
         if (!empty($meta_query)) {
-            $args['meta_query'] = $meta_query;
+            $base_offer_args['meta_query'] = $meta_query;
         }
 
         if ($search !== '') {
-            $args['s'] = $search;
+            $base_offer_args['s'] = $search;
         }
 
         if ($categoria !== '') {
-            $args['tax_query'] = [[
+            $base_offer_args['tax_query'] = [[
                 'taxonomy' => WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX,
                 'field' => 'slug',
                 'terms' => $categoria,
             ]];
         }
 
-        $query = new WP_Query($args);
+        $fallback_meta_query = [
+            [
+                'key' => 'submitted_from_app',
+                'value' => '1',
+                'compare' => '=',
+            ],
+        ];
+
+        if ($ambito === 'seek') {
+            $fallback_meta_query[] = [
+                'key' => 'category_direction',
+                'value' => 'seek',
+                'compare' => '=',
+            ];
+        } elseif ($ambito === 'offer') {
+            $fallback_meta_query[] = [
+                'relation' => 'OR',
+                [
+                    'key' => 'category_direction',
+                    'compare' => 'NOT EXISTS',
+                ],
+                [
+                    'key' => 'category_direction',
+                    'value' => 'offer',
+                    'compare' => '=',
+                ],
+            ];
+        }
+
+        if ($force_scope !== '') {
+            $fallback_meta_query[] = [
+                'key' => 'category_scope',
+                'value' => $force_scope,
+                'compare' => '=',
+            ];
+        }
+
+        if ($categoria !== '') {
+            $fallback_meta_query[] = [
+                'key' => 'category_slug',
+                'value' => $categoria,
+                'compare' => '=',
+            ];
+        }
+
+        $fallback_args = [
+            'post_type' => 'post',
+            'post_status' => ['publish', 'pending'],
+            'posts_per_page' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_query' => $fallback_meta_query,
+        ];
+
+        if ($search !== '') {
+            $fallback_args['s'] = $search;
+        }
+
+        $offer_posts = get_posts($base_offer_args);
+        $fallback_posts = get_posts($fallback_args);
+
+        $combined_posts = [];
+        foreach (array_merge($offer_posts, $fallback_posts) as $post_item) {
+            $combined_posts[$post_item->ID] = $post_item;
+        }
+
+        $combined_posts = array_values($combined_posts);
+        usort($combined_posts, static function ($a, $b) {
+            $a_featured = (int) get_post_meta((int) $a->ID, 'is_featured', true);
+            $b_featured = (int) get_post_meta((int) $b->ID, 'is_featured', true);
+            if ($a_featured !== $b_featured) {
+                return $b_featured <=> $a_featured;
+            }
+
+            return strtotime((string) $b->post_date_gmt) <=> strtotime((string) $a->post_date_gmt);
+        });
+
+        $per_page = 12;
+        $total_items = count($combined_posts);
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        $paged = min($paged, $total_pages);
+        $offset = ($paged - 1) * $per_page;
+        $paged_posts = array_slice($combined_posts, $offset, $per_page);
         $terms = get_terms([
             'taxonomy' => WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX,
             'hide_empty' => false,
@@ -201,14 +282,13 @@ class WeCoop_Offerte_Lavoro_Frontend {
                 <button type="submit">Filtra</button>
             </form>
 
-            <?php if (!$query->have_posts()) : ?>
+            <?php if (empty($paged_posts)) : ?>
                 <p>Nessun annuncio disponibile con questi filtri.</p>
             <?php else : ?>
                 <div class="wecoop-annunci-grid">
                     <?php
-                    while ($query->have_posts()) :
-                        $query->the_post();
-                        $id = get_the_ID();
+                    foreach ($paged_posts as $post_item) :
+                        $id = (int) $post_item->ID;
                         $direction = (string) get_post_meta($id, 'category_direction', true);
                         if ($direction === '') {
                             $direction = 'offer';
@@ -217,14 +297,17 @@ class WeCoop_Offerte_Lavoro_Frontend {
                         $badge_text = $direction === 'seek' ? 'Cerco' : 'Offro';
                         $city = (string) get_post_meta($id, 'city', true);
                         $contract_type = (string) get_post_meta($id, 'contract_type', true);
-                        $excerpt = get_the_excerpt();
+                        $excerpt = (string) $post_item->post_excerpt;
                         if (trim((string) $excerpt) === '') {
                             $excerpt = (string) get_post_meta($id, 'description', true);
+                        }
+                        if (trim((string) $excerpt) === '') {
+                            $excerpt = (string) $post_item->post_content;
                         }
                         ?>
                         <article class="wecoop-annuncio-card">
                             <div class="wecoop-annuncio-head">
-                                <h3 class="wecoop-annuncio-title"><?php echo esc_html(get_the_title()); ?></h3>
+                                <h3 class="wecoop-annuncio-title"><?php echo esc_html(get_the_title($id)); ?></h3>
                                 <span class="wecoop-badge <?php echo esc_attr($badge_class); ?>"><?php echo esc_html($badge_text); ?></span>
                             </div>
                             <div class="wecoop-annuncio-meta">
@@ -240,7 +323,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                                 <a class="wecoop-btn-dettagli" href="<?php echo esc_url(get_permalink($id)); ?>">Dettagli annuncio</a>
                             </div>
                         </article>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </div>
 
                 <?php
@@ -248,7 +331,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                     'base' => add_query_arg('paged', '%#%'),
                     'format' => '',
                     'current' => $paged,
-                    'total' => max(1, (int) $query->max_num_pages),
+                    'total' => $total_pages,
                     'type' => 'array',
                     'add_args' => [
                         'q' => $search,
@@ -270,7 +353,6 @@ class WeCoop_Offerte_Lavoro_Frontend {
         </div>
         <?php
 
-        wp_reset_postdata();
         return (string) ob_get_clean();
     }
 }

@@ -30,6 +30,7 @@ class WeCoop_Offerte_Lavoro_Admin {
             wp_die(esc_html__('Non autorizzato', 'wecoop-offerte-lavoro'));
         }
 
+        self::handle_migrate_fallback_action();
         self::handle_delete_action();
 
         $offers = get_posts([
@@ -76,6 +77,27 @@ class WeCoop_Offerte_Lavoro_Admin {
         if ($notice === 'deleted') {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Annuncio eliminato con successo.', 'wecoop-offerte-lavoro') . '</p></div>';
         }
+
+        if ($notice === 'migrated') {
+            $migrated = isset($_GET['migrated']) ? max(0, (int) $_GET['migrated']) : 0;
+            $failed = isset($_GET['failed']) ? max(0, (int) $_GET['failed']) : 0;
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(sprintf('Migrazione completata. Migrati: %d, errori: %d.', $migrated, $failed)) . '</p></div>';
+        }
+
+        $migrate_url = wp_nonce_url(
+            add_query_arg([
+                'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+                'page' => 'wecoop-annunci-inseriti',
+                'wecoop_action' => 'migrate_fallback',
+            ], admin_url('edit.php')),
+            'wecoop_migrate_fallback_posts'
+        );
+
+        echo '<p style="margin: 14px 0 18px;">';
+        echo '<a class="button button-primary" href="' . esc_url($migrate_url) . '" onclick="return confirm(\'Vuoi migrare i post fallback in Offerte Lavoro CPT?\');">';
+        echo esc_html__('Migra fallback in CPT', 'wecoop-offerte-lavoro');
+        echo '</a>';
+        echo '</p>';
 
         echo '<table class="widefat striped">';
         echo '<thead><tr>';
@@ -170,6 +192,92 @@ class WeCoop_Offerte_Lavoro_Admin {
         exit;
     }
 
+    private static function handle_migrate_fallback_action() {
+        $action = isset($_GET['wecoop_action']) ? sanitize_text_field(wp_unslash($_GET['wecoop_action'])) : '';
+        if ($action !== 'migrate_fallback') {
+            return;
+        }
+
+        check_admin_referer('wecoop_migrate_fallback_posts');
+
+        if (!current_user_can('edit_posts')) {
+            wp_die(esc_html__('Non autorizzato a migrare gli annunci fallback.', 'wecoop-offerte-lavoro'));
+        }
+
+        $fallback_posts = get_posts([
+            'post_type' => 'post',
+            'post_status' => ['publish', 'pending', 'draft', 'private'],
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'submitted_from_app',
+                    'value' => '1',
+                    'compare' => '=',
+                ],
+            ],
+            'orderby' => 'date',
+            'order' => 'ASC',
+        ]);
+
+        $migrated = 0;
+        $failed = 0;
+
+        foreach ($fallback_posts as $old_post) {
+            $new_post_id = wp_insert_post([
+                'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+                'post_status' => 'publish',
+                'post_title' => (string) $old_post->post_title,
+                'post_content' => (string) $old_post->post_content,
+                'post_excerpt' => (string) $old_post->post_excerpt,
+            ], true);
+
+            if (is_wp_error($new_post_id)) {
+                $failed++;
+                continue;
+            }
+
+            $all_meta = get_post_meta((int) $old_post->ID);
+            foreach ($all_meta as $meta_key => $meta_values) {
+                if (strpos((string) $meta_key, '_') === 0) {
+                    continue;
+                }
+
+                foreach ((array) $meta_values as $meta_value) {
+                    add_post_meta((int) $new_post_id, (string) $meta_key, maybe_unserialize($meta_value));
+                }
+            }
+
+            // Normalize key fields for CPT listing.
+            update_post_meta((int) $new_post_id, 'is_active', 1);
+            if ((string) get_post_meta((int) $new_post_id, 'category_scope', true) === '') {
+                update_post_meta((int) $new_post_id, 'category_scope', 'job');
+            }
+            if ((string) get_post_meta((int) $new_post_id, 'category_direction', true) === '') {
+                update_post_meta((int) $new_post_id, 'category_direction', 'offer');
+            }
+
+            $category_slug = (string) get_post_meta((int) $new_post_id, 'category_slug', true);
+            if ($category_slug !== '') {
+                $term = get_term_by('slug', $category_slug, WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX);
+                if ($term && !is_wp_error($term)) {
+                    wp_set_post_terms((int) $new_post_id, [(int) $term->term_id], WeCoop_Offerte_Lavoro_CPT::CATEGORY_TAX, false);
+                }
+            }
+
+            wp_trash_post((int) $old_post->ID);
+            $migrated++;
+        }
+
+        wp_safe_redirect(add_query_arg([
+            'post_type' => WeCoop_Offerte_Lavoro_CPT::OFFER_CPT,
+            'page' => 'wecoop-annunci-inseriti',
+            'wecoop_notice' => 'migrated',
+            'migrated' => $migrated,
+            'failed' => $failed,
+        ], admin_url('edit.php')));
+        exit;
+    }
+
     public static function add_meta_boxes() {
         add_meta_box(
             'wecoop_offer_meta',
@@ -237,7 +345,13 @@ class WeCoop_Offerte_Lavoro_Admin {
             }
 
             $raw = wp_unslash($_POST[$key]);
-            $value = $key === 'email_contact' ? sanitize_email((string) $raw) : sanitize_text_field((string) $raw);
+            if ($key === 'email_contact') {
+                $value = sanitize_email((string) $raw);
+            } elseif (in_array($key, ['source_url', 'image_url'], true)) {
+                $value = esc_url_raw((string) $raw);
+            } else {
+                $value = sanitize_text_field((string) $raw);
+            }
             update_post_meta($post_id, $key, $value);
         }
     }
@@ -281,6 +395,7 @@ class WeCoop_Offerte_Lavoro_Admin {
             'language_requirement' => 'Lingue richieste',
             'phone_whatsapp' => 'Telefono / WhatsApp',
             'email_contact' => 'Email contatto',
+            'image_url' => 'Immagine (URL opzionale)',
             'source_url' => 'URL esterno annuncio',
             'requirements' => 'Requisiti principali',
             'schedule' => 'Orari / Disponibilita',
