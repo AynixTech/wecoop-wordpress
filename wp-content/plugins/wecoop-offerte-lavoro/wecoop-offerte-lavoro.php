@@ -43,6 +43,7 @@ class WeCoop_Offerte_Lavoro {
         require_once WECOOP_OFFERTE_LAVORO_INCLUDES_DIR . 'class-wecoop-offerte-lavoro-cpt.php';
         require_once WECOOP_OFFERTE_LAVORO_INCLUDES_DIR . 'class-wecoop-offerte-lavoro-admin.php';
         require_once WECOOP_OFFERTE_LAVORO_INCLUDES_DIR . 'class-wecoop-offerte-lavoro-rest.php';
+        require_once WECOOP_OFFERTE_LAVORO_INCLUDES_DIR . 'class-wecoop-offerte-lavoro-frontend.php';
     }
 
     private function init_hooks() {
@@ -52,6 +53,7 @@ class WeCoop_Offerte_Lavoro {
         WeCoop_Offerte_Lavoro_CPT::init();
         WeCoop_Offerte_Lavoro_Admin::init();
         WeCoop_Offerte_Lavoro_REST::init();
+        WeCoop_Offerte_Lavoro_Frontend::init();
     }
 
     public function on_activation() {
