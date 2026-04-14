@@ -911,7 +911,8 @@ class WECOOP_Soci_Endpoint {
             'username' => $current_user->user_login,
             'email' => $current_user->user_email,
             'display_name' => $current_user->display_name,
-            'roles' => $current_user->roles
+            'roles' => $current_user->roles,
+            'is_socio' => self::user_is_socio($current_user)
         ];
 
         $avatar_data = self::get_avatar_data($user_id);
@@ -976,6 +977,79 @@ class WECOOP_Soci_Endpoint {
             'success' => true,
             'data' => $data
         ]);
+    }
+
+    public static function activate_user_as_socio($user_id, $args = []) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return new WP_Error('invalid_user_id', 'User ID non valido', ['status' => 400]);
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            return new WP_Error('user_not_found', 'Utente non trovato', ['status' => 404]);
+        }
+
+        $already_socio = self::user_is_socio($user);
+
+        if (!get_role('socio')) {
+            $subscriber_role = get_role('subscriber');
+            add_role(
+                'socio',
+                'Socio',
+                $subscriber_role ? $subscriber_role->capabilities : ['read' => true]
+            );
+        }
+
+        $wp_user = new WP_User($user_id);
+        if (!in_array('subscriber', (array) $wp_user->roles, true)) {
+            $wp_user->add_role('subscriber');
+        }
+        if (!in_array('socio', (array) $wp_user->roles, true)) {
+            $wp_user->add_role('socio');
+        }
+
+        $numero_tessera = trim((string) get_user_meta($user_id, 'numero_tessera', true));
+        if ($numero_tessera === '') {
+            $numero_tessera = wp_generate_uuid4();
+            update_user_meta($user_id, 'numero_tessera', $numero_tessera);
+        }
+
+        if (!get_user_meta($user_id, 'data_adesione', true)) {
+            update_user_meta($user_id, 'data_adesione', current_time('Y-m-d'));
+        }
+
+        update_user_meta($user_id, 'is_socio', true);
+        update_user_meta($user_id, 'status_socio', 'attivo');
+        update_user_meta($user_id, 'socio_id', $user_id);
+
+        if (!$already_socio) {
+            do_action('wecoop_socio_approved', $user_id, $numero_tessera);
+        }
+
+        return [
+            'user_id' => $user_id,
+            'already_socio' => $already_socio,
+            'numero_tessera' => $numero_tessera,
+            'status_socio' => 'attivo',
+            'is_socio' => true,
+        ];
+    }
+
+    private static function user_is_socio($user) {
+        if (!$user instanceof WP_User) {
+            $user = get_userdata($user);
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        $is_socio_meta = get_user_meta($user->ID, 'is_socio', true);
+        return in_array('socio', (array) $user->roles, true)
+            || $is_socio_meta === '1'
+            || $is_socio_meta === 1
+            || $is_socio_meta === true;
     }
 
     private static function get_avatar_data($user_id) {

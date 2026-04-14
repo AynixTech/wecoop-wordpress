@@ -271,6 +271,19 @@ class WECOOP_Firma_Handler {
             do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $current_stato, 'processing');
             error_log('[WECOOP FIRMA] 🔄 Stato richiesta #' . $richiesta_id . ' cambiato da \'awaiting_signature\' a \'processing\'');
         }
+
+        if (class_exists('WECOOP_Soci_Endpoint')) {
+            $promotion_result = WECOOP_Soci_Endpoint::activate_user_as_socio(intval($otp_record->user_id));
+
+            if (is_wp_error($promotion_result)) {
+                error_log('[WECOOP FIRMA] ⚠️ Firma completata ma promozione a socio fallita per user #' . intval($otp_record->user_id) . ': ' . $promotion_result->get_error_message());
+            } else {
+                update_post_meta($richiesta_id, 'socio_id', intval($otp_record->user_id));
+                error_log('[WECOOP FIRMA] ✅ Utente #' . intval($otp_record->user_id) . ' impostato come socio attivo dopo firma OTP');
+            }
+        } else {
+            error_log('[WECOOP FIRMA] ⚠️ WECOOP_Soci_Endpoint non disponibile: salto promozione a socio');
+        }
         
         error_log("[WECOOP FIRMA] ✅ Documento firmato: richiesta #{$richiesta_id}, firma_id #{$firma_id}");
         
