@@ -2145,6 +2145,100 @@ function wecoop_lavoro_admin_can_generate_cv(array $profile) {
     return $has_name || $has_email;
 }
 
+function wecoop_lavoro_admin_cv_history_entries() {
+    static $entries = null;
+    if ($entries !== null) {
+        return $entries;
+    }
+
+    $cache_key = 'wecoop_lavoro_admin_cv_history_v1';
+    $cached = get_transient($cache_key);
+    if (is_array($cached)) {
+        $entries = $cached;
+        return $entries;
+    }
+
+    $response = wecoop_cv_call_bffe(
+        'GET',
+        wecoop_cv_upstream_path(''),
+        null,
+        [
+            'limit' => 100,
+            'status' => 'generated',
+        ],
+        wecoop_cv_request_id()
+    );
+
+    if (is_wp_error($response)) {
+        $entries = [];
+        return $entries;
+    }
+
+    $data = $response instanceof WP_REST_Response ? $response->get_data() : $response;
+    $items = [];
+    if (is_array($data)) {
+        $raw_items = $data['cvs'] ?? $data['items'] ?? $data['data'] ?? $data;
+        if (is_array($raw_items)) {
+            foreach ($raw_items as $item) {
+                if (is_array($item)) {
+                    $items[] = $item;
+                }
+            }
+        }
+    }
+
+    set_transient($cache_key, $items, MINUTE_IN_SECONDS);
+    $entries = $items;
+    return $entries;
+}
+
+function wecoop_lavoro_admin_cv_entry_files(array $entry) {
+    return isset($entry['files']) && is_array($entry['files']) ? $entry['files'] : [];
+}
+
+function wecoop_lavoro_admin_cv_entry_payload(array $entry) {
+    foreach (['inputData', 'payload', 'data'] as $key) {
+        if (isset($entry[$key]) && is_array($entry[$key])) {
+            return $entry[$key];
+        }
+    }
+
+    return [];
+}
+
+function wecoop_lavoro_admin_find_generated_cv(array $profile) {
+    $entries = wecoop_lavoro_admin_cv_history_entries();
+    if (empty($entries)) {
+        return null;
+    }
+
+    $profile_user_id = (int) ($profile['userId'] ?? 0);
+    $profile_email = strtolower(wecoop_lavoro_admin_profile_email($profile));
+
+    foreach ($entries as $entry) {
+        $files = wecoop_lavoro_admin_cv_entry_files($entry);
+        $pdf_url = trim((string) ($files['pdfUrl'] ?? ''));
+        $docx_url = trim((string) ($files['docxUrl'] ?? ''));
+        if ($pdf_url === '' && $docx_url === '') {
+            continue;
+        }
+
+        $entry_user_id = (string) ($entry['userId'] ?? $entry['user_id'] ?? '');
+        if ($profile_user_id > 0 && $entry_user_id === 'usr_' . $profile_user_id) {
+            return $entry;
+        }
+
+        $payload = wecoop_lavoro_admin_cv_entry_payload($entry);
+        $personal = isset($payload['personalInfo']) && is_array($payload['personalInfo']) ? $payload['personalInfo'] : [];
+        $entry_email = strtolower(trim((string) ($personal['email'] ?? $entry['email'] ?? '')));
+        if ($profile_email !== '' && $entry_email !== '' && $entry_email === $profile_email) {
+            return $entry;
+        }
+    }
+
+    return null;
+}
+
 function wecoop_lavoro_admin_download_cv_url($profile_id) {
     return wp_nonce_url(
         admin_url('admin-post.php?action=wecoop_lavoro_download_cv&profile_id=' . (int) $profile_id),
@@ -2348,7 +2442,8 @@ function wecoop_lavoro_admin_render_page() {
                         <?php
                         $profile = is_array($row['profile'] ?? null) ? $row['profile'] : null;
                         $profile_id = (int) ($row['profileId'] ?? 0);
-                        $can_download_cv = $profile_id > 0 && $profile !== null && wecoop_lavoro_admin_can_generate_cv($profile);
+                        $generated_cv = $profile !== null ? wecoop_lavoro_admin_find_generated_cv($profile) : null;
+                        $can_download_cv = $profile_id > 0 && $profile !== null && ($generated_cv !== null || wecoop_lavoro_admin_can_generate_cv($profile));
                         $status_label = wecoop_lavoro_admin_status_label((string) ($row['status'] ?? ''));
                         $is_active = !empty($row['isActive']);
                         ?>
@@ -2371,6 +2466,9 @@ function wecoop_lavoro_admin_render_page() {
                             <td>
                                 <?php if ($can_download_cv) : ?>
                                     <a class="button button-secondary" href="<?php echo esc_url(wecoop_lavoro_admin_download_cv_url($profile_id)); ?>">Scarica CV</a>
+                                    <?php if ($generated_cv !== null) : ?>
+                                        <div style="color:#6b7280; font-size:12px; margin-top:4px;">CV generato disponibile</div>
+                                    <?php endif; ?>
                                 <?php else : ?>
                                     <span style="color:#6b7280;">CV non disponibile</span>
                                 <?php endif; ?>
@@ -2416,6 +2514,23 @@ function wecoop_lavoro_admin_download_cv() {
 
     if ($profile === null) {
         wp_die('Profilo non trovato.');
+    }
+
+    $generated_cv = wecoop_lavoro_admin_find_generated_cv($profile);
+    if (is_array($generated_cv)) {
+        $files = wecoop_lavoro_admin_cv_entry_files($generated_cv);
+        $pdf_url = trim((string) ($files['pdfUrl'] ?? ''));
+        $docx_url = trim((string) ($files['docxUrl'] ?? ''));
+
+        if ($pdf_url !== '') {
+            wp_safe_redirect($pdf_url);
+            exit;
+        }
+
+        if ($docx_url !== '') {
+            wp_safe_redirect($docx_url);
+            exit;
+        }
     }
 
     if (!wecoop_lavoro_admin_can_generate_cv($profile)) {
