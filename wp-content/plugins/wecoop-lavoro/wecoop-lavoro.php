@@ -2082,6 +2082,364 @@ function wecoop_lavoro_push_message(array &$store, $profile_id, $type, $message)
     return $entry;
 }
 
+function wecoop_lavoro_admin_capability() {
+    return 'list_users';
+}
+
+function wecoop_lavoro_admin_status_label($status) {
+    $labels = [
+        'profilo_creato' => 'Profilo creato',
+        'cv_generato' => 'CV generato',
+        'servizio_attivato' => 'Servizio attivato',
+        'consenso_firmato' => 'Consenso firmato',
+        'in_revisione' => 'In revisione',
+        'pronto_invio' => 'Pronto invio',
+        'inviato' => 'Inviato',
+        'in_valutazione' => 'In valutazione',
+        'colloquio' => 'Colloquio',
+        'chiuso' => 'Chiuso',
+        'non_selezionato' => 'Non selezionato',
+        '' => 'Non attivo',
+    ];
+
+    return isset($labels[$status]) ? $labels[$status] : ucwords(str_replace('_', ' ', (string) $status));
+}
+
+function wecoop_lavoro_admin_is_service_active($status) {
+    return in_array((string) $status, [
+        'servizio_attivato',
+        'consenso_firmato',
+        'in_revisione',
+        'pronto_invio',
+        'inviato',
+        'in_valutazione',
+        'colloquio',
+    ], true);
+}
+
+function wecoop_lavoro_admin_profile_display_name(array $profile) {
+    $personal = isset($profile['personalInfo']) && is_array($profile['personalInfo']) ? $profile['personalInfo'] : [];
+    $first_name = trim((string) ($personal['firstName'] ?? ''));
+    $last_name = trim((string) ($personal['lastName'] ?? ''));
+    $full_name = trim($first_name . ' ' . $last_name);
+
+    if ($full_name !== '') {
+        return $full_name;
+    }
+
+    return trim((string) ($personal['fullName'] ?? ''));
+}
+
+function wecoop_lavoro_admin_profile_email(array $profile) {
+    $personal = isset($profile['personalInfo']) && is_array($profile['personalInfo']) ? $profile['personalInfo'] : [];
+    return trim((string) ($personal['email'] ?? ''));
+}
+
+function wecoop_lavoro_admin_can_generate_cv(array $profile) {
+    $personal = isset($profile['personalInfo']) && is_array($profile['personalInfo']) ? $profile['personalInfo'] : [];
+    $has_name = trim((string) ($personal['firstName'] ?? '')) !== '' || trim((string) ($personal['lastName'] ?? '')) !== '';
+    $has_email = trim((string) ($personal['email'] ?? '')) !== '';
+
+    return $has_name || $has_email;
+}
+
+function wecoop_lavoro_admin_download_cv_url($profile_id) {
+    return wp_nonce_url(
+        admin_url('admin-post.php?action=wecoop_lavoro_download_cv&profile_id=' . (int) $profile_id),
+        'wecoop_lavoro_download_cv_' . (int) $profile_id
+    );
+}
+
+function wecoop_lavoro_admin_collect_rows() {
+    $store = wecoop_lavoro_store_get();
+    $profiles = $store['profiles'];
+    $jobs = $store['jobs'];
+    $rows = [];
+    $profile_ids_by_key = [];
+
+    foreach ($profiles as $profile_id => $profile) {
+        if (!is_array($profile)) {
+            continue;
+        }
+
+        $user_id = (int) ($profile['userId'] ?? 0);
+        $email = strtolower(wecoop_lavoro_admin_profile_email($profile));
+
+        if ($user_id > 0) {
+            $profile_ids_by_key['user:' . $user_id] = (string) $profile_id;
+        }
+        if ($email !== '') {
+            $profile_ids_by_key['email:' . $email] = (string) $profile_id;
+        }
+    }
+
+    foreach (get_users(['orderby' => 'display_name', 'order' => 'ASC']) as $user) {
+        $match_key = 'user:' . (int) $user->ID;
+        $email_key = 'email:' . strtolower((string) $user->user_email);
+        $profile_id = isset($profile_ids_by_key[$match_key])
+            ? $profile_ids_by_key[$match_key]
+            : (isset($profile_ids_by_key[$email_key]) ? $profile_ids_by_key[$email_key] : '');
+        $profile = ($profile_id !== '' && isset($profiles[$profile_id]) && is_array($profiles[$profile_id])) ? $profiles[$profile_id] : null;
+        $job = ($profile_id !== '' && isset($jobs[$profile_id]) && is_array($jobs[$profile_id])) ? $jobs[$profile_id] : null;
+        $status = $job['status'] ?? ($profile['status'] ?? '');
+
+        $rows[] = [
+            'rowType' => 'wp_user',
+            'userId' => (int) $user->ID,
+            'name' => (string) $user->display_name,
+            'email' => (string) $user->user_email,
+            'profileId' => $profile_id !== '' ? (int) $profile_id : null,
+            'status' => (string) $status,
+            'isActive' => wecoop_lavoro_admin_is_service_active((string) $status),
+            'updatedAt' => (string) ($job['updatedAt'] ?? $profile['updatedAt'] ?? ''),
+            'profile' => $profile,
+            'job' => $job,
+        ];
+    }
+
+    foreach ($profiles as $profile_id => $profile) {
+        if (!is_array($profile)) {
+            continue;
+        }
+
+        $user_id = (int) ($profile['userId'] ?? 0);
+        $email = strtolower(wecoop_lavoro_admin_profile_email($profile));
+        $already_mapped = false;
+
+        foreach ($rows as $row) {
+            if (($row['profileId'] ?? null) === (int) $profile_id) {
+                $already_mapped = true;
+                break;
+            }
+            if ($user_id > 0 && ($row['userId'] ?? 0) === $user_id) {
+                $already_mapped = true;
+                break;
+            }
+            if ($email !== '' && strtolower((string) ($row['email'] ?? '')) === $email) {
+                $already_mapped = true;
+                break;
+            }
+        }
+
+        if ($already_mapped) {
+            continue;
+        }
+
+        $job = isset($jobs[$profile_id]) && is_array($jobs[$profile_id]) ? $jobs[$profile_id] : null;
+        $status = $job['status'] ?? ($profile['status'] ?? '');
+
+        $rows[] = [
+            'rowType' => 'profile_only',
+            'userId' => $user_id,
+            'name' => wecoop_lavoro_admin_profile_display_name($profile) !== ''
+                ? wecoop_lavoro_admin_profile_display_name($profile)
+                : 'Profilo #' . (int) $profile_id,
+            'email' => wecoop_lavoro_admin_profile_email($profile),
+            'profileId' => (int) $profile_id,
+            'status' => (string) $status,
+            'isActive' => wecoop_lavoro_admin_is_service_active((string) $status),
+            'updatedAt' => (string) ($job['updatedAt'] ?? $profile['updatedAt'] ?? ''),
+            'profile' => $profile,
+            'job' => $job,
+        ];
+    }
+
+    usort($rows, static function ($left, $right) {
+        $left_active = !empty($left['isActive']) ? 1 : 0;
+        $right_active = !empty($right['isActive']) ? 1 : 0;
+        if ($left_active !== $right_active) {
+            return $right_active <=> $left_active;
+        }
+
+        return strcasecmp((string) ($left['name'] ?? ''), (string) ($right['name'] ?? ''));
+    });
+
+    return $rows;
+}
+
+function wecoop_lavoro_admin_render_page() {
+    if (!current_user_can(wecoop_lavoro_admin_capability())) {
+        wp_die('Non hai i permessi per visualizzare questa pagina.');
+    }
+
+    $rows = wecoop_lavoro_admin_collect_rows();
+    $status_filter = sanitize_key((string) ($_GET['service_status'] ?? 'all'));
+    $search = sanitize_text_field((string) ($_GET['s'] ?? ''));
+
+    $rows = array_values(array_filter($rows, static function ($row) use ($status_filter, $search) {
+        if ($status_filter === 'active' && empty($row['isActive'])) {
+            return false;
+        }
+        if ($status_filter === 'inactive' && !empty($row['isActive'])) {
+            return false;
+        }
+
+        if ($search !== '') {
+            $haystack = strtolower(implode(' ', [
+                (string) ($row['name'] ?? ''),
+                (string) ($row['email'] ?? ''),
+                (string) ($row['profileId'] ?? ''),
+                (string) ($row['status'] ?? ''),
+            ]));
+            if (strpos($haystack, strtolower($search)) === false) {
+                return false;
+            }
+        }
+
+        return true;
+    }));
+
+    $active_count = count(array_filter($rows, static function ($row) {
+        return !empty($row['isActive']);
+    }));
+
+    ?>
+    <div class="wrap">
+        <h1>Utenti servizio lavoro</h1>
+        <p>Da qui puoi vedere chi ha un profilo lavoro, verificare se il servizio e attivo e scaricare il CV dal profilo salvato.</p>
+
+        <form method="get" style="margin:16px 0; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <input type="hidden" name="page" value="wecoop-lavoro-utenti" />
+            <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Cerca per nome, email o profilo" class="regular-text" />
+            <select name="service_status">
+                <option value="all" <?php selected($status_filter, 'all'); ?>>Tutti gli stati</option>
+                <option value="active" <?php selected($status_filter, 'active'); ?>>Servizio attivo</option>
+                <option value="inactive" <?php selected($status_filter, 'inactive'); ?>>Servizio non attivo</option>
+            </select>
+            <button type="submit" class="button button-primary">Filtra</button>
+        </form>
+
+        <div style="display:flex; gap:16px; margin:16px 0 24px; flex-wrap:wrap;">
+            <div style="background:#fff; border:1px solid #dcdcde; border-radius:10px; padding:16px 18px; min-width:180px;">
+                <div style="font-size:24px; font-weight:700;"><?php echo esc_html((string) count($rows)); ?></div>
+                <div>Utenti visibili</div>
+            </div>
+            <div style="background:#fff; border:1px solid #dcdcde; border-radius:10px; padding:16px 18px; min-width:180px;">
+                <div style="font-size:24px; font-weight:700; color:#008a20;"><?php echo esc_html((string) $active_count); ?></div>
+                <div>Servizio attivo</div>
+            </div>
+            <div style="background:#fff; border:1px solid #dcdcde; border-radius:10px; padding:16px 18px; min-width:180px;">
+                <div style="font-size:24px; font-weight:700; color:#6b7280;"><?php echo esc_html((string) (count($rows) - $active_count)); ?></div>
+                <div>Servizio non attivo</div>
+            </div>
+        </div>
+
+        <table class="widefat fixed striped">
+            <thead>
+                <tr>
+                    <th>Utente</th>
+                    <th>Email</th>
+                    <th>Profile ID</th>
+                    <th>Stato servizio</th>
+                    <th>Stato attivazione</th>
+                    <th>Ultimo aggiornamento</th>
+                    <th>CV</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($rows)) : ?>
+                    <tr>
+                        <td colspan="7">Nessun utente trovato con i filtri selezionati.</td>
+                    </tr>
+                <?php else : ?>
+                    <?php foreach ($rows as $row) : ?>
+                        <?php
+                        $profile = is_array($row['profile'] ?? null) ? $row['profile'] : null;
+                        $profile_id = (int) ($row['profileId'] ?? 0);
+                        $can_download_cv = $profile_id > 0 && $profile !== null && wecoop_lavoro_admin_can_generate_cv($profile);
+                        $status_label = wecoop_lavoro_admin_status_label((string) ($row['status'] ?? ''));
+                        $is_active = !empty($row['isActive']);
+                        ?>
+                        <tr>
+                            <td>
+                                <strong><?php echo esc_html((string) ($row['name'] ?? '')); ?></strong>
+                                <?php if (($row['rowType'] ?? '') === 'profile_only') : ?>
+                                    <div style="color:#6b7280; font-size:12px;">Profilo senza account WordPress associato</div>
+                                <?php endif; ?>
+                            </td>
+                            <td><?php echo esc_html((string) ($row['email'] ?? '')); ?></td>
+                            <td><?php echo $profile_id > 0 ? esc_html((string) $profile_id) : '—'; ?></td>
+                            <td><?php echo esc_html($status_label); ?></td>
+                            <td>
+                                <span style="display:inline-flex; align-items:center; padding:6px 10px; border-radius:999px; font-weight:600; background:<?php echo $is_active ? '#dcfce7' : '#f3f4f6'; ?>; color:<?php echo $is_active ? '#166534' : '#374151'; ?>;">
+                                    <?php echo $is_active ? 'Attivo' : 'Non attivo'; ?>
+                                </span>
+                            </td>
+                            <td><?php echo !empty($row['updatedAt']) ? esc_html((string) $row['updatedAt']) : '—'; ?></td>
+                            <td>
+                                <?php if ($can_download_cv) : ?>
+                                    <a class="button button-secondary" href="<?php echo esc_url(wecoop_lavoro_admin_download_cv_url($profile_id)); ?>">Scarica CV</a>
+                                <?php else : ?>
+                                    <span style="color:#6b7280;">CV non disponibile</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+function wecoop_lavoro_admin_register_menu() {
+    add_menu_page(
+        'Utenti servizio lavoro',
+        'Servizio lavoro',
+        wecoop_lavoro_admin_capability(),
+        'wecoop-lavoro-utenti',
+        'wecoop_lavoro_admin_render_page',
+        'dashicons-id-alt',
+        58
+    );
+}
+add_action('admin_menu', 'wecoop_lavoro_admin_register_menu');
+
+function wecoop_lavoro_admin_download_cv() {
+    if (!current_user_can(wecoop_lavoro_admin_capability())) {
+        wp_die('Non hai i permessi per scaricare questo CV.');
+    }
+
+    $profile_id = isset($_GET['profile_id']) ? (int) $_GET['profile_id'] : 0;
+    if ($profile_id <= 0) {
+        wp_die('Profile ID non valido.');
+    }
+
+    check_admin_referer('wecoop_lavoro_download_cv_' . $profile_id);
+
+    $store = wecoop_lavoro_store_get();
+    $profile = isset($store['profiles'][(string) $profile_id]) && is_array($store['profiles'][(string) $profile_id])
+        ? $store['profiles'][(string) $profile_id]
+        : null;
+
+    if ($profile === null) {
+        wp_die('Profilo non trovato.');
+    }
+
+    if (!wecoop_lavoro_admin_can_generate_cv($profile)) {
+        wp_die('Il profilo non contiene dati sufficienti per generare il CV.');
+    }
+
+    $payload = $profile;
+    $payload['config'] = [
+        'template' => 'formal',
+        'cvLanguage' => 'it',
+        'includePhoto' => true,
+    ];
+
+    $html = wecoop_cv_build_local_html($payload, true, 'pdf');
+    $filename = 'wecoop-cv-profilo-' . $profile_id;
+    $pdf = wecoop_cv_html_to_pdf($html, $filename);
+
+    if (empty($pdf['success']) || empty($pdf['url'])) {
+        wp_die('Impossibile generare il PDF del CV.');
+    }
+
+    wp_safe_redirect((string) $pdf['url']);
+    exit;
+}
+add_action('admin_post_wecoop_lavoro_download_cv', 'wecoop_lavoro_admin_download_cv');
+
 function wecoop_lavoro_rest_job_activate(WP_REST_Request $request) {
     $request_id = wecoop_cv_request_id();
     $payload = $request->get_json_params();
