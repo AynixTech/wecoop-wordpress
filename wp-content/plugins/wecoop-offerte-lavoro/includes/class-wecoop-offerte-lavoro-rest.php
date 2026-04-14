@@ -1235,6 +1235,7 @@ class WeCoop_Offerte_Lavoro_REST {
             'author_user_id' => $author_data['user_id'],
             'author_name' => $author_data['name'],
             'author_avatar_url' => $author_data['avatar_url'],
+            'author_profile_complete' => !empty($author_data['profile_complete']),
             'attached_cv_id' => (string) get_post_meta($id, 'attached_cv_id', true),
             'attached_cv_label' => (string) get_post_meta($id, 'attached_cv_label', true),
             'attached_cv_pdf_url' => (string) get_post_meta($id, 'attached_cv_pdf_url', true),
@@ -1285,6 +1286,7 @@ class WeCoop_Offerte_Lavoro_REST {
             'user_id' => $user_id,
             'name' => $name,
             'avatar_url' => $avatar_url,
+            'profile_complete' => filter_var(get_user_meta($user_id, 'profilo_completo', true), FILTER_VALIDATE_BOOLEAN),
         ];
     }
 
