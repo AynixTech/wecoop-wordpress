@@ -272,8 +272,18 @@ class WECOOP_Soci_Endpoint {
             'callback' => [__CLASS__, 'reset_password'],
             'permission_callback' => '__return_true',
             'args' => [
-                'telefono' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                'telefono' => ['type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
                 'email' => ['type' => 'string', 'sanitize_callback' => 'sanitize_email']
+            ]
+        ]);
+
+        register_rest_route('wecoop/v1', '/soci/reset-password/confirm', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'confirm_reset_password'],
+            'permission_callback' => '__return_true',
+            'args' => [
+                'token' => ['required' => true, 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field'],
+                'new_password' => ['required' => true, 'type' => 'string'],
             ]
         ]);
         
@@ -1807,37 +1817,134 @@ class WECOOP_Soci_Endpoint {
         if (!$user) {
             return new WP_Error('user_not_found', 'Utente non trovato', ['status' => 404]);
         }
+
+        if (empty($user->user_email)) {
+            return new WP_Error('missing_email', 'L\'utente non ha un indirizzo email associato', ['status' => 400]);
+        }
+
+        $reset_token = wp_generate_password(64, false);
+        update_user_meta($user->ID, 'password_reset_token', $reset_token);
+        update_user_meta($user->ID, 'password_reset_token_time', time());
+
+        $deep_link = 'wecoop://app/reset-password?token=' . rawurlencode($reset_token);
+        $redirect_url = home_url('/app-redirect.php?link=' . urlencode($deep_link) . '&fallback=' . urlencode(wp_login_url()));
         
-        // Genera nuova password memorabile
-        $new_password = self::generate_memorable_password();
-        
-        // Aggiorna password
-        wp_set_password($new_password, $user->ID);
-        
-        // Invia email con nuova password
+        $email_sent = false;
+        $nome = get_user_meta($user->ID, 'nome', true) ?: $user->display_name ?: $user->user_login;
+
         if (class_exists('WeCoop_Email_Template_Unified')) {
-            $nome = get_user_meta($user->ID, 'nome', true) ?: $user->display_name;
-            $numero_tessera = get_user_meta($user->ID, 'numero_tessera', true);
-            $tessera_url = home_url('/tessera-socio/?id=' . $numero_tessera);
-            
-            WeCoop_Email_Template_Unified::send_password_reset(
-                $nome,
+            $content = sprintf(
+                '<h1>Ciao %s,</h1>
+                <p>Hai richiesto di reimpostare la password del tuo account WECOOP.</p>
+                <p>Apri il link qui sotto dal tuo telefono per aprire l\'app e scegliere una nuova password.</p>
+                <p><strong>Username:</strong> %s</p>
+                <p><strong>Importante:</strong> il link scade tra 24 ore. Se non hai richiesto tu questa operazione, ignora questa email.</p>',
+                esc_html($nome),
+                esc_html($user->user_login)
+            );
+
+            $email_sent = WeCoop_Email_Template_Unified::send(
                 $user->user_email,
-                $new_password,
-                $numero_tessera,
-                $tessera_url,
-                null,
-                $user->user_login
+                '🔐 Reimposta la tua password - WECOOP',
+                $content,
+                [
+                    'user_id' => $user->ID,
+                    'preheader' => 'Apri l\'app WeCoop e scegli una nuova password',
+                    'button_text' => 'Apri l\'app e reimposta password',
+                    'button_url' => $redirect_url,
+                ]
+            );
+        } elseif (class_exists('WeCoop_Email_Template')) {
+            $content = sprintf(
+                '<h1>Ciao %s,</h1>
+                <p>Hai richiesto di reimpostare la password del tuo account WECOOP.</p>
+                <p><strong>Username:</strong> %s</p>
+                <p>Apri il link qui sotto dal tuo telefono per aprire l\'app e scegliere una nuova password.</p>',
+                esc_html($nome),
+                esc_html($user->user_login)
+            );
+
+            $email_sent = WeCoop_Email_Template::send(
+                $user->user_email,
+                '🔐 Reimposta la tua password - WECOOP',
+                $content,
+                [
+                    'preheader' => 'Apri l\'app WeCoop e scegli una nuova password',
+                    'button_text' => 'Apri l\'app e reimposta password',
+                    'button_url' => $redirect_url,
+                ]
+            );
+        } else {
+            $email_sent = wp_mail(
+                $user->user_email,
+                '🔐 Reimposta la tua password - WECOOP',
+                "Ciao {$nome},\n\nHai richiesto di reimpostare la password del tuo account WECOOP.\nUsername: {$user->user_login}\n\nApri questo link dal telefono per aprire l'app e scegliere una nuova password:\n{$redirect_url}\n\nIl link scade tra 24 ore."
+            );
+        }
+
+        if (!$email_sent) {
+            delete_user_meta($user->ID, 'password_reset_token');
+            delete_user_meta($user->ID, 'password_reset_token_time');
+            error_log('WECOOP: Invio email reset password fallito per utente ' . $user->user_login . ' (ID: ' . $user->ID . ')');
+
+            return new WP_Error(
+                'email_send_failed',
+                'Invio email di reset non riuscito. Contatta l\'assistenza.',
+                ['status' => 500]
             );
         }
         
         // Log
-        error_log('WECOOP: Password reset per utente ' . $user->user_login . ' (ID: ' . $user->ID . ')');
+        error_log('WECOOP: Link reset password creato per utente ' . $user->user_login . ' (ID: ' . $user->ID . '), email inviata a ' . $user->user_email . ', deep link: ' . $deep_link);
         
         return rest_ensure_response([
             'success' => true,
-            'message' => 'Password resettata. Controlla la tua email.',
+            'message' => 'Ti abbiamo inviato un link via email per aprire l\'app e reimpostare la password.',
             'email_sent_to' => $user->user_email
+        ]);
+    }
+
+    public static function confirm_reset_password($request) {
+        $token = sanitize_text_field((string) $request->get_param('token'));
+        $new_password = (string) $request->get_param('new_password');
+
+        if (empty($token) || empty($new_password)) {
+            return new WP_Error('missing_reset_data', 'Token e nuova password sono obbligatori', ['status' => 400]);
+        }
+
+        if (strlen($new_password) < 6) {
+            return new WP_Error('weak_password', 'La nuova password deve essere almeno 6 caratteri', ['status' => 400]);
+        }
+
+        $users = get_users([
+            'number' => 1,
+            'count_total' => false,
+            'meta_key' => 'password_reset_token',
+            'meta_value' => $token,
+        ]);
+
+        if (empty($users)) {
+            return new WP_Error('invalid_reset_token', 'Link non valido o già utilizzato', ['status' => 400]);
+        }
+
+        $user = $users[0];
+        $issued_at = intval(get_user_meta($user->ID, 'password_reset_token_time', true));
+        if ($issued_at <= 0 || (time() - $issued_at) > DAY_IN_SECONDS) {
+            delete_user_meta($user->ID, 'password_reset_token');
+            delete_user_meta($user->ID, 'password_reset_token_time');
+
+            return new WP_Error('expired_reset_token', 'Il link di reset password è scaduto', ['status' => 400]);
+        }
+
+        wp_set_password($new_password, $user->ID);
+        delete_user_meta($user->ID, 'password_reset_token');
+        delete_user_meta($user->ID, 'password_reset_token_time');
+
+        error_log('WECOOP: Password aggiornata tramite deep link per utente ' . $user->user_login . ' (ID: ' . $user->ID . ')');
+
+        return rest_ensure_response([
+            'success' => true,
+            'message' => 'Password cambiata con successo. Ora puoi accedere all\'app.',
         ]);
     }
     
