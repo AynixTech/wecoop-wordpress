@@ -697,6 +697,10 @@ class WeCoop_Offerte_Lavoro_REST {
         $category_direction = sanitize_text_field((string) ($payload['category_direction'] ?? ''));
         $category_macro = sanitize_text_field((string) ($payload['category_macro'] ?? ''));
         $category_slug = sanitize_text_field((string) ($payload['category_slug'] ?? ''));
+        $cv_id = sanitize_text_field((string) ($payload['cv_id'] ?? ''));
+        $cv_label = sanitize_text_field((string) ($payload['cv_label'] ?? ''));
+        $cv_pdf_url = esc_url_raw((string) ($payload['cv_pdf_url'] ?? ''));
+        $cv_docx_url = esc_url_raw((string) ($payload['cv_docx_url'] ?? ''));
         $image_base64 = isset($payload['image_base64']) ? (string) $payload['image_base64'] : '';
         $consent_privacy = !empty($payload['consent_privacy']);
 
@@ -785,6 +789,11 @@ class WeCoop_Offerte_Lavoro_REST {
         update_post_meta($submission_id, 'description', $description);
         update_post_meta($submission_id, 'category_macro', $category_macro);
         update_post_meta($submission_id, 'category_slug', $category_slug);
+        update_post_meta($submission_id, 'attached_cv_id', $cv_id);
+        update_post_meta($submission_id, 'attached_cv_label', $cv_label);
+        update_post_meta($submission_id, 'attached_cv_pdf_url', $cv_pdf_url);
+        update_post_meta($submission_id, 'attached_cv_docx_url', $cv_docx_url);
+        update_post_meta($submission_id, 'has_attached_cv', (!empty($cv_pdf_url) || !empty($cv_docx_url)) ? 1 : 0);
         update_post_meta($submission_id, 'is_active', 1);
         update_post_meta($submission_id, 'is_featured', 0);
         update_post_meta($submission_id, 'consent_privacy', $consent_privacy ? 1 : 0);
@@ -817,6 +826,7 @@ class WeCoop_Offerte_Lavoro_REST {
             'description' => $description,
             'category_macro' => $category_macro,
             'category_slug' => $category_slug,
+            'cv_id' => $cv_id,
         ]);
 
         return new WP_REST_Response([
@@ -1225,6 +1235,11 @@ class WeCoop_Offerte_Lavoro_REST {
             'author_user_id' => $author_data['user_id'],
             'author_name' => $author_data['name'],
             'author_avatar_url' => $author_data['avatar_url'],
+            'attached_cv_id' => (string) get_post_meta($id, 'attached_cv_id', true),
+            'attached_cv_label' => (string) get_post_meta($id, 'attached_cv_label', true),
+            'attached_cv_pdf_url' => (string) get_post_meta($id, 'attached_cv_pdf_url', true),
+            'attached_cv_docx_url' => (string) get_post_meta($id, 'attached_cv_docx_url', true),
+            'has_attached_cv' => (bool) get_post_meta($id, 'has_attached_cv', true),
         ];
 
         if ($full) {
