@@ -1190,6 +1190,9 @@ class WeCoop_Offerte_Lavoro_REST {
 
     private static function serialize_offer(WP_Post $post, $full = false) {
         $id = (int) $post->ID;
+        $submitted_user_id = (int) get_post_meta($id, 'submitted_user_id', true);
+        $author_user_id = $submitted_user_id > 0 ? $submitted_user_id : (int) $post->post_author;
+        $author_data = self::resolve_offer_author_data($author_user_id);
 
         $data = [
             'id' => $id,
@@ -1219,6 +1222,9 @@ class WeCoop_Offerte_Lavoro_REST {
             'category_sub' => (string) get_post_meta($id, 'category_sub', true),
             'published_at' => get_post_time('c', true, $post),
             'categories' => self::get_offer_categories($id),
+            'author_user_id' => $author_data['user_id'],
+            'author_name' => $author_data['name'],
+            'author_avatar_url' => $author_data['avatar_url'],
         ];
 
         if ($full) {
@@ -1226,6 +1232,45 @@ class WeCoop_Offerte_Lavoro_REST {
         }
 
         return $data;
+    }
+
+    private static function resolve_offer_author_data($user_id) {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return [
+                'user_id' => 0,
+                'name' => '',
+                'avatar_url' => '',
+            ];
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            return [
+                'user_id' => 0,
+                'name' => '',
+                'avatar_url' => '',
+            ];
+        }
+
+        $name_parts = array_filter([
+            (string) get_user_meta($user_id, 'nome', true),
+            (string) get_user_meta($user_id, 'cognome', true),
+        ]);
+        $name = !empty($name_parts)
+            ? implode(' ', $name_parts)
+            : (string) $user->display_name;
+
+        $avatar_url = (string) get_user_meta($user_id, 'avatar_url', true);
+        if ($avatar_url === '') {
+            $avatar_url = (string) wp_get_avatar_url($user_id, ['size' => 256]);
+        }
+
+        return [
+            'user_id' => $user_id,
+            'name' => $name,
+            'avatar_url' => $avatar_url,
+        ];
     }
 
     private static function get_offer_categories($post_id) {

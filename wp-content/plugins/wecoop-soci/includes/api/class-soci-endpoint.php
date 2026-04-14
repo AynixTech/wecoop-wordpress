@@ -239,6 +239,12 @@ class WECOOP_Soci_Endpoint {
             'callback' => [__CLASS__, 'upload_documento_identita'],
             'permission_callback' => [__CLASS__, 'check_jwt_auth']
         ]);
+
+        register_rest_route('wecoop/v1', '/soci/me/avatar', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'upload_avatar'],
+            'permission_callback' => [__CLASS__, 'check_jwt_auth']
+        ]);
         
         // 17b. READ: Lista documenti dell'utente corrente (self-service)
         register_rest_route('wecoop/v1', '/soci/me/documenti', [
@@ -907,6 +913,10 @@ class WECOOP_Soci_Endpoint {
             'display_name' => $current_user->display_name,
             'roles' => $current_user->roles
         ];
+
+        $avatar_data = self::get_avatar_data($user_id);
+        $data['avatar_url'] = $avatar_data['avatar_url'];
+        $data['avatar_attachment_id'] = $avatar_data['avatar_attachment_id'];
         
         // Aggiungi metadati
         foreach ($fields as $field) {
@@ -965,6 +975,78 @@ class WECOOP_Soci_Endpoint {
         return rest_ensure_response([
             'success' => true,
             'data' => $data
+        ]);
+    }
+
+    private static function get_avatar_data($user_id) {
+        $attachment_id = (int) get_user_meta($user_id, 'avatar_attachment_id', true);
+        $avatar_url = (string) get_user_meta($user_id, 'avatar_url', true);
+
+        if ($attachment_id > 0) {
+            $resolved_url = wp_get_attachment_image_url($attachment_id, 'medium');
+            if (!empty($resolved_url)) {
+                $avatar_url = $resolved_url;
+            }
+        }
+
+        if ($avatar_url === '') {
+            $fallback = wp_get_avatar_url($user_id, ['size' => 256]);
+            $avatar_url = is_string($fallback) ? $fallback : '';
+        }
+
+        return [
+            'avatar_url' => $avatar_url,
+            'avatar_attachment_id' => $attachment_id,
+        ];
+    }
+
+    public static function upload_avatar($request) {
+        $current_user = wp_get_current_user();
+        $user_id = (int) $current_user->ID;
+
+        if ($user_id <= 0) {
+            return new WP_Error('not_logged_in', 'Utente non autenticato', ['status' => 401]);
+        }
+
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+        $files = $request->get_file_params();
+        if (empty($files['file'])) {
+            return new WP_Error('no_file', 'Nessun file caricato', ['status' => 400]);
+        }
+
+        $attachment_id = media_handle_upload('file', 0);
+        if (is_wp_error($attachment_id)) {
+            return $attachment_id;
+        }
+
+        $old_attachment_id = (int) get_user_meta($user_id, 'avatar_attachment_id', true);
+        if ($old_attachment_id > 0 && $old_attachment_id !== $attachment_id) {
+            wp_delete_attachment($old_attachment_id, true);
+        }
+
+        $avatar_url = wp_get_attachment_image_url($attachment_id, 'medium');
+        if (!$avatar_url) {
+            $avatar_url = wp_get_attachment_url($attachment_id);
+        }
+
+        update_post_meta($attachment_id, 'wecoop_user_avatar', '1');
+        update_post_meta($attachment_id, 'socio_id', $user_id);
+        update_post_meta($attachment_id, 'data_upload', current_time('mysql'));
+
+        update_user_meta($user_id, 'avatar_attachment_id', $attachment_id);
+        update_user_meta($user_id, 'avatar_url', $avatar_url ?: '');
+
+        return rest_ensure_response([
+            'success' => true,
+            'message' => 'Avatar aggiornato con successo',
+            'data' => [
+                'avatar_attachment_id' => $attachment_id,
+                'avatar_url' => $avatar_url,
+                'filename' => basename((string) get_attached_file($attachment_id)),
+            ]
         ]);
     }
     
