@@ -54,7 +54,10 @@ class WeCoop_Offerta_Formativa {
     }
 
     private function load_dependencies() {
-        require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-partner-cpt.php';
+        $partner_file = WECOOP_OF_INCLUDES_DIR . 'post-types/class-partner-cpt.php';
+        if (file_exists($partner_file)) {
+            require_once $partner_file;
+        }
         require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-offerta-formativa-cpt.php';
         require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-richiesta-studio-cpt.php';
         require_once WECOOP_OF_INCLUDES_DIR . 'api/class-offerte-formative-endpoint.php';
