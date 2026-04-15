@@ -48,7 +48,7 @@ class WECOOP_Partners_Endpoint {
         $page     = (int) $request->get_param('page');
 
         $args = [
-            'post_type'      => 'partner',
+            'post_type'      => 'wecoop_partner',
             'post_status'    => 'publish',
             'posts_per_page' => $per_page,
             'paged'          => $page,
@@ -66,7 +66,7 @@ class WECOOP_Partners_Endpoint {
 
                 $logo_url    = get_the_post_thumbnail_url($post_id, 'full') ?: '';
                 $website_url = get_post_meta($post_id, 'website_url', true) ?: '';
-                $descrizione = get_post_meta($post_id, 'descrizione', true) ?: '';
+                $descrizione = get_the_excerpt() ?: (get_post_meta($post_id, 'descrizione', true) ?: '');
                 $ordine      = (int)(get_post_meta($post_id, 'ordine', true) ?: 0);
 
                 $result[] = [

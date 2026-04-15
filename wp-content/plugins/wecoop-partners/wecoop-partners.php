@@ -67,7 +67,6 @@ class WeCoop_Partners {
         register_activation_hook(__FILE__, [$this, 'on_activation']);
         register_deactivation_hook(__FILE__, [$this, 'on_deactivation']);
 
-        add_action('init', [$this, 'register_cpts'], 10);
         add_action('rest_api_init', [$this, 'init_rest_api'], 20);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
 
@@ -80,13 +79,10 @@ class WeCoop_Partners {
     }
 
     public function register_cpts() {
-        if (class_exists('WECOOP_Partner_CPT')) {
-            WECOOP_Partner_CPT::register_post_type();
-        }
+        // Il CPT wecoop_partner è già registrato dal tema
     }
 
     public function on_activation() {
-        $this->register_cpts();
         flush_rewrite_rules();
     }
 
@@ -96,7 +92,7 @@ class WeCoop_Partners {
 
     public function enqueue_admin_assets($hook) {
         global $post_type;
-        if ($post_type !== 'partner') {
+        if ($post_type !== 'wecoop_partner') {
             return;
         }
         wp_enqueue_style(
