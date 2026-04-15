@@ -57,6 +57,7 @@ class WECOOP_Offerta_Formativa_CPT {
     public static function render_metabox($post) {
         wp_nonce_field('offerta_formativa_save', 'offerta_formativa_nonce');
 
+        $partner_id     = (int) get_post_meta($post->ID, 'partner_id', true);
         $partner_nome   = get_post_meta($post->ID, 'partner_nome', true);
         $categoria      = get_post_meta($post->ID, 'categoria', true);
         $durata         = get_post_meta($post->ID, 'durata', true);
@@ -65,6 +66,14 @@ class WECOOP_Offerta_Formativa_CPT {
         $attiva         = get_post_meta($post->ID, 'attiva', true);
 
         $categorie = ['Lingua italiana', 'Lingua inglese', 'Formazione professionale', 'Università', 'Corsi online', 'Altro'];
+
+        $partners = get_posts([
+            'post_type'      => 'partner',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'orderby'        => 'title',
+            'order'          => 'ASC',
+        ]);
         ?>
         <style>
             .of-field { margin-bottom: 16px; }
@@ -73,12 +82,48 @@ class WECOOP_Offerta_Formativa_CPT {
             .of-field select { width: 100%; padding: 8px 10px; border: 1px solid #8c8f94; border-radius: 4px; font-size: 14px; }
             .of-hint { font-size: 12px; color: #646970; margin-top: 4px; }
             .of-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+            #of-partner-preview { display:flex; align-items:center; gap:10px; margin-top:8px; min-height:40px; }
+            #of-partner-preview img { max-width:80px; max-height:50px; border-radius:4px; border:1px solid #dde; object-fit:contain; background:#f6f7f7; padding:3px; }
         </style>
         <div class="of-row">
             <div class="of-field">
-                <label for="of_partner_nome">Nome Partner / Ente formativo</label>
-                <input type="text" id="of_partner_nome" name="of_partner_nome"
-                       value="<?php echo esc_attr($partner_nome); ?>" placeholder="es. Umanitaria" />
+                <label for="of_partner_id">Partner / Ente formativo</label>
+                <select id="of_partner_id" name="of_partner_id">
+                    <option value="">— Nessun partner —</option>
+                    <?php foreach ($partners as $p):
+                        $logo = get_the_post_thumbnail_url($p->ID, 'thumbnail') ?: '';
+                    ?>
+                        <option value="<?php echo esc_attr($p->ID); ?>"
+                                data-logo="<?php echo esc_attr($logo); ?>"
+                                <?php selected($partner_id, $p->ID); ?>>
+                            <?php echo esc_html(get_the_title($p)); ?>
+                        </option>
+                    <?php endforeach; ?>
+                    <?php if (!$partners && $partner_nome): ?>
+                        <option value="" disabled><?php echo esc_html('(legacy) ' . $partner_nome); ?></option>
+                    <?php endif; ?>
+                </select>
+                <div id="of-partner-preview">
+                    <?php
+                    if ($partner_id) {
+                        $logo = get_the_post_thumbnail_url($partner_id, 'thumbnail');
+                        $name = get_the_title($partner_id);
+                        if ($logo) echo '<img src="' . esc_url($logo) . '" alt="' . esc_attr($name) . '" />';
+                        echo '<span style="font-size:13px;color:#646970;">' . esc_html($name) . '</span>';
+                    }
+                    ?>
+                </div>
+                <script>
+                document.getElementById('of_partner_id').addEventListener('change', function() {
+                    var opt = this.options[this.selectedIndex];
+                    var logo = opt.getAttribute('data-logo') || '';
+                    var name = opt.text;
+                    var preview = document.getElementById('of-partner-preview');
+                    preview.innerHTML = logo
+                        ? '<img src="' + logo + '" alt="' + name + '" /><span style="font-size:13px;color:#646970;">' + name + '</span>'
+                        : '';
+                });
+                </script>
             </div>
             <div class="of-field">
                 <label for="of_categoria">Categoria</label>
@@ -128,10 +173,9 @@ class WECOOP_Offerta_Formativa_CPT {
         if (!current_user_can('edit_post', $post_id)) return;
 
         $fields = [
-            'partner_nome' => 'of_partner_nome',
-            'categoria'    => 'of_categoria',
-            'durata'       => 'of_durata',
-            'ordine'       => 'of_ordine',
+            'categoria' => 'of_categoria',
+            'durata'    => 'of_durata',
+            'ordine'    => 'of_ordine',
         ];
         foreach ($fields as $meta_key => $post_key) {
             if (isset($_POST[$post_key])) {
@@ -140,6 +184,14 @@ class WECOOP_Offerta_Formativa_CPT {
                     : sanitize_text_field($_POST[$post_key]);
                 update_post_meta($post_id, $meta_key, $value);
             }
+        }
+        // Partner
+        if (isset($_POST['of_partner_id'])) {
+            $pid = absint($_POST['of_partner_id']);
+            update_post_meta($post_id, 'partner_id', $pid);
+            // Keep partner_nome in sync for legacy compatibility
+            $pname = $pid ? get_the_title($pid) : '';
+            update_post_meta($post_id, 'partner_nome', sanitize_text_field($pname));
         }
         if (isset($_POST['of_link_info'])) {
             update_post_meta($post_id, 'link_info', esc_url_raw($_POST['of_link_info']));
@@ -151,7 +203,7 @@ class WECOOP_Offerta_Formativa_CPT {
         return [
             'cb'           => $columns['cb'],
             'title'        => 'Titolo',
-            'partner_nome' => 'Partner',
+            'partner_logo' => 'Partner',
             'categoria'    => 'Categoria',
             'ordine'       => 'Ordine',
             'attiva'       => 'Visibile App',
@@ -161,8 +213,17 @@ class WECOOP_Offerta_Formativa_CPT {
 
     public static function render_column($column, $post_id) {
         switch ($column) {
-            case 'partner_nome':
-                echo esc_html(get_post_meta($post_id, 'partner_nome', true) ?: '—');
+            case 'partner_logo':
+                $pid  = (int) get_post_meta($post_id, 'partner_id', true);
+                $name = $pid ? get_the_title($pid) : get_post_meta($post_id, 'partner_nome', true);
+                if ($pid) {
+                    $thumb = get_the_post_thumbnail($pid, [32, 32]);
+                    echo '<div style="display:flex;align-items:center;gap:6px;">';
+                    if ($thumb) echo '<span style="width:32px;height:32px;overflow:hidden;border-radius:3px;border:1px solid #dde;flex-shrink:0;">' . $thumb . '</span>';
+                    echo '<span>' . esc_html($name) . '</span></div>';
+                } else {
+                    echo esc_html($name ?: '—');
+                }
                 break;
             case 'categoria':
                 echo esc_html(get_post_meta($post_id, 'categoria', true) ?: '—');

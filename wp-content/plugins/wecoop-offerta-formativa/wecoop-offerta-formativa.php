@@ -54,6 +54,7 @@ class WeCoop_Offerta_Formativa {
     }
 
     private function load_dependencies() {
+        require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-partner-cpt.php';
         require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-offerta-formativa-cpt.php';
         require_once WECOOP_OF_INCLUDES_DIR . 'post-types/class-richiesta-studio-cpt.php';
         require_once WECOOP_OF_INCLUDES_DIR . 'api/class-offerte-formative-endpoint.php';
@@ -68,11 +69,13 @@ class WeCoop_Offerta_Formativa {
         add_action('rest_api_init', [$this, 'register_routes'], 20);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
 
+        WECOOP_Partner_CPT::init();
         WECOOP_Offerta_Formativa_CPT::init();
         WECOOP_Richiesta_Studio_CPT::init();
     }
 
     public function register_cpts() {
+        WECOOP_Partner_CPT::register_post_type();
         WECOOP_Offerta_Formativa_CPT::register_post_type();
         WECOOP_Richiesta_Studio_CPT::register_post_type();
     }
@@ -83,6 +86,7 @@ class WeCoop_Offerta_Formativa {
     }
 
     public function on_activation() {
+        WECOOP_Partner_CPT::register_post_type();
         WECOOP_Offerta_Formativa_CPT::register_post_type();
         WECOOP_Richiesta_Studio_CPT::register_post_type();
         flush_rewrite_rules();
