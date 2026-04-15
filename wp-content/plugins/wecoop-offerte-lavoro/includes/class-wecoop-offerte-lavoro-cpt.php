@@ -38,6 +38,7 @@ class WeCoop_Offerte_Lavoro_CPT {
                 'singular_name' => __('Offerta Lavoro', 'wecoop-offerte-lavoro'),
                 'add_new_item' => __('Aggiungi Offerta Lavoro', 'wecoop-offerte-lavoro'),
                 'edit_item' => __('Modifica Offerta Lavoro', 'wecoop-offerte-lavoro'),
+                'menu_name' => __('WeCoop Offerte Lavoro', 'wecoop-offerte-lavoro'),
             ],
             'public' => true,
             'show_ui' => true,
@@ -52,6 +53,7 @@ class WeCoop_Offerte_Lavoro_CPT {
             'labels' => [
                 'name' => __('Candidature Lavoro', 'wecoop-offerte-lavoro'),
                 'singular_name' => __('Candidatura Lavoro', 'wecoop-offerte-lavoro'),
+                'menu_name' => __('WeCoop Candidature', 'wecoop-offerte-lavoro'),
             ],
             'public' => false,
             'show_ui' => true,
@@ -67,6 +69,7 @@ class WeCoop_Offerte_Lavoro_CPT {
             'labels' => [
                 'name' => __('Annunci Proposti', 'wecoop-offerte-lavoro'),
                 'singular_name' => __('Annuncio Proposto', 'wecoop-offerte-lavoro'),
+                'menu_name' => __('WeCoop Annunci', 'wecoop-offerte-lavoro'),
             ],
             'public' => false,
             'show_ui' => true,

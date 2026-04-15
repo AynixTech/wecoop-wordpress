@@ -14,8 +14,8 @@ class WeCoop_Users_List_Page {
     
     public function add_admin_menu() {
         add_menu_page(
-            'Utenti Registrati',
-            'Utenti Registrati',
+            'WeCoop Utenti Registrati',
+            'WeCoop Utenti',
             'manage_options',
             'wecoop-users-list',
             [$this, 'render_page'],

@@ -16,8 +16,8 @@ class WECOOP_WhatsApp_Settings {
     
     public static function add_admin_menu() {
         add_menu_page(
-            'Push WhatsApp',                    // Page title
-            'Push WhatsApp',                    // Menu title
+            'WeCoop Push WhatsApp',             // Page title
+            'WeCoop WhatsApp',                  // Menu title
             'manage_options',                   // Capability
             'wecoop-whatsapp-settings',         // Menu slug
             [__CLASS__, 'render_settings_page'], // Callback

@@ -140,8 +140,8 @@ class WeCoop_Notifications {
     
     public function add_admin_menu() {
         add_menu_page(
-            'Push Notifications',
-            'Push Notifications',
+            'WeCoop Push Notifications',
+            'WeCoop Notifiche',
             'manage_options',
             'wecoop-push-notifications',
             [__CLASS__, 'render_admin_page'],

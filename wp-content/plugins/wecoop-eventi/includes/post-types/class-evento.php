@@ -37,7 +37,7 @@ class WECOOP_Evento_CPT {
                 'view_item' => 'Visualizza Evento',
                 'search_items' => 'Cerca Eventi',
                 'not_found' => 'Nessun evento trovato',
-                'menu_name' => 'Eventi'
+                'menu_name' => 'WeCoop Eventi'
             ],
             'public' => true,
             'show_ui' => true,

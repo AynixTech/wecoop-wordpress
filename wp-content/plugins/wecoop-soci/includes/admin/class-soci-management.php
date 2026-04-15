@@ -25,8 +25,8 @@ class WECOOP_Soci_Management {
     public static function add_admin_menus() {
         // Menu principale
         add_menu_page(
-            'Gestione Soci',
-            'Soci',
+            'WeCoop Gestione Soci',
+            'WeCoop Soci',
             'manage_options',
             'wecoop-soci',
             [__CLASS__, 'render_dashboard_page'],

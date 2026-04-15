@@ -15,8 +15,8 @@ class WECOOP_CRM_Menu {
     
     public static function add_menu() {
         add_menu_page(
-            'CRM Dashboard',
-            'CRM',
+            'WeCoop CRM Dashboard',
+            'WeCoop CRM',
             'manage_options',
             'wecoop-crm',
             [__CLASS__, 'render_dashboard'],

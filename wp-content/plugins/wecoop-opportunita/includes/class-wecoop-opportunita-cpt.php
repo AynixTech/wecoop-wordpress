@@ -30,7 +30,7 @@ class WeCoop_Opportunita_CPT {
                 'view_item' => 'Visualizza Opportunita',
                 'search_items' => 'Cerca Opportunita',
                 'not_found' => 'Nessuna opportunita trovata',
-                'menu_name' => 'Progetti e Opportunita',
+                'menu_name' => 'WeCoop Progetti',
             ],
             'public' => true,
             'show_ui' => true,

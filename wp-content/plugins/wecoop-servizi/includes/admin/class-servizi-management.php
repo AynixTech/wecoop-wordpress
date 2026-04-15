@@ -121,8 +121,8 @@ class WECOOP_Servizi_Management {
      */
     public static function add_admin_menu() {
         add_menu_page(
-            'Richieste Servizi',
-            'Richieste Servizi',
+            'WeCoop Richieste Servizi',
+            'WeCoop Servizi',
             'manage_options',
             'wecoop-richieste-servizi',
             [__CLASS__, 'render_list'],

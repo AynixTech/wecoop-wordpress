@@ -2484,8 +2484,8 @@ function wecoop_lavoro_admin_render_page() {
 
 function wecoop_lavoro_admin_register_menu() {
     add_menu_page(
-        'Utenti servizio lavoro',
-        'Servizio lavoro',
+        'WeCoop Utenti Servizio Lavoro',
+        'WeCoop Lavoro',
         wecoop_lavoro_admin_capability(),
         'wecoop-lavoro-utenti',
         'wecoop_lavoro_admin_render_page',
