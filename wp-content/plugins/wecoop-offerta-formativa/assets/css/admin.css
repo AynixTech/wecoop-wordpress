@@ -1,0 +1,7 @@
+/* WeCoop Offerta Formativa – Admin Styles */
+
+.of-field { margin-bottom: 16px; }
+.of-field label { display: block; font-weight: 600; margin-bottom: 4px; color: #1d2327; }
+.of-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.of-hint { font-size: 12px; color: #646970; margin-top: 4px; }
+.rs-field { display: grid; grid-template-columns: 200px 1fr; gap: 8px; padding: 10px 0; border-bottom: 1px solid #f0f0f1; }
