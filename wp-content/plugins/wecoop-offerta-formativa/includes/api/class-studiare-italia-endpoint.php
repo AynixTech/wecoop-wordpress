@@ -35,7 +35,7 @@ class WECOOP_Studiare_Italia_Endpoint {
                 'required'          => false,
                 'sanitize_callback' => 'sanitize_text_field',
             ],
-            'whatsapp' => [
+            'telefono' => [
                 'required'          => false,
                 'sanitize_callback' => 'sanitize_text_field',
             ],
@@ -98,7 +98,7 @@ class WECOOP_Studiare_Italia_Endpoint {
 
         // Salva tutti i campi come meta
         $meta_fields = [
-            'nome_cognome', 'paese_origine', 'email', 'whatsapp',
+            'nome_cognome', 'paese_origine', 'email', 'telefono',
             'eta', 'titolo_studio', 'livello_italiano', 'livello_inglese',
             'cosa_studiare', 'quando_iniziare', 'gia_studiato',
             'ha_documenti', 'aiuto_richiesto',
@@ -143,7 +143,7 @@ class WECOOP_Studiare_Italia_Endpoint {
             update_post_meta($lead_id, 'nome',     $nome);
             update_post_meta($lead_id, 'cognome',  $cognome);
             update_post_meta($lead_id, 'email',    $request->get_param('email'));
-            update_post_meta($lead_id, 'telefono', $request->get_param('whatsapp') ?: '');
+            update_post_meta($lead_id, 'telefono', $request->get_param('telefono') ?: '');
             update_post_meta($lead_id, 'fonte',    'App – Studiare in Italia');
             update_post_meta($lead_id, 'note',     'Richiesta studio #' . $richiesta_id);
             if (taxonomy_exists('pipeline_stage')) {
@@ -165,7 +165,7 @@ class WECOOP_Studiare_Italia_Endpoint {
             'nome_cognome'     => 'Nome e cognome',
             'paese_origine'    => 'Paese di origine',
             'email'            => 'Email',
-            'whatsapp'         => 'WhatsApp',
+            'telefono'         => 'Telefono',
             'eta'              => 'Età',
             'titolo_studio'    => 'Titolo di studio',
             'livello_italiano' => 'Livello italiano',
