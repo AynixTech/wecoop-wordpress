@@ -55,7 +55,7 @@ class WECOOP_Offerte_Formative_Endpoint {
             if ($partner_id) {
                 $partner_nome     = get_the_title($partner_id);
                 $partner_logo_url = get_the_post_thumbnail_url($partner_id, 'medium') ?: '';
-                $partner_sito_web = get_post_meta($partner_id, 'sito_web', true) ?: '';
+                $partner_sito_web = get_post_meta($partner_id, 'website_url', true) ?: '';
             } else {
                 // legacy: partner_nome meta without partner_id
                 $partner_nome = get_post_meta($post->ID, 'partner_nome', true) ?: '';

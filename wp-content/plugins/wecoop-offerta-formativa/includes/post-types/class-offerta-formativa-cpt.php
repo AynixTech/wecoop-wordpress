@@ -68,7 +68,7 @@ class WECOOP_Offerta_Formativa_CPT {
         $categorie = ['Lingua italiana', 'Lingua inglese', 'Formazione professionale', 'Università', 'Corsi online', 'Altro'];
 
         $partners = get_posts([
-            'post_type'      => 'partner',
+            'post_type'      => 'wecoop_partner',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
             'orderby'        => 'title',
