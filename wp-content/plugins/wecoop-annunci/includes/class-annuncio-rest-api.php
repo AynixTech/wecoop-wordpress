@@ -92,6 +92,13 @@ class WECOOP_Annuncio_REST_API {
             'callback'            => [ $this, 'improve_description' ],
             'permission_callback' => [ $this, 'check_auth' ],
         ] );
+
+        // POST migrazione slug categorie (solo admin, one-time)
+        register_rest_route( $ns, '/annunci/migrate-categorie-slugs', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'migrate_categorie_slugs' ],
+            'permission_callback' => function() { return current_user_can( 'manage_options' ); },
+        ] );
     }
 
     // -------------------------------------------------------------------------
@@ -706,5 +713,37 @@ class WECOOP_Annuncio_REST_API {
         $cat      = trim( $categoria ) !== '' ? ' Categoria: ' . $categoria . '.' : '';
         $clean    = preg_replace( '/\s+/', ' ', trim( $descrizione ) );
         return trim( $intro . ' ' . $clean . $location . $cat );
+    }
+
+    public function migrate_categorie_slugs() {
+        $mapping = [
+            'evento'     => [ 'slug' => 'event',      'name' => 'Evento' ],
+            'concerto'   => [ 'slug' => 'concert',    'name' => 'Concerto / Musica' ],
+            'ristorante' => [ 'slug' => 'restaurant', 'name' => 'Ristorante / Food' ],
+            'servizio'   => [ 'slug' => 'service',    'name' => 'Servizio' ],
+            'vendita'    => [ 'slug' => 'sale',        'name' => 'Vendita' ],
+            'sport'      => [ 'slug' => 'sport',       'name' => 'Sport / Fitness' ],
+            'cultura'    => [ 'slug' => 'culture',    'name' => 'Cultura / Arte' ],
+            'lavoro'     => [ 'slug' => 'work',        'name' => 'Lavoro / Collaborazione' ],
+            'altro'      => [ 'slug' => 'other',       'name' => 'Altro' ],
+        ];
+        $results = [];
+        foreach ( $mapping as $old_slug => $new ) {
+            $term = get_term_by( 'slug', $old_slug, 'categoria_annuncio' );
+            if ( ! $term ) {
+                $results[] = [ 'old' => $old_slug, 'status' => 'not_found' ];
+                continue;
+            }
+            $r = wp_update_term( $term->term_id, 'categoria_annuncio', [
+                'slug' => $new['slug'],
+                'name' => $new['name'],
+            ] );
+            $results[] = [
+                'old'    => $old_slug,
+                'new'    => $new['slug'],
+                'status' => is_wp_error( $r ) ? 'error: ' . $r->get_error_message() : 'ok',
+            ];
+        }
+        return rest_ensure_response( [ 'success' => true, 'results' => $results ] );
     }
 }
