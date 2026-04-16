@@ -128,18 +128,38 @@ class WECOOP_Annuncio_REST_API {
             'paged'          => (int) $request['page'],
             'orderby'        => 'date',
             'order'          => 'DESC',
-            // Solo annunci non scaduti
+            // Solo annunci non scaduti (o senza data di scadenza = sempre visibili)
             'meta_query'     => [
+                'relation' => 'AND',
                 [
-                    'key'     => '_annuncio_data_scadenza',
-                    'value'   => $today,
-                    'compare' => '>=',
-                    'type'    => 'DATE',
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_annuncio_data_scadenza',
+                        'value'   => $today,
+                        'compare' => '>=',
+                        'type'    => 'DATE',
+                    ],
+                    [
+                        'key'     => '_annuncio_data_scadenza',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key'     => '_annuncio_data_scadenza',
+                        'value'   => '',
+                        'compare' => '=',
+                    ],
                 ],
                 [
-                    'key'     => '_annuncio_stato_pagamento',
-                    'value'   => 'scaduto',
-                    'compare' => '!=',
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_annuncio_stato_pagamento',
+                        'value'   => 'scaduto',
+                        'compare' => '!=',
+                    ],
+                    [
+                        'key'     => '_annuncio_stato_pagamento',
+                        'compare' => 'NOT EXISTS',
+                    ],
                 ],
             ],
         ];
