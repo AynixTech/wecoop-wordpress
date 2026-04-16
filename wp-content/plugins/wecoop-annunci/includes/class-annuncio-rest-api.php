@@ -64,6 +64,27 @@ class WECOOP_Annuncio_REST_API {
             'callback'            => [ $this, 'get_categorie' ],
             'permission_callback' => '__return_true',
         ] );
+
+        // POST upload foto copertina (featured image)
+        register_rest_route( $ns, '/annunci/(?P<id>\d+)/upload-copertina', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'upload_copertina' ],
+            'permission_callback' => [ $this, 'check_owner_or_admin' ],
+        ] );
+
+        // POST upload foto galleria (allegato all'annuncio)
+        register_rest_route( $ns, '/annunci/(?P<id>\d+)/upload-foto', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'upload_foto' ],
+            'permission_callback' => [ $this, 'check_owner_or_admin' ],
+        ] );
+
+        // DELETE foto galleria
+        register_rest_route( $ns, '/annunci/(?P<id>\d+)/foto/(?P<attachment_id>\d+)', [
+            'methods'             => WP_REST_Server::DELETABLE,
+            'callback'            => [ $this, 'delete_foto' ],
+            'permission_callback' => [ $this, 'check_owner_or_admin' ],
+        ] );
     }
 
     // -------------------------------------------------------------------------
@@ -274,6 +295,154 @@ class WECOOP_Annuncio_REST_API {
     }
 
     // -------------------------------------------------------------------------
+    // Upload handlers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Carica/sostituisce la foto copertina (featured image) dell'annuncio.
+     * Multipart POST con campo 'file' (image/jpeg, image/png, image/webp).
+     */
+    public function upload_copertina( $request ) {
+        $post_id = (int) $request['id'];
+
+        if ( ! function_exists( 'wp_handle_upload' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
+        if ( ! function_exists( 'media_handle_upload' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+        }
+
+        $files = $request->get_file_params();
+        if ( empty( $files['file'] ) ) {
+            return new WP_Error( 'no_file', 'Nessun file ricevuto.', [ 'status' => 400 ] );
+        }
+
+        $attachment_id = $this->_do_upload( $files['file'], $post_id );
+        if ( is_wp_error( $attachment_id ) ) {
+            return $attachment_id;
+        }
+
+        // Rimuovi vecchia copertina se esiste
+        $old_thumb = get_post_thumbnail_id( $post_id );
+        if ( $old_thumb ) {
+            wp_delete_attachment( $old_thumb, true );
+        }
+
+        set_post_thumbnail( $post_id, $attachment_id );
+
+        return rest_ensure_response( [
+            'success'        => true,
+            'attachment_id'  => $attachment_id,
+            'url'            => wp_get_attachment_url( $attachment_id ),
+            'thumbnail_url'  => get_the_post_thumbnail_url( $post_id, 'large' ),
+        ] );
+    }
+
+    /**
+     * Aggiunge una foto alla galleria dell'annuncio (meta _annuncio_galleria).
+     * Multipart POST con campo 'file'. Max 8 foto per annuncio.
+     */
+    public function upload_foto( $request ) {
+        $post_id = (int) $request['id'];
+
+        if ( ! function_exists( 'wp_handle_upload' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        if ( ! function_exists( 'wp_generate_attachment_metadata' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
+        if ( ! function_exists( 'media_handle_upload' ) ) {
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+        }
+
+        // Limite foto galleria
+        $galleria = get_post_meta( $post_id, '_annuncio_galleria', true );
+        $galleria = is_array( $galleria ) ? $galleria : [];
+        if ( count( $galleria ) >= 8 ) {
+            return new WP_Error( 'max_photos', 'Limite massimo di 8 foto raggiunto.', [ 'status' => 400 ] );
+        }
+
+        $files = $request->get_file_params();
+        if ( empty( $files['file'] ) ) {
+            return new WP_Error( 'no_file', 'Nessun file ricevuto.', [ 'status' => 400 ] );
+        }
+
+        $attachment_id = $this->_do_upload( $files['file'], $post_id );
+        if ( is_wp_error( $attachment_id ) ) {
+            return $attachment_id;
+        }
+
+        $galleria[] = $attachment_id;
+        update_post_meta( $post_id, '_annuncio_galleria', $galleria );
+
+        return rest_ensure_response( [
+            'success'       => true,
+            'attachment_id' => $attachment_id,
+            'url'           => wp_get_attachment_url( $attachment_id ),
+            'galleria_ids'  => $galleria,
+        ] );
+    }
+
+    /**
+     * Elimina una foto dalla galleria.
+     */
+    public function delete_foto( $request ) {
+        $post_id       = (int) $request['id'];
+        $attachment_id = (int) $request['attachment_id'];
+
+        $galleria = get_post_meta( $post_id, '_annuncio_galleria', true );
+        $galleria = is_array( $galleria ) ? $galleria : [];
+        $galleria = array_values( array_filter( $galleria, fn( $id ) => (int) $id !== $attachment_id ) );
+        update_post_meta( $post_id, '_annuncio_galleria', $galleria );
+
+        wp_delete_attachment( $attachment_id, true );
+
+        return rest_ensure_response( [
+            'success'      => true,
+            'deleted_id'   => $attachment_id,
+            'galleria_ids' => $galleria,
+        ] );
+    }
+
+    /**
+     * Helper interno: carica un file e crea un attachment WP.
+     */
+    private function _do_upload( array $file_data, int $post_id ) {
+        $allowed_mime = [ 'image/jpeg', 'image/png', 'image/webp' ];
+        $file_type    = $file_data['type'] ?? '';
+
+        if ( ! in_array( $file_type, $allowed_mime, true ) ) {
+            return new WP_Error( 'invalid_type', 'Formato non supportato. Usa JPG, PNG o WebP.', [ 'status' => 415 ] );
+        }
+
+        // Limite 5MB
+        if ( $file_data['size'] > 5 * 1024 * 1024 ) {
+            return new WP_Error( 'file_too_large', 'Il file supera il limite di 5MB.', [ 'status' => 413 ] );
+        }
+
+        $upload = wp_handle_upload( $file_data, [ 'test_form' => false ] );
+        if ( isset( $upload['error'] ) ) {
+            return new WP_Error( 'upload_error', $upload['error'], [ 'status' => 500 ] );
+        }
+
+        $attachment_id = wp_insert_attachment( [
+            'guid'           => $upload['url'],
+            'post_mime_type' => $upload['type'],
+            'post_title'     => sanitize_file_name( $file_data['name'] ),
+            'post_status'    => 'inherit',
+            'post_parent'    => $post_id,
+        ], $upload['file'], $post_id );
+
+        $meta = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
+        wp_update_attachment_metadata( $attachment_id, $meta );
+
+        return $attachment_id;
+    }
+
+    // -------------------------------------------------------------------------
     // Formatter
     // -------------------------------------------------------------------------
 
@@ -292,6 +461,11 @@ class WECOOP_Annuncio_REST_API {
             $cat_data[] = [ 'id' => $cat->term_id, 'name' => $cat->name, 'slug' => $cat->slug ];
         }
 
+        // Galleria foto
+        $galleria_ids  = get_post_meta( $id, '_annuncio_galleria', true );
+        $galleria_ids  = is_array( $galleria_ids ) ? $galleria_ids : [];
+        $galleria_urls = array_values( array_filter( array_map( fn( $aid ) => wp_get_attachment_url( $aid ) ?: null, $galleria_ids ) ) );
+
         $autore    = get_userdata( $post->post_author );
         $giorni    = (int) $get( '_annuncio_giorni_pubb' ) ?: WECOOP_ANNUNCI_FREE_DAYS;
         $scadenza  = $get( '_annuncio_data_scadenza' );
@@ -302,6 +476,7 @@ class WECOOP_Annuncio_REST_API {
             'titolo'            => $post->post_title,
             'descrizione'       => $full ? wp_strip_all_tags( $post->post_content ) : wp_trim_words( $post->post_content, 25 ),
             'immagine_url'      => $thumb_url,
+            'galleria_urls'     => $galleria_urls,
             'categorie'         => $cat_data,
             'tipo_evento'       => $get( '_annuncio_tipo_evento' ),
             'lingua'            => $get( '_annuncio_lingua' ),
@@ -340,6 +515,8 @@ class WECOOP_Annuncio_REST_API {
                 // Servizio
                 'disponibilita'    => $get( '_annuncio_disponibilita' ),
                 'tariffa'          => (float) $get( '_annuncio_tariffa' ),
+                // Galleria
+                'galleria_ids'     => $galleria_ids,
             ] );
         }
 
