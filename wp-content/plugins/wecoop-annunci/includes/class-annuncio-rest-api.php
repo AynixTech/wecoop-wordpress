@@ -443,11 +443,34 @@ class WECOOP_Annuncio_REST_API {
      * Helper interno: carica un file e crea un attachment WP.
      */
     private function _do_upload( array $file_data, int $post_id ) {
-        $allowed_mime = [ 'image/jpeg', 'image/png', 'image/webp' ];
-        $file_type    = $file_data['type'] ?? '';
+        $allowed_mime = [ 'image/jpeg', 'image/png', 'image/webp', 'image/jpg' ];
 
-        if ( ! in_array( $file_type, $allowed_mime, true ) ) {
-            return new WP_Error( 'invalid_type', 'Formato non supportato. Usa JPG, PNG o WebP.', [ 'status' => 415 ] );
+        // Detect MIME dal file reale se il tipo dichiarato è assente o non valido
+        $file_type = $file_data['type'] ?? '';
+        if ( $file_type === '' || ! in_array( $file_type, $allowed_mime, true ) ) {
+            if ( function_exists( 'mime_content_type' ) && ! empty( $file_data['tmp_name'] ) ) {
+                $detected = mime_content_type( $file_data['tmp_name'] );
+                if ( $detected !== false ) {
+                    $file_type = $detected;
+                }
+            }
+            // jpg non standard → normalizza
+            if ( $file_type === 'image/jpg' ) {
+                $file_type = 'image/jpeg';
+            }
+        }
+
+        $allowed_validated = [ 'image/jpeg', 'image/png', 'image/webp' ];
+        if ( ! in_array( $file_type, $allowed_validated, true ) ) {
+            return new WP_Error(
+                'invalid_type',
+                'Formato non supportato (' . esc_html( $file_type ) . '). Usa JPG, PNG o WebP.',
+                [ 'status' => 415 ]
+            );
+        }
+
+        // Correggi il tipo nel file_data per wp_handle_upload
+        $file_data['type'] = $file_type;
         }
 
         // Limite 5MB
