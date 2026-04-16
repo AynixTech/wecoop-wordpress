@@ -1,0 +1,36 @@
+/* WeCoop Annunci - Admin styles */
+
+#wecoop_annuncio_dettagli .inside,
+#wecoop_annuncio_datetime .inside,
+#wecoop_annuncio_specifici .inside,
+#wecoop_annuncio_contatti .inside,
+#wecoop_annuncio_pubblicazione .inside {
+    padding: 12px 16px;
+}
+
+#wecoop_annuncio_dettagli label strong,
+#wecoop_annuncio_datetime label strong,
+#wecoop_annuncio_specifici label strong,
+#wecoop_annuncio_contatti label strong,
+#wecoop_annuncio_pubblicazione label strong {
+    color: #1282A8;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+#wecoop_annuncio_specifici h4 {
+    padding: 8px 0 4px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 8px;
+}
+
+#wecoop_annuncio_specifici h4:first-child {
+    border-top: none;
+    margin-top: 0;
+}
+
+#wecoop_annuncio_pubblicazione .inside {
+    background: #f8fbfc;
+    border-radius: 4px;
+}
