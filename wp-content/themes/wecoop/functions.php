@@ -192,18 +192,37 @@ function wecoop_contact_form_shortcode() {
     $action = esc_url(admin_url('admin-post.php'));
     $nonce  = wp_create_nonce('wecoop_contact_nonce');
 
-    $label_name    = esc_html(translate_string('frontpage.contact.form.label_name',    'Nome completo'));
-    $label_email   = esc_html(translate_string('frontpage.contact.form.label_email',   'Email'));
-    $label_message = esc_html(translate_string('frontpage.contact.form.label_message', 'Messaggio'));
-    $btn_send      = esc_html(translate_string('frontpage.contact.form.btn_send',      'Invia'));
+    $label_name    = esc_html(translate_string('contact.form.label_name',    'Nome e cognome'));
+    $label_email   = esc_html(translate_string('contact.form.label_email',   'Email'));
+    $label_need    = esc_html(translate_string('contact.form.label_need',    'Di cosa hai bisogno?'));
+    $label_message = esc_html(translate_string('contact.form.label_message', 'Messaggio'));
+    $btn_send      = esc_html(translate_string('contact.form.btn_send',      'Invia messaggio'));
+    $microcopy     = esc_html(translate_string('contact.form.microcopy',     'Ti risponderemo il prima possibile.'));
+
+    $opt_servizi      = esc_html(translate_string('contact.form.need.servizi',      'Servizi'));
+    $opt_lavoro       = esc_html(translate_string('contact.form.need.lavoro',       'Lavoro'));
+    $opt_formazione   = esc_html(translate_string('contact.form.need.formazione',   'Formazione'));
+    $opt_collaborazione = esc_html(translate_string('contact.form.need.collaborazione', 'Collaborazione'));
+    $opt_altro        = esc_html(translate_string('contact.form.need.altro',        'Altro'));
+    $opt_placeholder  = esc_html(translate_string('contact.form.need.placeholder',  '— Seleziona —'));
 
     return '<form class="wecoop-contact-form" action="' . $action . '" method="post">'
         . '<input type="hidden" name="action" value="wecoop_contact_submit">'
         . '<input type="hidden" name="wecoop_contact_nonce" value="' . esc_attr($nonce) . '">'
         . '<label for="wc_name">' . $label_name . '</label><input id="wc_name" type="text" name="name" required>'
         . '<label for="wc_email">' . $label_email . '</label><input id="wc_email" type="email" name="email" required>'
+        . '<label for="wc_need">' . $label_need . '</label>'
+        . '<select id="wc_need" name="need">'
+        . '<option value="">' . $opt_placeholder . '</option>'
+        . '<option value="Servizi">' . $opt_servizi . '</option>'
+        . '<option value="Lavoro">' . $opt_lavoro . '</option>'
+        . '<option value="Formazione">' . $opt_formazione . '</option>'
+        . '<option value="Collaborazione">' . $opt_collaborazione . '</option>'
+        . '<option value="Altro">' . $opt_altro . '</option>'
+        . '</select>'
         . '<label for="wc_message">' . $label_message . '</label><textarea id="wc_message" name="message" rows="5" required></textarea>'
         . '<button type="submit">' . $btn_send . '</button>'
+        . '<p class="wecoop-form-microcopy">' . $microcopy . '</p>'
         . '</form>';
 }
 add_shortcode('wecoop_contact_form', 'wecoop_contact_form_shortcode');
@@ -213,8 +232,9 @@ function wecoop_handle_contact_form() {
         wp_die('Nonce non valido');
     }
 
-    $name = isset($_POST['name']) ? sanitize_text_field(wp_unslash($_POST['name'])) : '';
-    $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    $name    = isset($_POST['name'])    ? sanitize_text_field(wp_unslash($_POST['name']))    : '';
+    $email   = isset($_POST['email'])   ? sanitize_email(wp_unslash($_POST['email']))        : '';
+    $need    = isset($_POST['need'])    ? sanitize_text_field(wp_unslash($_POST['need']))    : '';
     $message = isset($_POST['message']) ? sanitize_textarea_field(wp_unslash($_POST['message'])) : '';
 
     if (empty($name) || !is_email($email) || empty($message)) {
@@ -222,8 +242,9 @@ function wecoop_handle_contact_form() {
         exit;
     }
 
-    $body = "Nome: {$name}\nEmail: {$email}\n\nMessaggio:\n{$message}";
-    wp_mail(get_option('admin_email'), 'Nuovo contatto dal sito WECOOP', $body);
+    $need_line = $need ? "\nRichiesta: {$need}" : '';
+    $body = "Nome: {$name}\nEmail: {$email}{$need_line}\n\nMessaggio:\n{$message}";
+    wp_mail('info@wecoop.org', 'Nuovo contatto dal sito WECOOP', $body);
 
     wp_safe_redirect(add_query_arg('contact', 'ok', wp_get_referer()));
     exit;
@@ -507,6 +528,24 @@ function wecoop_autocreate_pages(): void {
             'title'    => 'Contatti',
             'status'   => 'publish',
             'template' => 'page-contact.php',
+        ],
+        [
+            'slug'     => 'passaparola',
+            'title'    => 'Passaparola',
+            'status'   => 'publish',
+            'template' => 'page-passaparola.php',
+        ],
+        [
+            'slug'     => 'piattaforma',
+            'title'    => 'Piattaforma Digitale',
+            'status'   => 'publish',
+            'template' => 'page-piattaforma.php',
+        ],
+        [
+            'slug'     => 'impatto',
+            'title'    => 'Il Nostro Impatto Sociale',
+            'status'   => 'publish',
+            'template' => 'page-impatto.php',
         ],
     ];
 

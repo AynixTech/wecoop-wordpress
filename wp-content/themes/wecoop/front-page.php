@@ -126,35 +126,6 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         </div>
     </section>
 
-    <section id="servizi" class="ws-section ws-section--soft-blue">
-        <div class="ws-container">
-            <h2><?php echo esc_html($tr('frontpage.services.title', 'Servizi')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.services.lead', 'Supporto specializzato su fiscalita, mediazione e adempimenti per vivere e lavorare in Italia.')); ?></p>
-            <div class="ws-grid-4">
-                <article class="ws-card ws-card--blue">
-                    <span class="ws-icon ws-icon--blue" aria-hidden="true"><i class="fa-solid fa-house"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.service1.title', 'Vivere in Italia')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.service1.body', 'Supporto pratico per orientarti nella vita quotidiana e amministrativa in Italia.')); ?></p>
-                </article>
-                <article class="ws-card ws-card--green">
-                    <span class="ws-icon ws-icon--green" aria-hidden="true"><i class="fa-solid fa-handshake-angle"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.service2.title', 'Mediazione fiscale')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.service2.body', 'Mediazione e accompagnamento per comprendere procedure e comunicazioni fiscali.')); ?></p>
-                </article>
-                <article class="ws-card ws-card--pink">
-                    <span class="ws-icon ws-icon--pink" aria-hidden="true"><i class="fa-solid fa-receipt"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.service3.title', 'Supporto contabile per P.IVA forfettaria')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.service3.body', 'Supporto contabile dedicato a chi opera con partita IVA in regime forfettario.')); ?></p>
-                </article>
-                <article class="ws-card ws-card--lime">
-                    <span class="ws-icon ws-icon--lime" aria-hidden="true"><i class="fa-solid fa-circle-info"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.services.service4.title', 'Orientamenti e chiarimenti fiscali')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.services.service4.body', 'Orientamento e chiarimenti su dubbi fiscali ricorrenti e adempimenti principali.')); ?></p>
-                </article>
-            </div>
-        </div>
-    </section>
-
     <section id="come-funziona" class="ws-section ws-section--soft">
         <div class="ws-container">
             <h2><?php echo esc_html($tr('frontpage.how.title', 'Come funziona WECOOP')); ?></h2>
@@ -179,106 +150,6 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         </div>
     </section>
 
-    <section id="sistema-fisico-digitale" class="ws-section ws-section--soft">
-        <div class="ws-container">
-            <div class="cw-section-head">
-                <span class="cw-eyebrow"><?php echo esc_html($tr('frontpage.phygital.eyebrow', 'Come funziona')); ?></span>
-                <h2><?php echo esc_html($tr('frontpage.phygital.title', 'Un sistema fisico + digitale')); ?></h2>
-                <p class="ws-lead"><?php echo esc_html($tr('frontpage.phygital.lead', 'WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.')); ?></p>
-            </div>
-            <div class="ws-grid-2 ws-phygital-grid">
-                <article class="ws-phygital-card ws-phygital-card--physical">
-                    <span class="ws-phygital-card__icon" aria-hidden="true"><i class="fa-regular fa-building"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.phygital.physical.title', 'Sportello fisico')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.phygital.physical.lead', 'Un luogo dove puoi venire di persona per:')); ?></p>
-                    <ul class="ws-phygital-list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item1', 'Parlare con un operatore')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item2', 'Ricevere assistenza personalizzata')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.physical.item3', 'Gestire documenti e pratiche')); ?></li>
-                    </ul>
-                </article>
-                <article class="ws-phygital-card ws-phygital-card--digital">
-                    <span class="ws-phygital-card__icon" aria-hidden="true"><i class="fa-solid fa-mobile-screen-button"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.phygital.digital.title', 'Piattaforma digitale')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.phygital.digital.lead', 'Accedi ai servizi online quando vuoi:')); ?></p>
-                    <ul class="ws-phygital-list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item1', 'Prenota appuntamenti')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item2', 'Segui la tua formazione')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item3', 'Monitora il tuo percorso')); ?></li>
-                    </ul>
-                </article>
-            </div>
-            <div class="ws-section-cta">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/servizi/')); ?>">
-                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    <?php echo esc_html($tr('frontpage.phygital.cta', 'Scopri di più sui servizi')); ?>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <section id="servizi-modulari" class="ws-section">
-        <div class="ws-container">
-            <h2><?php echo esc_html($tr('frontpage.detailservices.title', 'I nostri servizi')); ?></h2>
-            <div class="ws-services-stack">
-                <article class="ws-service-band ws-service-band--blue">
-                    <h3><?php echo esc_html($tr('frontpage.detailservices.block1.title', 'Vivere in Italia')); ?></h3>
-                    <ul class="ws-service-band__list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item1', 'Permesso di soggiorno')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item2', 'Cittadinanza')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item3', 'Ricongiungimento familiare')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item4', 'Asilo politico')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block1.item5', 'Visto per turismo')); ?></li>
-                    </ul>
-                </article>
-
-                <article class="ws-service-band ws-service-band--green">
-                    <h3><?php echo esc_html($tr('frontpage.detailservices.block2.title', 'Servizi fiscali')); ?></h3>
-                    <ul class="ws-service-band__list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item1', 'Modello 730')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item2', 'Modello PF (ex Unico)')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item3', 'Dichiarazioni redditi')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item4', 'Tasse e contributi (IMU, TARI, ecc.)')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item5', 'Consulenza fiscale')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block2.item6', 'Chiarimenti personalizzati')); ?></li>
-                    </ul>
-                </article>
-
-                <article class="ws-service-band ws-service-band--pink">
-                    <h3><?php echo esc_html($tr('frontpage.detailservices.block3.title', 'Partita IVA e contabilita')); ?></h3>
-                    <ul class="ws-service-band__list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item1', 'Apertura Partita IVA (regime forfettario)')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item2', 'Gestione contabile')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item3', 'Fatturazione')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block3.item4', 'Chiusura o modifica attivita')); ?></li>
-                    </ul>
-                </article>
-
-                <article class="ws-service-band ws-service-band--lime">
-                    <h3><?php echo esc_html($tr('frontpage.detailservices.block4.title', 'Lavoro e orientamento')); ?></h3>
-                    <ul class="ws-service-band__list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item1', 'Creazione CV')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item2', 'Ricerca lavoro')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item3', 'Preparazione colloqui')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item4', 'Orientamento professionale')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block4.item5', 'Supporto candidature')); ?></li>
-                    </ul>
-                </article>
-
-                <article class="ws-service-band ws-service-band--blue">
-                    <h3><?php echo esc_html($tr('frontpage.detailservices.block5.title', 'Educazione finanziaria e accesso al credito')); ?></h3>
-                    <ul class="ws-service-band__list">
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item1', 'Educazione finanziaria di base')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item2', 'Supporto gestione del denaro')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item3', 'Orientamento al credito')); ?></li>
-                        <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.detailservices.block5.item4', 'Supporto accesso a finanziamenti')); ?></li>
-                    </ul>
-                </article>
-            </div>
-        </div>
-    </section>
-    
-
     <section id="passaparola" class="ws-section">
         <div class="ws-container">
             <div class="ws-grid-2 ws-pass">
@@ -296,6 +167,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <article class="ws-mini ws-mini--lime"><span class="ws-mini__icon" aria-hidden="true"><i class="fa-solid fa-chart-line"></i></span><h3><?php echo esc_html($tr('frontpage.passaparola.impact.title', 'Impacto')); ?></h3><p><?php echo esc_html($tr('frontpage.passaparola.impact.body', 'Inclusion social efectiva, autonomia personal y acceso real al mercado laboral.')); ?></p></article>
             </div>
             <div class="ws-actions" style="margin-top:18px;">
+                <a class="ws-btn ws-btn--secondary" href="<?php echo esc_url(home_url('/passaparola/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta1', 'Scopri Passaparola')); ?></a>
                 <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta2', 'Collabora con noi')); ?></a>
             </div>
         </div>
@@ -306,22 +178,33 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             <div class="ws-grid-2 ws-pass">
                 <div>
                     <img class="ws-logo-app" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="APP WECOOP">
-                    <h2><?php echo esc_html($tr('frontpage.platform.title', 'Plataforma Digital')); ?></h2>
-                    <p class="ws-lead"><?php echo esc_html($tr('frontpage.platform.lead', 'Desarrollada en colaboracion con nuestro partner tecnologico AYNIX, la plataforma APP WECOOP democratiza el acceso a servicios y oportunidades a traves de una solucion digital intuitiva y accesible.')); ?></p>
+                    <h2><?php echo esc_html($tr('frontpage.platform.title', 'Piattaforma Digitale WECOOP')); ?></h2>
+                    <p class="ws-lead"><?php echo esc_html($tr('frontpage.platform.lead', 'Gestisci servizi, appuntamenti e il tuo percorso direttamente online.')); ?></p>
+                    <p><?php echo esc_html($tr('frontpage.platform.intro', 'La piattaforma digitale di WECOOP ti permette di accedere ai servizi in modo semplice, veloce e guidato.')); ?></p>
                     <ul class="ws-checks">
-                        <li><?php echo esc_html($tr('frontpage.platform.check1', 'Registro y perfil personalizado')); ?></li>
-                        <li><?php echo esc_html($tr('frontpage.platform.check2', 'Reserva de citas con operadores')); ?></li>
-                        <li><?php echo esc_html($tr('frontpage.platform.check3', 'Acceso a formacion y recursos')); ?></li>
-                        <li><?php echo esc_html($tr('frontpage.platform.check4', 'Comunicacion directa y seguimiento')); ?></li>
+                        <li><?php echo esc_html($tr('frontpage.platform.check1', 'Crea il tuo profilo e accedi ai servizi')); ?></li>
+                        <li><?php echo esc_html($tr('frontpage.platform.check2', 'Prenota appuntamenti con gli operatori')); ?></li>
+                        <li><?php echo esc_html($tr('frontpage.platform.check3', 'Accedi a contenuti e percorsi formativi')); ?></li>
+                        <li><?php echo esc_html($tr('frontpage.platform.check4', 'Comunica con noi e segui il tuo percorso')); ?></li>
                     </ul>
                     <div class="ws-actions" style="margin-top:14px;">
-                        <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/wecoop-app/')); ?>"><?php echo esc_html($tr('frontpage.platform.cta1', 'Registrati alla piattaforma')); ?></a>
+                        <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/piattaforma/')); ?>">
+                            <?php echo esc_html($tr('frontpage.platform.cta1', 'Registrati alla piattaforma')); ?>
+                        </a>
+                    </div>
+                    <div class="ws-store-badges" style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <a href="https://play.google.com/store/apps/details?id=com.wecoop.app" target="_blank" rel="noopener noreferrer" aria-label="Scarica su Google Play">
+                            <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/badges/playstore.svg'); ?>" alt="Google Play" style="height:40px;">
+                        </a>
+                        <a href="https://apps.apple.com/app/wecoop/id0000000000" target="_blank" rel="noopener noreferrer" aria-label="Scarica su App Store">
+                            <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/badges/appstpre.png'); ?>" alt="App Store" style="height:40px;">
+                        </a>
                     </div>
                 </div>
                 <div class="ws-grid-2 ws-media-grid">
-                    <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_person_navigating_a_mobile_app_for_booking_appointments_and_accessing_services,_finge_122886.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image1_alt', 'App movil')); ?>">
-                    <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_person_using_a_smartphone_and_laptop_to_access_online_services_platform,_clean_modern_536372_(1).png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image2_alt', 'Plataforma digital')); ?>">
-                    <img class="ws-img ws-img--wide" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_social_worker_managing_appointments_and_digital_services_on_a_laptop_while_talking_wi_122886.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image3_alt', 'Gestion de servicios')); ?>">
+                    <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_person_navigating_a_mobile_app_for_booking_appointments_and_accessing_services,_finge_122886.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image1_alt', 'App mobile WECOOP')); ?>">
+                    <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_person_using_a_smartphone_and_laptop_to_access_online_services_platform,_clean_modern_536372_(1).png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image2_alt', 'Piattaforma digitale')); ?>">
+                    <img class="ws-img ws-img--wide" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_social_worker_managing_appointments_and_digital_services_on_a_laptop_while_talking_wi_122886.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.platform.image3_alt', 'Gestione servizi')); ?>">
                 </div>
             </div>
         </div>
@@ -329,16 +212,17 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
 
     <section id="impacto" class="ws-section">
         <div class="ws-container">
-            <h2><?php echo esc_html($tr('frontpage.impact.title', 'Nuestro Impacto Social')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.impact.lead', 'Resultados medibles de un modelo que transforma vidas y genera oportunidades reales.')); ?></p>
+            <h2><?php echo esc_html($tr('frontpage.impact.title', 'Il nostro impatto sociale')); ?></h2>
+            <p class="ws-lead"><?php echo esc_html($tr('frontpage.impact.lead', 'Risultati concreti che migliorano la vita delle persone.')); ?></p>
+            <p><?php echo esc_html($tr('frontpage.impact.human', 'Dietro ogni numero c\'è una persona accompagnata nel suo percorso.')); ?></p>
             <div class="ws-grid-4">
-                <article class="ws-stat ws-stat--users"><i class="fa-solid fa-users ws-stat__icon" aria-hidden="true"></i><strong>400+</strong><span><?php echo esc_html($tr('frontpage.impact.stat1', 'Beneficiarios')); ?></span></article>
-                <article class="ws-stat ws-stat--learn"><i class="fa-solid fa-graduation-cap ws-stat__icon" aria-hidden="true"></i><strong>150+</strong><span><?php echo esc_html($tr('frontpage.impact.stat2', 'Recorridos Formativos')); ?></span></article>
-                <article class="ws-stat ws-stat--work"><i class="fa-solid fa-briefcase ws-stat__icon" aria-hidden="true"></i><strong>80+</strong><span><?php echo esc_html($tr('frontpage.impact.stat3', 'Inserciones Laborales')); ?></span></article>
-                <article class="ws-stat ws-stat--app"><i class="fa-solid fa-mobile-screen-button ws-stat__icon" aria-hidden="true"></i><strong>300+</strong><span><?php echo esc_html($tr('frontpage.impact.stat4', 'Usuarios Plataforma')); ?></span></article>
+                <article class="ws-stat ws-stat--users"><i class="fa-solid fa-users ws-stat__icon" aria-hidden="true"></i><strong>400+</strong><span><?php echo esc_html($tr('frontpage.impact.stat1', 'Persone supportate')); ?></span></article>
+                <article class="ws-stat ws-stat--learn"><i class="fa-solid fa-graduation-cap ws-stat__icon" aria-hidden="true"></i><strong>150+</strong><span><?php echo esc_html($tr('frontpage.impact.stat2', 'Percorsi di formazione attivati')); ?></span></article>
+                <article class="ws-stat ws-stat--work"><i class="fa-solid fa-briefcase ws-stat__icon" aria-hidden="true"></i><strong>80+</strong><span><?php echo esc_html($tr('frontpage.impact.stat3', 'Persone inserite nel lavoro')); ?></span></article>
+                <article class="ws-stat ws-stat--app"><i class="fa-solid fa-mobile-screen-button ws-stat__icon" aria-hidden="true"></i><strong>300+</strong><span><?php echo esc_html($tr('frontpage.impact.stat4', 'Utenti attivi sulla piattaforma')); ?></span></article>
             </div>
             <div class="ws-actions" style="margin-top:18px;">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta1', 'Scopri come partecipare')); ?></a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/impatto/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta1', 'Scopri il nostro impatto')); ?></a>
                 <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta2', 'Collabora con noi')); ?></a>
             </div>
         </div>
@@ -387,41 +271,57 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
     <section id="colabora" class="ws-section ws-section--cta">
         <div class="ws-container ws-grid-2 ws-pass">
             <div>
-                <h2><?php echo esc_html($tr('frontpage.collab.title', 'Colabora con WECOOP')); ?></h2>
-                <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('frontpage.collab.lead', 'Unete a nuestra red de partners y contribuye a crear oportunidades de inclusion social y laboral.')); ?></p>
-                <div class="ws-grid-2">
-                    <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card1.title', 'Instituciones Publicas')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card1.body', 'Alianzas estrategicas para ampliar el impacto')); ?></p></article>
-                    <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card2.title', 'Empresas')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card2.body', 'Oportunidades de empleo y RSC')); ?></p></article>
-                    <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card3.title', 'Fundaciones')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card3.body', 'Apoyo a proyectos de inclusion')); ?></p></article>
-                    <article class="ws-glass"><h3><?php echo esc_html($tr('frontpage.collab.card4.title', 'Voluntarios')); ?></h3><p><?php echo esc_html($tr('frontpage.collab.card4.body', 'Comparte tu tiempo y talento')); ?></p></article>
+                <h2><?php echo esc_html($tr('frontpage.collab.title', 'Collabora con WECOOP')); ?></h2>
+                <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('frontpage.collab.lead', 'Costruiamo insieme progetti concreti di inclusione e sviluppo sul territorio.')); ?></p>
+                <p class="ws-lead ws-lead--light" style="font-size:.9rem; opacity:.8;"><?php echo esc_html($tr('frontpage.collab.sublead', 'WECOOP è una piattaforma aperta a partner pubblici e privati.')); ?></p>
+                <div class="ws-grid-2" style="margin-top:16px;">
+                    <article class="ws-glass">
+                        <h3><?php echo esc_html($tr('frontpage.collab.card1.title', 'Istituzioni Pubbliche')); ?></h3>
+                        <p><?php echo esc_html($tr('frontpage.collab.card1.body', 'Sviluppiamo progetti di inclusione sociale e accesso ai servizi sul territorio')); ?></p>
+                    </article>
+                    <article class="ws-glass">
+                        <h3><?php echo esc_html($tr('frontpage.collab.card2.title', 'Imprese')); ?></h3>
+                        <p><?php echo esc_html($tr('frontpage.collab.card2.body', 'Creiamo opportunità di lavoro e progetti di responsabilità sociale')); ?></p>
+                    </article>
+                    <article class="ws-glass">
+                        <h3><?php echo esc_html($tr('frontpage.collab.card3.title', 'Fondazioni')); ?></h3>
+                        <p><?php echo esc_html($tr('frontpage.collab.card3.body', 'Sviluppiamo progetti ad alto impatto sociale e misurabile')); ?></p>
+                    </article>
+                    <article class="ws-glass">
+                        <h3><?php echo esc_html($tr('frontpage.collab.card4.title', 'Volontari')); ?></h3>
+                        <p><?php echo esc_html($tr('frontpage.collab.card4.body', 'Contribuisci attivamente ai progetti WECOOP sul territorio')); ?></p>
+                    </article>
                 </div>
-                <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('frontpage.final.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></p>
+                <div class="ws-actions" style="margin-top:20px;">
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                        <?php echo esc_html($tr('frontpage.collab.cta1', 'Collabora con noi')); ?>
+                    </a>
+                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/contatti/')); ?>">
+                        <?php echo esc_html($tr('frontpage.collab.cta2', 'Contattaci')); ?>
+                    </a>
+                </div>
             </div>
-            <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_inspiring_realistic_photo_of_diverse_people_walking_together_in_an_urban_european_env_725555-3.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.collab.image_alt', 'Colaboracion')); ?>">
+            <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_inspiring_realistic_photo_of_diverse_people_walking_together_in_an_urban_european_env_725555-3.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.collab.image_alt', 'Collaborazione WECOOP')); ?>">
         </div>
     </section>
 
-    <section id="contacto" class="ws-section">
-        <div class="ws-container ws-grid-2 ws-pass">
-            <div>
-                <h2><?php echo esc_html($tr('frontpage.contact.title', 'Contattaci')); ?></h2>
-                <p class="ws-lead"><?php echo esc_html($tr('frontpage.contact.lead', 'Siamo qui per aiutarti. Parlaci e ti guideremo.')); ?></p>
-                <div class="ws-actions" style="margin-bottom:12px;">
-                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('frontpage.contact.cta1', 'Scrivici su WhatsApp')); ?></a>
-                    <a class="ws-btn ws-btn--ghost" href="tel:+3902XXXXXXX"><?php echo esc_html($tr('frontpage.contact.cta2', 'Chiama ora')); ?></a>
-                </div>
-                <p class="ws-kpi"><?php echo esc_html($tr('frontpage.contact.microcopy', 'Ti rispondiamo rapidamente')); ?></p>
-                <ul class="ws-contact-list">
-                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_address', 'Dove siamo')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano')); ?></span></li>
-                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_hours', 'Orari')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_hours', 'Lunedi - Venerdi')); ?></span></li>
-                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_email', 'Email')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.org')); ?></span></li>
-                    <li><strong><?php echo esc_html($tr('frontpage.contact.label_phone', 'Telefono')); ?></strong><span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span></li>
-                </ul>
+    <section id="contacto" class="ws-section ws-section--cta">
+        <div class="ws-container" style="text-align:center; max-width:640px;">
+            <h2><?php echo esc_html($tr('frontpage.contact.title', 'Hai bisogno di supporto?')); ?></h2>
+            <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('frontpage.contact.lead', 'Ti aiutiamo a capire cosa fare e da dove iniziare, passo dopo passo.')); ?></p>
+            <div class="ws-actions" style="justify-content:center; margin-top:20px;">
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                    <?php echo esc_html($tr('frontpage.contact.cta1', 'Scrivici su WhatsApp')); ?>
+                </a>
+                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/contatti/')); ?>">
+                    <?php echo esc_html($tr('frontpage.contact.cta2', 'Contattaci')); ?>
+                </a>
             </div>
-            <div class="ws-form-shell">
-                <h3><?php echo esc_html($tr('frontpage.contact.form_title', 'Oppure scrivici')); ?></h3>
-                <?php echo do_shortcode('[wecoop_contact_form]'); ?>
-            </div>
+            <p class="ws-microcopy" style="margin-top:14px; opacity:.85;">
+                <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                <?php echo esc_html($tr('frontpage.contact.microcopy', 'Ti rispondiamo rapidamente e ti guidiamo nel primo passo.')); ?>
+            </p>
         </div>
     </section>
 
