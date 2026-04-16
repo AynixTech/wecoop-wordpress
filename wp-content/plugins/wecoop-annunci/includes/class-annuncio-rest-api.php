@@ -85,6 +85,13 @@ class WECOOP_Annuncio_REST_API {
             'callback'            => [ $this, 'delete_foto' ],
             'permission_callback' => [ $this, 'check_owner_or_admin' ],
         ] );
+
+        // POST migliora descrizione con AI (autenticato)
+        register_rest_route( $ns, '/annunci/improve-description', [
+            'methods'             => WP_REST_Server::CREATABLE,
+            'callback'            => [ $this, 'improve_description' ],
+            'permission_callback' => [ $this, 'check_auth' ],
+        ] );
     }
 
     // -------------------------------------------------------------------------
@@ -522,5 +529,125 @@ class WECOOP_Annuncio_REST_API {
         }
 
         return $data;
+    }
+
+    // -------------------------------------------------------------------------
+    // AI: migliora descrizione annuncio
+    // -------------------------------------------------------------------------
+
+    public function improve_description( $request ) {
+        $payload = $request->get_json_params();
+        if ( ! is_array( $payload ) ) {
+            $payload = $request->get_params();
+        }
+
+        $titolo      = sanitize_text_field( (string) ( $payload['titolo'] ?? '' ) );
+        $citta       = sanitize_text_field( (string) ( $payload['citta'] ?? '' ) );
+        $categoria   = sanitize_text_field( (string) ( $payload['categoria'] ?? '' ) );
+        $descrizione = sanitize_textarea_field( (string) ( $payload['descrizione'] ?? '' ) );
+
+        if ( strlen( $descrizione ) < 12 ) {
+            return new WP_Error( 'short_description', 'Inserisci almeno 12 caratteri di descrizione per usare l\'AI.', [ 'status' => 400 ] );
+        }
+
+        $api_key = defined( 'OPENAI_API_KEY' ) ? OPENAI_API_KEY : (string) get_option( 'wecoop_openai_api_key', '' );
+        if ( $api_key === '' ) {
+            return new WP_REST_Response( [
+                'success' => true,
+                'data'    => [
+                    'ai_description' => $this->_fallback_description( $titolo, $citta, $categoria, $descrizione ),
+                    'source'         => 'template_fallback',
+                ],
+            ], 200 );
+        }
+
+        $result = $this->_openai_improve( $api_key, $titolo, $citta, $categoria, $descrizione );
+
+        if ( is_wp_error( $result ) ) {
+            return new WP_REST_Response( [
+                'success' => true,
+                'data'    => [
+                    'ai_description' => $this->_fallback_description( $titolo, $citta, $categoria, $descrizione ),
+                    'source'         => 'template_fallback',
+                    'note'           => 'Fallback: ' . $result->get_error_message(),
+                ],
+            ], 200 );
+        }
+
+        return new WP_REST_Response( [
+            'success' => true,
+            'data'    => [
+                'ai_description' => $result,
+                'source'         => 'openai',
+            ],
+        ], 200 );
+    }
+
+    private function _openai_improve( string $api_key, string $titolo, string $citta, string $categoria, string $descrizione ) {
+        $model = apply_filters( 'wecoop_annunci_openai_model', 'gpt-4o-mini' );
+
+        $messages = [
+            [
+                'role'    => 'system',
+                'content' => 'Sei un assistente editoriale per annunci locali (eventi, concerti, ristoranti, servizi). Scrivi testi chiari, vivaci e coinvolgenti. Restituisci solo JSON valido.',
+            ],
+            [
+                'role'    => 'user',
+                'content' => "Migliora questa bozza di annuncio locale mantenendo tutti i dati reali.\n"
+                    . "Titolo: $titolo\n"
+                    . "Città: $citta\n"
+                    . "Categoria: $categoria\n"
+                    . "Testo originale: $descrizione\n"
+                    . "Regole: massimo 1200 caratteri, frasi brevi e coinvolgenti, includi luogo/città se disponibile, orari/date se presenti, come partecipare o contattare. Non inventare dati assenti.\n"
+                    . 'Rispondi solo con JSON: {"ai_description":"testo migliorato"}',
+            ],
+        ];
+
+        $response = wp_remote_post( 'https://api.openai.com/v1/chat/completions', [
+            'timeout' => 25,
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type'  => 'application/json',
+            ],
+            'body'    => wp_json_encode( [
+                'model'           => $model,
+                'temperature'     => 0.25,
+                'response_format' => [ 'type' => 'json_object' ],
+                'messages'        => $messages,
+            ] ),
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            return $response;
+        }
+
+        $status  = (int) wp_remote_retrieve_response_code( $response );
+        $body    = wp_remote_retrieve_body( $response );
+        $decoded = json_decode( $body, true );
+
+        if ( $status < 200 || $status >= 300 || ! is_array( $decoded ) ) {
+            return new WP_Error( 'openai_http_error', 'Errore chiamata OpenAI: HTTP ' . $status );
+        }
+
+        $content = (string) ( $decoded['choices'][0]['message']['content'] ?? '' );
+        $parsed  = json_decode( $content, true );
+        if ( ! is_array( $parsed ) ) {
+            return new WP_Error( 'openai_parse_error', 'Risposta AI non leggibile' );
+        }
+
+        $text = trim( (string) ( $parsed['ai_description'] ?? '' ) );
+        if ( $text === '' ) {
+            return new WP_Error( 'openai_empty', 'Descrizione AI vuota' );
+        }
+
+        return preg_replace( '/\s+/', ' ', $text ) ?: $text;
+    }
+
+    private function _fallback_description( string $titolo, string $citta, string $categoria, string $descrizione ): string {
+        $intro    = trim( $titolo ) !== '' ? $titolo . '.' : 'Annuncio locale.';
+        $location = trim( $citta ) !== '' ? ' Luogo: ' . $citta . '.' : '';
+        $cat      = trim( $categoria ) !== '' ? ' Categoria: ' . $categoria . '.' : '';
+        $clean    = preg_replace( '/\s+/', ' ', trim( $descrizione ) );
+        return trim( $intro . ' ' . $clean . $location . $cat );
     }
 }
