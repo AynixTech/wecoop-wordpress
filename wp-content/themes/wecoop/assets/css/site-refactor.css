@@ -1759,8 +1759,8 @@ body.home {
 }
 
 .ws-footer-bottom {
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 20px;
+    border-top: none;
+    margin-top: 0;
     padding-top: 16px;
     display: flex;
     justify-content: space-between;
@@ -1775,14 +1775,134 @@ body.home {
     gap: 14px;
 }
 
-.ws-footer-brands img:first-child {
-    max-height: 56px;
+.ws-footer-brands__label {
+    display: block;
+    font-size: .75rem;
+    opacity: .6;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-right: 4px;
+}
+
+.ws-footer-brands img:nth-child(2) {
+    max-height: 32px;
     filter: brightness(0) invert(1);
 }
 
 .ws-footer-brands img:last-child {
     max-height: 36px;
     opacity: 0.78;
+}
+
+/* ── FOOTER NEW ELEMENTS ─────────────────────────── */
+.ws-footer-cols {
+    padding-bottom: 32px;
+}
+
+.ws-footer-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.ws-footer-col nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ws-footer-desc {
+    font-size: .88rem;
+    line-height: 1.6;
+    opacity: .78;
+    margin-top: 8px;
+}
+
+.ws-footer-contact-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ws-footer-contact-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: .9rem;
+    color: rgba(255,255,255,.78);
+    margin: 0;
+}
+
+.ws-footer-contact-list i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    opacity: .75;
+}
+
+.ws-footer-contact-list a {
+    display: inline;
+    margin: 0;
+}
+
+.ws-footer-cta {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 8px 0 28px;
+}
+
+.ws-footer-cta__text {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #fff;
+    margin: 0;
+    flex: 1 1 200px;
+    display: block;
+}
+
+.ws-footer-cta__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.ws-footer-cta__microcopy {
+    width: 100%;
+    font-size: .8rem;
+    opacity: .6;
+    margin: 0;
+    padding-top: 4px;
+    display: block;
+}
+
+/* Ghost button override for dark footer background */
+.ws-footer-cta .ws-btn--ghost {
+    background: transparent;
+    color: #fff;
+    border-color: rgba(255,255,255,.6);
+}
+.ws-footer-cta .ws-btn--ghost:hover {
+    background: rgba(255,255,255,.12);
+    border-color: #fff;
+}
+
+.ws-footer-divider {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,.15);
+    margin: 0 0 16px;
+}
+
+.ws-btn--sm {
+    padding: 8px 18px;
+    font-size: .85rem;
 }
 
 @media (max-width: 1024px) {
