@@ -459,7 +459,7 @@ class WECOOP_Annuncio_REST_API {
 
         $thumb_url = '';
         if ( has_post_thumbnail( $id ) ) {
-            $thumb_url = get_the_post_thumbnail_url( $id, 'large' );
+            $thumb_url = (string) ( get_the_post_thumbnail_url( $id, 'large' ) ?: get_the_post_thumbnail_url( $id, 'full' ) ?: '' );
         }
 
         $categorie = wp_get_post_terms( $id, 'categoria_annuncio', [ 'fields' => 'all' ] );
