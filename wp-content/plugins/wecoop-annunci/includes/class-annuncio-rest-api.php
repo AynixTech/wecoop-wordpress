@@ -360,11 +360,16 @@ class WECOOP_Annuncio_REST_API {
 
         set_post_thumbnail( $post_id, $attachment_id );
 
+        $url = get_the_post_thumbnail_url( $post_id, 'large' )
+            ?: get_the_post_thumbnail_url( $post_id, 'full' )
+            ?: wp_get_attachment_url( $attachment_id )
+            ?: '';
+
         return rest_ensure_response( [
             'success'        => true,
             'attachment_id'  => $attachment_id,
             'url'            => wp_get_attachment_url( $attachment_id ),
-            'thumbnail_url'  => get_the_post_thumbnail_url( $post_id, 'large' ),
+            'thumbnail_url'  => $url,
         ] );
     }
 
@@ -479,7 +484,13 @@ class WECOOP_Annuncio_REST_API {
 
         $thumb_url = '';
         if ( has_post_thumbnail( $id ) ) {
-            $thumb_url = (string) ( get_the_post_thumbnail_url( $id, 'large' ) ?: get_the_post_thumbnail_url( $id, 'full' ) ?: '' );
+            $thumb_id  = (int) get_post_thumbnail_id( $id );
+            $thumb_url = (string) (
+                get_the_post_thumbnail_url( $id, 'large' )
+                ?: get_the_post_thumbnail_url( $id, 'full' )
+                ?: ( $thumb_id > 0 ? wp_get_attachment_url( $thumb_id ) : '' )
+                ?: ''
+            );
         }
 
         $categorie = wp_get_post_terms( $id, 'categoria_annuncio', [ 'fields' => 'all' ] );
