@@ -72,7 +72,7 @@ function wecoop_register_block_patterns() {
         register_block_pattern('wecoop/cta-collabora', [
             'title' => __('CTA Collaborate', 'wecoop'),
             'categories' => ['wecoop-sections'],
-            'content' => "<!-- wp:group {\"className\":\"wecoop-cta\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group wecoop-cta\"><!-- wp:heading {\"level\":3} --><h3>Build local impact together</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Contact WECOOP to activate new collaborations with institutions, organizations, and businesses.</p><!-- /wp:paragraph --><!-- wp:buttons --><div class=\"wp-block-buttons\"><!-- wp:button {\"className\":\"is-style-fill\"} --><div class=\"wp-block-button is-style-fill\"><a class=\"wp-block-button__link wp-element-button\" href=\"/contact\">Contact us</a></div><!-- /wp:button --><!-- wp:button {\"className\":\"is-style-outline\"} --><div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link wp-element-button\" href=\"/collaborate-with-us\">Collaborate</a></div><!-- /wp:button --></div><!-- /wp:buttons --></div>\n<!-- /wp:group -->",
+            'content' => "<!-- wp:group {\"className\":\"ws-cta-box\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group ws-cta-box\"><!-- wp:heading {\"level\":3} --><h3>Build local impact together</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Contact WECOOP to activate new collaborations with institutions, organizations, and businesses.</p><!-- /wp:paragraph --><!-- wp:buttons --><div class=\"wp-block-buttons\"><!-- wp:button {\"className\":\"is-style-fill\"} --><div class=\"wp-block-button is-style-fill\"><a class=\"wp-block-button__link wp-element-button\" href=\"/contact\">Contact us</a></div><!-- /wp:button --><!-- wp:button {\"className\":\"is-style-outline\"} --><div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link wp-element-button\" href=\"/collaborate-with-us\">Collaborate</a></div><!-- /wp:button --></div><!-- /wp:buttons --></div>\n<!-- /wp:group -->",
         ]);
     }
 }
@@ -80,7 +80,7 @@ add_action('init', 'wecoop_register_block_patterns');
 
 function wecoop_language() {
     $lang = isset($_GET['lang']) ? sanitize_key($_GET['lang']) : (isset($_COOKIE['site_lang']) ? sanitize_key($_COOKIE['site_lang']) : 'it');
-    if (!in_array($lang, ['it', 'es', 'en'], true)) {
+    if (!in_array($lang, ['it', 'es', 'en', 'ar', 'zh'], true)) {
         $lang = 'it';
     }
     return $lang;
@@ -141,7 +141,7 @@ function wecoop_t($es, $it = '', $en = '') {
 }
 
 function wecoop_save_language_cookie() {
-    if (isset($_GET['lang']) && in_array($_GET['lang'], ['it', 'es', 'en'], true)) {
+    if (isset($_GET['lang']) && in_array($_GET['lang'], ['it', 'es', 'en', 'ar', 'zh'], true)) {
         setcookie('site_lang', sanitize_key($_GET['lang']), time() + YEAR_IN_SECONDS, COOKIEPATH ?: '/', COOKIE_DOMAIN, is_ssl(), true);
     }
 }
@@ -190,15 +190,20 @@ add_action('admin_post_wecoop_newsletter_submit', 'wecoop_handle_newsletter');
 
 function wecoop_contact_form_shortcode() {
     $action = esc_url(admin_url('admin-post.php'));
-    $nonce = wp_create_nonce('wecoop_contact_nonce');
+    $nonce  = wp_create_nonce('wecoop_contact_nonce');
+
+    $label_name    = esc_html(translate_string('frontpage.contact.form.label_name',    'Nome completo'));
+    $label_email   = esc_html(translate_string('frontpage.contact.form.label_email',   'Email'));
+    $label_message = esc_html(translate_string('frontpage.contact.form.label_message', 'Messaggio'));
+    $btn_send      = esc_html(translate_string('frontpage.contact.form.btn_send',      'Invia'));
 
     return '<form class="wecoop-contact-form" action="' . $action . '" method="post">'
         . '<input type="hidden" name="action" value="wecoop_contact_submit">'
         . '<input type="hidden" name="wecoop_contact_nonce" value="' . esc_attr($nonce) . '">'
-        . '<label for="wc_name">Full name</label><input id="wc_name" type="text" name="name" required>'
-        . '<label for="wc_email">Email</label><input id="wc_email" type="email" name="email" required>'
-        . '<label for="wc_message">Message</label><textarea id="wc_message" name="message" rows="5" required></textarea>'
-        . '<button type="submit">Send</button>'
+        . '<label for="wc_name">' . $label_name . '</label><input id="wc_name" type="text" name="name" required>'
+        . '<label for="wc_email">' . $label_email . '</label><input id="wc_email" type="email" name="email" required>'
+        . '<label for="wc_message">' . $label_message . '</label><textarea id="wc_message" name="message" rows="5" required></textarea>'
+        . '<button type="submit">' . $btn_send . '</button>'
         . '</form>';
 }
 add_shortcode('wecoop_contact_form', 'wecoop_contact_form_shortcode');
@@ -227,16 +232,16 @@ add_action('admin_post_nopriv_wecoop_contact_submit', 'wecoop_handle_contact_for
 add_action('admin_post_wecoop_contact_submit', 'wecoop_handle_contact_form');
 
 function wecoop_default_home_content() {
-    return '<section class="wecoop-section hero"><h1>WECOOP: access to services, education, and work in network</h1><p>A model that combines physical local presence with a digital platform to generate real opportunities.</p><a class="wecoop-btn" href="/contact">Contact us</a></section>'
-        . '<section class="wecoop-section"><h2>The problem</h2><p>Many people struggle to access services, guidance, and opportunities due to language, digital, and network barriers.</p></section>'
-        . '<section class="wecoop-section"><h2>The solution: The WECOOP model</h2><p>A local access point + WECOOP App + partner network supporting people, families, and organizations.</p></section>'
-        . '<section class="wecoop-section"><h2>How it works: Physical + Digital</h2><ul><li>Listening and guidance in person.</li><li>Digital platform for requests and tracking.</li><li>Active collaboration with local partners.</li></ul></section>'
-        . '<section class="wecoop-section"><h2>Intervention areas</h2><p>Services, training, work inclusion, administrative support, and mediation.</p></section>'
-        . '<section class="wecoop-section"><h2>PASSAPAROLA Project</h2><p>Community activation project connecting people, institutions, and local resources.</p><a class="wecoop-btn wecoop-btn-outline" href="/passaparola-project">View project</a></section>'
-        . '<section class="wecoop-section"><h2>Digital platform - WECOOP App</h2><p>Digital experience to manage requests, documents, payments, and service tracking.</p><a class="wecoop-btn wecoop-btn-outline" href="/wecoop-app">Discover the app</a></section>'
-        . '<section class="wecoop-section"><h2>Social impact</h2><p>Measurable results in service access, employability, and community connection.</p><a class="wecoop-btn wecoop-btn-outline" href="/social-impact">View impact</a></section>'
-        . '<section class="wecoop-section"><h2>Partners</h2><p>WECOOP works in network with social entities, companies, schools, and institutions.</p><a class="wecoop-btn wecoop-btn-outline" href="/partners">Meet our partners</a></section>'
-        . '<section class="wecoop-section wecoop-cta"><h2>Collaborate with WECOOP</h2><p>If you are an institution or an interested individual, we can build a joint project together.</p><p><a class="wecoop-btn" href="/contact">Contact us</a> <a class="wecoop-btn wecoop-btn-outline" href="/collaborate-with-us">Collaborate</a></p></section>';
+    return '<section class="ws-inner-hero"><h1>WECOOP: access to services, education, and work in network</h1><p>A model that combines physical local presence with a digital platform to generate real opportunities.</p><a class="ws-btn ws-btn--primary" href="/contact">Contact us</a></section>'
+        . '<section class="ws-content-section"><h2>The problem</h2><p>Many people struggle to access services, guidance, and opportunities due to language, digital, and network barriers.</p></section>'
+        . '<section class="ws-content-section"><h2>The solution: The WECOOP model</h2><p>A local access point + WECOOP App + partner network supporting people, families, and organizations.</p></section>'
+        . '<section class="ws-content-section"><h2>How it works: Physical + Digital</h2><ul><li>Listening and guidance in person.</li><li>Digital platform for requests and tracking.</li><li>Active collaboration with local partners.</li></ul></section>'
+        . '<section class="ws-content-section"><h2>Intervention areas</h2><p>Services, training, work inclusion, administrative support, and mediation.</p></section>'
+        . '<section class="ws-content-section"><h2>PASSAPAROLA Project</h2><p>Community activation project connecting people, institutions, and local resources.</p><a class="ws-btn ws-btn--ghost" href="/passaparola-project">View project</a></section>'
+        . '<section class="ws-content-section"><h2>Digital platform - WECOOP App</h2><p>Digital experience to manage requests, documents, payments, and service tracking.</p><a class="ws-btn ws-btn--ghost" href="/wecoop-app">Discover the app</a></section>'
+        . '<section class="ws-content-section"><h2>Social impact</h2><p>Measurable results in service access, employability, and community connection.</p><a class="ws-btn ws-btn--ghost" href="/social-impact">View impact</a></section>'
+        . '<section class="ws-content-section"><h2>Partners</h2><p>WECOOP works in network with social entities, companies, schools, and institutions.</p><a class="ws-btn ws-btn--ghost" href="/partners">Meet our partners</a></section>'
+        . '<section class="ws-cta-box"><h2>Collaborate with WECOOP</h2><p>If you are an institution or an interested individual, we can build a joint project together.</p><p><a class="ws-btn ws-btn--light" href="/contact">Contact us</a> <a class="ws-btn ws-btn--ghost" href="/collaborate-with-us">Collaborate</a></p></section>';
 }
 
 function wecoop_seed_pages_and_menu() {
@@ -418,44 +423,8 @@ function wecoop_ws_page_shell_start($aria_label = '') {
     $tr = static function($key, $default = '') {
         return translate_string($key, $default);
     };
-
-    $current_lang = wecoop_language();
-    $lang_base_url = remove_query_arg('lang');
     ?>
-    <style>
-        body.page .wecoop-header,
-        body.page .wecoop-footer {
-            display: none !important;
-        }
-
-        body.page .wecoop-site-content {
-            min-height: 0;
-        }
-    </style>
-
     <main class="ws-site" aria-label="<?php echo esc_attr($aria_label !== '' ? $aria_label : $tr('page.aria.default', 'WECOOP page')); ?>">
-        <nav class="ws-nav">
-            <div class="ws-container ws-nav__inner">
-                <a class="ws-brand" href="<?php echo esc_url(home_url('/')); ?>#inicio">
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
-                </a>
-                <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
-                    <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.nav.about', 'Cos\'e WECOOP')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#servizi"><?php echo esc_html($tr('frontpage.nav.services', 'Servizi')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', 'Come funziona')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', 'Piattaforma Digitale')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.nav.impact', 'Impatto')); ?></a>
-                    <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.nav.contact', 'Contatti')); ?></a>
-                </div>
-                <div class="ws-lang-switcher" aria-label="Language switcher">
-                    <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
-                    <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
-                    <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
-                </div>
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
-            </div>
-        </nav>
     <?php
 }
 
@@ -463,50 +432,43 @@ function wecoop_ws_page_shell_end() {
     $tr = static function($key, $default = '') {
         return translate_string($key, $default);
     };
+    $modal_current_lang = wecoop_language();
+    $modal_base_url = remove_query_arg('lang');
+    $modal_langs = [
+        'it' => ['label' => 'Italiano', 'flag' => '🇮🇹'],
+        'en' => ['label' => 'English',  'flag' => '🇬🇧'],
+        'es' => ['label' => 'Español',  'flag' => '🇪🇸'],
+        'ar' => ['label' => 'العربية',  'flag' => '🇸🇦'],
+        'zh' => ['label' => '中文',      'flag' => '🇨🇳'],
+    ];
     ?>
-        <footer class="ws-footer">
-            <div class="ws-container">
-                <div class="ws-grid-4">
-                    <div>
-                        <div class="ws-footer-brand">
-                            <img class="ws-footer-logo" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
-                            <span>WECOOP</span>
-                        </div>
-                        <p><?php echo esc_html($tr('frontpage.footer.description', 'Un ecosistema de inclusion y oportunidades para todos.')); ?></p>
-                    </div>
-                    <div>
-                        <h4><?php echo esc_html($tr('frontpage.footer.col1_title', 'WECOOP')); ?></h4>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#que-es"><?php echo esc_html($tr('frontpage.footer.col1_link1', 'Cos\'e WECOOP')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#servizi"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Servizi')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#come-funziona"><?php echo esc_html($tr('frontpage.footer.col1_link3', 'Come funziona')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#passaparola"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Passaparola')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#plataforma"><?php echo esc_html($tr('frontpage.footer.col1_link4', 'Piattaforma Digitale')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#impacto"><?php echo esc_html($tr('frontpage.footer.col1_link5', 'Impatto')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#contacto"><?php echo esc_html($tr('frontpage.footer.col1_link6', 'Contatti')); ?></a>
-                    </div>
-                    <div>
-                        <h4><?php echo esc_html($tr('frontpage.footer.col2_title', 'Colabora')); ?></h4>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link1', 'Empresas')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link2', 'Instituciones')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link3', 'Fundaciones')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/')); ?>#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link4', 'Voluntarios')); ?></a>
-                    </div>
-                    <div>
-                        <h4><?php echo esc_html($tr('frontpage.footer.col3_title', 'Contacto')); ?></h4>
-                        <span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano, Italia')); ?></span>
-                        <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.org')); ?></span>
-                        <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span>
-                    </div>
+        <div class="ws-lang-modal" id="ws-lang-modal" role="dialog" aria-modal="true" aria-labelledby="ws-lang-modal-title" hidden>
+            <div class="ws-lang-modal__backdrop" id="ws-lang-modal-backdrop"></div>
+            <div class="ws-lang-modal__panel">
+                <div class="ws-lang-modal__header">
+                    <span id="ws-lang-modal-title" class="ws-lang-modal__title"><?php echo esc_html($tr('nav.select_language', 'Select Language')); ?></span>
+                    <button class="ws-lang-modal__close" id="ws-lang-modal-close" aria-label="Close">
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    </button>
                 </div>
-                <div class="ws-footer-bottom">
-                    <p><?php echo esc_html($tr('frontpage.footer.rights', '© 2026 WECOOP. Todos los derechos reservados.')); ?></p>
-                    <div class="ws-footer-brands">
-                        <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand1_alt', 'Passaparola')); ?>">
-                        <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand2_alt', 'APP WECOOP')); ?>">
-                    </div>
-                </div>
+                <ul class="ws-lang-modal__list" role="listbox" aria-label="Languages">
+                    <?php foreach ($modal_langs as $code => $info) : ?>
+                    <li role="option" aria-selected="<?php echo $modal_current_lang === $code ? 'true' : 'false'; ?>">
+                        <a class="ws-lang-modal__option <?php echo $modal_current_lang === $code ? 'is-active' : ''; ?>"
+                           href="<?php echo esc_url(add_query_arg('lang', $code, $modal_base_url)); ?>"
+                           <?php if ($code === 'ar') echo 'dir="rtl" lang="ar"'; ?>
+                           <?php if ($code === 'zh') echo 'lang="zh"'; ?>>
+                            <span class="ws-lang-modal__flag" aria-hidden="true"><?php echo $info['flag']; ?></span>
+                            <span class="ws-lang-modal__name"><?php echo esc_html($info['label']); ?></span>
+                            <?php if ($modal_current_lang === $code) : ?>
+                            <svg class="ws-lang-modal__check" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
-        </footer>
+        </div>
     </main>
     <?php
 }
@@ -514,3 +476,37 @@ function wecoop_ws_page_shell_end() {
 if (file_exists(get_template_directory() . '/inc/custom-functions.php')) {
     require_once get_template_directory() . '/inc/custom-functions.php';
 }
+
+/**
+ * Auto-create required pages if they don't exist yet.
+ * Runs once on every init but is guarded by a get_page_by_path check,
+ * so it's effectively a no-op once the pages are in the database.
+ */
+function wecoop_autocreate_pages(): void {
+    $pages = [
+        [
+            'slug'    => 'cos-e-wecoop',
+            'title'   => 'Cos\'è WECOOP',
+            'status'  => 'publish',
+        ],
+        [
+            'slug'    => 'servizi',
+            'title'   => 'Servizi',
+            'status'  => 'publish',
+        ],
+    ];
+
+    foreach ($pages as $page) {
+        if ( ! get_page_by_path( $page['slug'] ) ) {
+            wp_insert_post( [
+                'post_name'    => $page['slug'],
+                'post_title'   => $page['title'],
+                'post_status'  => $page['status'],
+                'post_type'    => 'page',
+                'post_content' => '',
+            ] );
+        }
+    }
+}
+add_action( 'after_switch_theme', 'wecoop_autocreate_pages' );
+add_action( 'init', 'wecoop_autocreate_pages' );  // also runs on current requests until page exists

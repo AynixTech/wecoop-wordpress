@@ -1,47 +1,46 @@
     </div>
 
-    <footer class="wecoop-footer">
-        <div class="wecoop-footer__inner">
-            <div>
-                <h3>WECOOP</h3>
-                <p>Un ecosistema de inclusion y oportunidades para todos.</p>
-                <ul class="wecoop-footer__menu">
-                    <li><a href="<?php echo esc_url(home_url('/#que-es')); ?>">Que es WECOOP</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#servizi')); ?>">Servizi</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/annunci-lavoro-wecoop/')); ?>">Offerte di lavoro</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#passaparola')); ?>">Passaparola</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#plataforma')); ?>">Plataforma Digital</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#impacto')); ?>">Impacto</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#contacto')); ?>">Contacto</a></li>
-                </ul>
-                <div class="wecoop-footer__brand-logos">
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="App WECOOP">
+    <footer class="ws-footer">
+        <div class="ws-container">
+            <div class="ws-grid-4">
+                <div>
+                    <div class="ws-footer-brand">
+                        <img class="ws-footer-logo" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
+                        <span>WECOOP</span>
+                    </div>
+                    <p><?php echo esc_html(wecoop_t('Un ecosistema di inclusione e opportunita per tutti.', 'Un ecosistema di inclusione e opportunita per tutti.')); ?></p>
+                </div>
+                <div>
+                    <h4><?php echo esc_html(wecoop_t('WECOOP', 'WECOOP')); ?></h4>
+                    <a href="<?php echo esc_url(home_url('/#que-es')); ?>"><?php echo esc_html(wecoop_t('Cos\'e WECOOP', 'Cos\'e WECOOP')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#servizi')); ?>"><?php echo esc_html(wecoop_t('Servizi', 'Servizi')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#come-funziona')); ?>"><?php echo esc_html(wecoop_t('Come funziona', 'Come funziona')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#passaparola')); ?>"><?php echo esc_html(wecoop_t('Passaparola', 'Passaparola')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#plataforma')); ?>"><?php echo esc_html(wecoop_t('Piattaforma Digitale', 'Piattaforma Digitale')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#impacto')); ?>"><?php echo esc_html(wecoop_t('Impatto', 'Impatto')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#contacto')); ?>"><?php echo esc_html(wecoop_t('Contatti', 'Contatti')); ?></a>
+                </div>
+                <div>
+                    <h4><?php echo esc_html(wecoop_t('Collabora', 'Collabora')); ?></h4>
+                    <a href="<?php echo esc_url(home_url('/#colabora')); ?>"><?php echo esc_html(wecoop_t('Imprese', 'Imprese')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#colabora')); ?>"><?php echo esc_html(wecoop_t('Istituzioni', 'Istituzioni')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#colabora')); ?>"><?php echo esc_html(wecoop_t('Fondazioni', 'Fondazioni')); ?></a>
+                    <a href="<?php echo esc_url(home_url('/#colabora')); ?>"><?php echo esc_html(wecoop_t('Volontari', 'Volontari')); ?></a>
+                </div>
+                <div>
+                    <h4><?php echo esc_html(wecoop_t('Contatto', 'Contatto')); ?></h4>
+                    <span><?php echo esc_html(wecoop_t('Via Populonia 8, Milano, Italia', 'Via Populonia 8, Milano, Italia')); ?></span>
+                    <span>info@wecoop.org</span>
+                    <span>+39 351 511 2113</span>
                 </div>
             </div>
-
-            <div>
-                <h4>Colabora</h4>
-                <ul class="wecoop-footer__menu">
-                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Empresas</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Instituciones</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Fundaciones</a></li>
-                    <li><a href="<?php echo esc_url(home_url('/#colabora')); ?>">Voluntarios</a></li>
-                </ul>
+            <div class="ws-footer-bottom">
+                <p>&copy; <?php echo esc_html(gmdate('Y')); ?> WECOOP. <?php echo esc_html(wecoop_t('Tutti i diritti riservati.', 'Tutti i diritti riservati.')); ?></p>
+                <div class="ws-footer-brands">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
+                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="APP WECOOP">
+                </div>
             </div>
-
-            <div>
-                <h4>Contacto</h4>
-                <ul class="wecoop-footer__menu">
-                    <li>Via Populonia 8, Milano</li>
-                    <li><a href="mailto:info@wecoop.org">info@wecoop.org</a></li>
-                    <li><a href="tel:+393515112113">+39 351 511 2113</a></li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="wecoop-footer__bottom">
-            <p>&copy; <?php echo esc_html(gmdate('Y')); ?> WECOOP. Todos los derechos reservados.</p>
         </div>
     </footer>
 

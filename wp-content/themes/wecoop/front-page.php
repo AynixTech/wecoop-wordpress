@@ -37,11 +37,10 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', $lang_default('Impatto', 'Impact', 'Impacto'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
-            <div class="ws-lang-switcher" aria-label="Language switcher">
-                <a class="<?php echo $current_lang === 'it' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'it', $lang_base_url)); ?>">IT</a>
-                <a class="<?php echo $current_lang === 'en' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'en', $lang_base_url)); ?>">EN</a>
-                <a class="<?php echo $current_lang === 'es' ? 'is-active' : ''; ?>" href="<?php echo esc_url(add_query_arg('lang', 'es', $lang_base_url)); ?>">ES</a>
-            </div>
+            <button class="ws-lang-trigger" id="ws-lang-trigger" aria-haspopup="dialog" aria-label="Select language">
+                <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
             <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
         </div>
     </nav>
@@ -80,23 +79,26 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
     <section id="que-es" class="ws-section">
         <div class="ws-container">
             <h2><?php echo esc_html($tr('frontpage.about.title', 'Modello WECOOP')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.about.lead', 'Un modello innovativo che combina un centro territoriale, servizi di orientamento, formazione, opportunita lavorative e una piattaforma digitale integrata.')); ?></p>
+            <p class="ws-lead"><?php echo esc_html($tr('frontpage.about.lead', 'Un sistema integrato che combina servizi, formazione e tecnologia per accompagnarti nella vita, nel lavoro e nell\'accesso alle opportunità.')); ?></p>
             <div class="ws-grid-3">
                 <article class="ws-card ws-card--blue">
                     <span class="ws-icon ws-icon--blue" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.about.card1.title', 'Centro Territorial')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.about.card1.body', 'Un espacio fisico de referencia donde las personas encuentran orientacion, acompanamiento personalizado y acceso a servicios de inclusion social.')); ?></p>
+                    <h3><?php echo esc_html($tr('frontpage.about.card1.title', 'Centro Territoriale')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.about.card1.body', 'Uno spazio fisico di riferimento dove le persone trovano orientamento, accompagnamento personalizzato e accesso ai servizi.')); ?></p>
                 </article>
                 <article class="ws-card ws-card--green">
                     <span class="ws-icon ws-icon--green" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.about.card2.title', 'Formacion y Empleo')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.about.card2.body', 'Recorridos formativos personalizados, desarrollo de competencias profesionales y conexion directa con oportunidades laborales reales.')); ?></p>
+                    <h3><?php echo esc_html($tr('frontpage.about.card2.title', 'Formazione e Lavoro')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.about.card2.body', 'Percorsi formativi personalizzati, sviluppo di competenze e connessione diretta con opportunità lavorative.')); ?></p>
                 </article>
                 <article class="ws-card ws-card--pink">
                     <span class="ws-icon ws-icon--pink" aria-hidden="true"><i class="fa-solid fa-mobile-screen-button"></i></span>
-                    <h3><?php echo esc_html($tr('frontpage.about.card3.title', 'Plataforma Digital')); ?></h3>
-                    <p><?php echo esc_html($tr('frontpage.about.card3.body', 'Tecnologia accesible que permite gestionar citas, acceder a formacion, comunicarse con operadores y hacer seguimiento del recorrido personal.')); ?></p>
+                    <h3><?php echo esc_html($tr('frontpage.about.card3.title', 'Piattaforma Digitale')); ?></h3>
+                    <p><?php echo esc_html($tr('frontpage.about.card3.body', 'Tecnologia accessibile per gestire appuntamenti, accedere alla formazione e monitorare il percorso.')); ?></p>
                 </article>
+            </div>
+            <div class="ws-section-cta">
+                <a class="ws-btn ws-btn--outline" href="<?php echo esc_url(home_url('/cos-e-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.about.cta', 'Scopri di più')); ?></a>
             </div>
         </div>
     </section>
@@ -114,6 +116,12 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile4.title', 'Formazione')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile4.body', 'Sviluppo di competenze')); ?></p></div></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile5.title', 'Opportunita')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile5.body', 'Accesso al lavoro')); ?></p></div></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-diagram-project"></i></span><div class="ws-tile__content"><h3><?php echo esc_html($tr('frontpage.model.tile6.title', 'Piattaforma Digitale')); ?></h3><p><?php echo esc_html($tr('frontpage.model.tile6.body', 'Tecnologia inclusiva')); ?></p></div></article>
+            </div>
+            <div class="ws-section-cta">
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/servizi/')); ?>">
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <?php echo esc_html($tr('frontpage.model.cta', 'Scopri i nostri servizi')); ?>
+                </a>
             </div>
         </div>
     </section>
@@ -163,8 +171,11 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
 
     <section id="sistema-fisico-digitale" class="ws-section ws-section--soft">
         <div class="ws-container">
-            <h2><?php echo esc_html($tr('frontpage.phygital.title', 'Un sistema fisico + digitale')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.phygital.lead', 'WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.')); ?></p>
+            <div class="cw-section-head">
+                <span class="cw-eyebrow"><?php echo esc_html($tr('frontpage.phygital.eyebrow', 'Come funziona')); ?></span>
+                <h2><?php echo esc_html($tr('frontpage.phygital.title', 'Un sistema fisico + digitale')); ?></h2>
+                <p class="ws-lead"><?php echo esc_html($tr('frontpage.phygital.lead', 'WECOOP combina uno sportello sul territorio con una piattaforma digitale per accompagnarti in tutto il percorso.')); ?></p>
+            </div>
             <div class="ws-grid-2 ws-phygital-grid">
                 <article class="ws-phygital-card ws-phygital-card--physical">
                     <span class="ws-phygital-card__icon" aria-hidden="true"><i class="fa-regular fa-building"></i></span>
@@ -186,6 +197,12 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                         <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('frontpage.phygital.digital.item3', 'Monitora il tuo percorso')); ?></li>
                     </ul>
                 </article>
+            </div>
+            <div class="ws-section-cta">
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/servizi/')); ?>">
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    <?php echo esc_html($tr('frontpage.phygital.cta', 'Scopri di più sui servizi')); ?>
+                </a>
             </div>
         </div>
     </section>
@@ -326,12 +343,33 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                     <strong><?php echo esc_html($tr('frontpage.partners.tech_label', 'Partner Tecnologico')); ?></strong>
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_2.png'); ?>" alt="AYNIX">
                 </div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
-                <div class="ws-partner-placeholder"><span aria-hidden="true"><i class="fa-regular fa-building"></i></span></div>
+                <?php
+                $partners_query = new WP_Query([
+                    'post_type'      => 'wecoop_partner',
+                    'post_status'    => 'publish',
+                    'posts_per_page' => -1,
+                    'orderby'        => 'meta_value_num',
+                    'meta_key'       => 'ordine',
+                    'order'          => 'ASC',
+                ]);
+                if ($partners_query->have_posts()) :
+                    while ($partners_query->have_posts()) : $partners_query->the_post();
+                        $partner_url  = get_post_meta(get_the_ID(), 'website_url', true);
+                        $logo_url     = get_the_post_thumbnail_url(get_the_ID(), 'medium');
+                        $partner_name = get_the_title();
+                        $tag_open  = $partner_url ? '<a class="ws-partner-card" href="' . esc_url($partner_url) . '" target="_blank" rel="noopener noreferrer">' : '<div class="ws-partner-card">';
+                        $tag_close = $partner_url ? '</a>' : '</div>';
+                        echo $tag_open;
+                        if ($logo_url) {
+                            echo '<img src="' . esc_url($logo_url) . '" alt="' . esc_attr($partner_name) . '" loading="lazy">';
+                        } else {
+                            echo '<span class="ws-partner-card__name">' . esc_html($partner_name) . '</span>';
+                        }
+                        echo $tag_close;
+                    endwhile;
+                    wp_reset_postdata();
+                endif;
+                ?>
             </div>
         </div>
     </section>
@@ -377,49 +415,43 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         </div>
     </section>
 
-    <footer class="ws-footer">
-        <div class="ws-container">
-            <div class="ws-grid-4">
-                <div>
-                    <div class="ws-footer-brand">
-                        <img class="ws-footer-logo" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
-                        <span>WECOOP</span>
-                    </div>
-                    <p><?php echo esc_html($tr('frontpage.footer.description', 'Un ecosistema de inclusion y oportunidades para todos.')); ?></p>
-                </div>
-                <div>
-                    <h4><?php echo esc_html($tr('frontpage.footer.col1_title', 'WECOOP')); ?></h4>
-                    <a href="#que-es"><?php echo esc_html($tr('frontpage.footer.col1_link1', 'Cos\'e WECOOP')); ?></a>
-                    <a href="#servizi"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Servizi')); ?></a>
-                    <a href="#come-funziona"><?php echo esc_html($tr('frontpage.footer.col1_link3', 'Come funziona')); ?></a>
-                    <a href="#passaparola"><?php echo esc_html($tr('frontpage.footer.col1_link2', 'Passaparola')); ?></a>
-                    <a href="#plataforma"><?php echo esc_html($tr('frontpage.footer.col1_link4', 'Piattaforma Digitale')); ?></a>
-                    <a href="#impacto"><?php echo esc_html($tr('frontpage.footer.col1_link5', 'Impatto')); ?></a>
-                    <a href="#contacto"><?php echo esc_html($tr('frontpage.footer.col1_link6', 'Contatti')); ?></a>
-                </div>
-                <div>
-                    <h4><?php echo esc_html($tr('frontpage.footer.col2_title', 'Colabora')); ?></h4>
-                    <a href="#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link1', 'Empresas')); ?></a>
-                    <a href="#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link2', 'Instituciones')); ?></a>
-                    <a href="#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link3', 'Fundaciones')); ?></a>
-                    <a href="#colabora"><?php echo esc_html($tr('frontpage.footer.col2_link4', 'Voluntarios')); ?></a>
-                </div>
-                <div>
-                    <h4><?php echo esc_html($tr('frontpage.footer.col3_title', 'Contacto')); ?></h4>
-                    <span><?php echo esc_html($tr('frontpage.contact.value_address', 'Via Populonia 8, Milano, Italia')); ?></span>
-                    <span><?php echo esc_html($tr('frontpage.contact.value_email', 'info@wecoop.org')); ?></span>
-                    <span><?php echo esc_html($tr('frontpage.contact.value_phone', '+39 351 511 2113')); ?></span>
-                </div>
+    <?php
+    $modal_langs = [
+        'it' => ['label' => 'Italiano', 'flag' => '🇮🇹'],
+        'en' => ['label' => 'English',  'flag' => '🇬🇧'],
+        'es' => ['label' => 'Español',  'flag' => '🇪🇸'],
+        'ar' => ['label' => 'العربية',  'flag' => '🇸🇦'],
+        'zh' => ['label' => '中文',      'flag' => '🇨🇳'],
+    ];
+    $modal_base_url = remove_query_arg('lang');
+    ?>
+    <div class="ws-lang-modal" id="ws-lang-modal" role="dialog" aria-modal="true" aria-labelledby="ws-lang-modal-title" hidden>
+        <div class="ws-lang-modal__backdrop" id="ws-lang-modal-backdrop"></div>
+        <div class="ws-lang-modal__panel">
+            <div class="ws-lang-modal__header">
+                <span id="ws-lang-modal-title" class="ws-lang-modal__title"><?php echo esc_html($tr('nav.select_language', 'Select Language')); ?></span>
+                <button class="ws-lang-modal__close" id="ws-lang-modal-close" aria-label="Close">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><path d="M3 3l12 12M15 3L3 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
             </div>
-            <div class="ws-footer-bottom">
-                <p><?php echo esc_html($tr('frontpage.footer.rights', '© 2026 WECOOP. Todos los derechos reservados.')); ?></p>
-                <div class="ws-footer-brands">
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand1_alt', 'Passaparola')); ?>">
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_1@3x.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.footer.brand2_alt', 'APP WECOOP')); ?>">
-                </div>
-            </div>
+            <ul class="ws-lang-modal__list" role="listbox" aria-label="Languages">
+                <?php foreach ($modal_langs as $code => $info) : ?>
+                <li role="option" aria-selected="<?php echo $current_lang === $code ? 'true' : 'false'; ?>">
+                    <a class="ws-lang-modal__option <?php echo $current_lang === $code ? 'is-active' : ''; ?>"
+                       href="<?php echo esc_url(add_query_arg('lang', $code, $modal_base_url)); ?>"
+                       <?php if ($code === 'ar') echo 'dir="rtl" lang="ar"'; ?>
+                       <?php if ($code === 'zh') echo 'lang="zh"'; ?>>
+                        <span class="ws-lang-modal__flag" aria-hidden="true"><?php echo $info['flag']; ?></span>
+                        <span class="ws-lang-modal__name"><?php echo esc_html($info['label']); ?></span>
+                        <?php if ($current_lang === $code) : ?>
+                        <svg class="ws-lang-modal__check" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <?php endif; ?>
+                    </a>
+                </li>
+                <?php endforeach; ?>
+            </ul>
         </div>
-    </footer>
+    </div>
 </main>
 
 <?php

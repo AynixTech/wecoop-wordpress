@@ -5,13 +5,13 @@ wecoop_ws_page_shell_start(translate_string('passaparola.aria.page', 'Passaparol
 
 <section class="ws-section">
     <div class="ws-container">
-    <article class="wecoop-page-content">
-        <section class="wecoop-section hero">
+    <article class="ws-page-content">
+        <section class="ws-inner-hero">
             <h1>PASSAPAROLA Project</h1>
             <p>PASSAPAROLA builds connections between people, resources, and local stakeholders to turn information into concrete opportunities.</p>
         </section>
 
-        <section class="wecoop-section">
+        <section class="ws-content-section">
             <h2>Goals</h2>
             <ul>
                 <li>Improve access to essential services.</li>
@@ -20,16 +20,16 @@ wecoop_ws_page_shell_start(translate_string('passaparola.aria.page', 'Passaparol
             </ul>
         </section>
 
-        <section class="wecoop-section">
+        <section class="ws-content-section">
             <h2>Action Areas</h2>
             <p>Guidance, administrative support, intercultural mediation, training workshops, and local network activation with institutions and companies.</p>
         </section>
 
-        <section class="wecoop-section wecoop-cta">
+        <section class="ws-cta-box">
             <h2>Join the project</h2>
             <p>
-                <a class="wecoop-btn" href="<?php echo esc_url(home_url('/collaborate-with-us')); ?>">Collaborate</a>
-                <a class="wecoop-btn wecoop-btn-outline" href="<?php echo esc_url(home_url('/contact')); ?>">Contact us</a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us')); ?>">Collaborate</a>
+                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/contact')); ?>">Contact us</a>
             </p>
         </section>
     </article>

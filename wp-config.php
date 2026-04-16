@@ -136,6 +136,7 @@ if ( ! defined( 'WP_DEBUG_DISPLAY' ) ) {
 define( 'FS_METHOD', 'direct' );
 define( 'COOKIEHASH', 'a89c81cd3eeea5503dc0907f67d44e6e' );
 define( 'WP_AUTO_UPDATE_CORE', false );
+define( 'WP_ENVIRONMENT_TYPE', 'local' );
 /* That's all, stop editing! Happy publishing. */
 
 /** Absolute path to the WordPress directory. */

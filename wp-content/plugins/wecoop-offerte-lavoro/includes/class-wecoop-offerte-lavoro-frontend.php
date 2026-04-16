@@ -223,38 +223,11 @@ class WeCoop_Offerte_Lavoro_Frontend {
 
         ob_start();
         ?>
-        <style>
-            .wecoop-annunci-wrap { max-width: 980px; margin: 0 auto; }
-            .wecoop-annunci-filters { display: grid; grid-template-columns: 1fr 180px 240px 120px; gap: 10px; margin: 16px 0 20px; }
-            .wecoop-annunci-filters input,
-            .wecoop-annunci-filters select,
-            .wecoop-annunci-filters button { padding: 10px; border: 1px solid #d9d9d9; border-radius: 8px; }
-            .wecoop-annunci-filters button { background: #0e7a3d; color: #fff; cursor: pointer; }
-            .wecoop-annunci-grid { display: grid; gap: 14px; }
-            .wecoop-annuncio-card { border: 1px solid #ececec; border-radius: 12px; padding: 14px; background: #fff; }
-            .wecoop-annuncio-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-            .wecoop-annuncio-title { margin: 0 0 6px; font-size: 18px; }
-            .wecoop-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-            .wecoop-badge-offer { background: #eaf8ef; color: #17693a; border: 1px solid #bde8cb; }
-            .wecoop-badge-seek { background: #fff4e7; color: #9b5600; border: 1px solid #ffd8ad; }
-            .wecoop-annuncio-meta { font-size: 13px; color: #5a5a5a; margin-bottom: 8px; }
-            .wecoop-annuncio-excerpt { margin: 0; color: #2f2f2f; }
-            .wecoop-annuncio-actions { margin-top: 12px; }
-            .wecoop-btn-dettagli { display: inline-block; background: #0e7a3d; color: #fff; padding: 8px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px; }
-            .wecoop-btn-dettagli:hover { background: #0b6532; }
-            .wecoop-annunci-pagination { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
-            .wecoop-annunci-pagination a,
-            .wecoop-annunci-pagination span { padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px; text-decoration: none; }
-            .wecoop-annunci-pagination .current { background: #0e7a3d; color: #fff; border-color: #0e7a3d; }
-            @media (max-width: 760px) {
-                .wecoop-annunci-filters { grid-template-columns: 1fr; }
-                .wecoop-annuncio-head { align-items: flex-start; flex-direction: column; }
-            }
-        </style>
-
         <div class="wecoop-annunci-wrap">
-            <h2><?php echo esc_html((string) $atts['title']); ?></h2>
-            <p><?php echo esc_html((string) $atts['subtitle']); ?></p>
+            <div class="wecoop-annunci-header">
+                <span class="cw-eyebrow"><?php echo esc_html((string) $atts['title']); ?></span>
+                <p class="ws-lead"><?php echo esc_html((string) $atts['subtitle']); ?></p>
+            </div>
 
             <form method="get" class="wecoop-annunci-filters">
                 <input type="text" name="q" placeholder="Cerca annuncio..." value="<?php echo esc_attr($search); ?>" />
@@ -279,7 +252,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                     }
                     ?>
                 </select>
-                <button type="submit">Filtra</button>
+                <button type="submit" class="ws-btn ws-btn--primary">Filtra</button>
             </form>
 
             <?php if (empty($paged_posts)) : ?>
@@ -305,7 +278,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                             $excerpt = (string) $post_item->post_content;
                         }
                         ?>
-                        <article class="wecoop-annuncio-card">
+                        <article class="wecoop-annuncio-card ws-card">
                             <div class="wecoop-annuncio-head">
                                 <h3 class="wecoop-annuncio-title"><?php echo esc_html(get_the_title($id)); ?></h3>
                                 <span class="wecoop-badge <?php echo esc_attr($badge_class); ?>"><?php echo esc_html($badge_text); ?></span>
@@ -320,7 +293,7 @@ class WeCoop_Offerte_Lavoro_Frontend {
                             </div>
                             <p class="wecoop-annuncio-excerpt"><?php echo esc_html(wp_trim_words(wp_strip_all_tags($excerpt), 30)); ?></p>
                             <div class="wecoop-annuncio-actions">
-                                <a class="wecoop-btn-dettagli" href="<?php echo esc_url(get_permalink($id)); ?>">Dettagli annuncio</a>
+                                <a class="ws-btn ws-btn--primary wecoop-btn-dettagli" href="<?php echo esc_url(get_permalink($id)); ?>">Dettagli annuncio</a>
                             </div>
                         </article>
                     <?php endforeach; ?>

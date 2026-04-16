@@ -4,9 +4,9 @@ wecoop_ws_page_shell_start(translate_string('page.aria.default', 'WECOOP page'))
 
 <section class="ws-section">
     <div class="ws-container">
-        <div class="wecoop-page-content">
+        <div class="ws-page-content">
             <?php if (have_posts()) : while (have_posts()) : the_post(); ?>
-                <article class="wecoop-section">
+                <article class="ws-content-section">
                     <h1><?php the_title(); ?></h1>
                     <div class="content">
                         <?php the_content(); ?>
