@@ -471,7 +471,6 @@ class WECOOP_Annuncio_REST_API {
 
         // Correggi il tipo nel file_data per wp_handle_upload
         $file_data['type'] = $file_type;
-        }
 
         // Limite 5MB
         if ( $file_data['size'] > 5 * 1024 * 1024 ) {
