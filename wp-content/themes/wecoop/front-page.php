@@ -50,19 +50,19 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         <div class="ws-container ws-grid-2 ws-hero__grid">
             <div>
                 <h1>
-                    <?php echo esc_html($tr('frontpage.hero.title.prefix', 'Un punto di accesso a')); ?>
+                    <?php echo esc_html($tr('frontpage.hero.title.prefix', 'Un punto di accesso a documenti,')); ?>
                     <span class="ws-grad ws-grad--green"><?php echo esc_html($tr('frontpage.hero.word.services', 'servizi')); ?></span>,
                     <span class="ws-grad ws-grad--blue"><?php echo esc_html($tr('frontpage.hero.word.training', 'formazione')); ?></span>
                     <?php echo esc_html($tr('frontpage.hero.title_join', 'e')); ?>
-                    <span class="ws-grad ws-grad--orange"><?php echo esc_html($tr('frontpage.hero.word.job_opportunities', 'opportunita di lavoro')); ?></span>
+                    <span class="ws-grad ws-grad--orange"><?php echo esc_html($tr('frontpage.hero.word.job_opportunities', 'opportunità di lavoro')); ?></span>
                 </h1>
-                <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP ti aiuta a gestire documenti, accedere ai servizi e costruire un percorso verso il lavoro, attraverso un sistema integrato tra sportello fisico e piattaforma digitale.')); ?></p>
+                <p><?php echo esc_html($tr('frontpage.hero.description', 'WECOOP ti accompagna passo dopo passo tra pratiche, orientamento e servizi, integrando supporto sul territorio e tecnologia digitale per facilitare l\'accesso al lavoro e all\'autonomia.')); ?></p>
                 <div class="ws-actions">
-                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><i class="fa-solid fa-headset" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Parla con un operatore')); ?></a>
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($operator_url); ?>"><i class="fa-solid fa-calendar-check" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_primary', 'Prenota un appuntamento')); ?></a>
                     <a class="ws-btn ws-btn--success" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp" aria-hidden="true" style="color:#fff;margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_secondary', 'Scrivici su WhatsApp')); ?></a>
                     <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url($job_offers_url); ?>"><i class="fa-solid fa-briefcase" aria-hidden="true" style="margin-right:8px;"></i><?php echo esc_html($tr('frontpage.hero.cta_jobs', 'Vedi offerte di lavoro')); ?></a>
                 </div>
-                <p class="ws-hero__microcopy"><?php echo esc_html($tr('frontpage.hero.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare')); ?></p>
+                <p class="ws-hero__microcopy"><?php echo esc_html($tr('frontpage.hero.microcopy', 'Ti rispondiamo rapidamente e ti aiutiamo a capire da dove iniziare, passo dopo passo.')); ?></p>
             </div>
             <div class="ws-hero__media">
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecoop-hero-community.png'); ?>" alt="<?php echo esc_attr($tr('frontpage.hero.image_alt', 'Comunidad WECOOP')); ?>">
