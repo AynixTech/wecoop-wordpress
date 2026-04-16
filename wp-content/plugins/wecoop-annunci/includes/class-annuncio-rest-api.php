@@ -258,7 +258,11 @@ class WECOOP_Annuncio_REST_API {
 
         // Categoria
         if ( ! empty( $body['categoria'] ) ) {
-            wp_set_post_terms( $post_id, [ sanitize_text_field( $body['categoria'] ) ], 'categoria_annuncio' );
+            $slug = sanitize_text_field( $body['categoria'] );
+            $term = get_term_by( 'slug', $slug, 'categoria_annuncio' );
+            if ( $term && ! is_wp_error( $term ) ) {
+                wp_set_object_terms( $post_id, [ $term->term_id ], 'categoria_annuncio' );
+            }
         }
 
         return rest_ensure_response( $this->format_annuncio( get_post( $post_id ), true ) );
