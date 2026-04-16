@@ -1,51 +1,113 @@
 <?php
+/**
+ * Template Name: Contatti
+ */
 get_header();
-wecoop_ws_page_shell_start(translate_string('contact.aria.page', 'Contact page'));
+$tr = 'translate_string';
+wecoop_ws_page_shell_start($tr('contact.aria.page', 'Contatti WECOOP'));
 
-$tr = static function($key, $default = '') {
-    return translate_string($key, $default);
-};
-
-$wa_phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'));
+$wa_phone   = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'));
 $wa_message = rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, vorrei parlare con un operatore.'));
-$whatsapp_url = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
+$wa_url     = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
 ?>
 
-<section class="ws-section ws-section--cta">
-    <div class="ws-container ws-grid-2 ws-pass">
-        <div>
-            <h1><?php echo esc_html($tr('contact.page.hero.title', 'Contattaci')); ?></h1>
-            <p class="ws-lead ws-lead--light"><?php echo esc_html($tr('contact.page.hero.subtitle', 'Siamo qui per aiutarti. Parlaci e ti guideremo.')); ?></p>
-            <div class="ws-actions">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($whatsapp_url); ?>" target="_blank" rel="noopener"><?php echo esc_html($tr('contact.page.cta.whatsapp', 'Scrivici su WhatsApp')); ?></a>
-                <a class="ws-btn ws-btn--ghost" href="tel:+3902XXXXXXX"><?php echo esc_html($tr('contact.page.cta.call', 'Chiama ora')); ?></a>
+    <!-- HERO -->
+    <section class="cw-hero" id="contatti-hero">
+        <div class="ws-container">
+            <div class="cw-hero__inner">
+                <div class="cw-hero__text">
+                    <span class="cw-eyebrow"><?php echo esc_html($tr('contact.hero.eyebrow', 'Siamo qui per te')); ?></span>
+                    <h1><?php echo esc_html($tr('contact.hero.title', 'Contattaci')); ?></h1>
+                    <p class="cw-hero__lead"><?php echo esc_html($tr('contact.hero.subtitle', 'Siamo qui per ascoltarti. Contattaci per informazioni sui servizi o opportunità di collaborazione.')); ?></p>
+                    <div class="ws-hero-ctas">
+                        <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($wa_url); ?>" target="_blank" rel="noopener noreferrer">
+                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                            <?php echo esc_html($tr('contact.hero.cta1', 'Scrivici su WhatsApp')); ?>
+                        </a>
+                        <a class="ws-btn cw-btn--ghost" href="tel:+393515112113">
+                            <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                            <?php echo esc_html($tr('contact.hero.cta2', 'Chiama ora')); ?>
+                        </a>
+                    </div>
+                    <p class="ws-microcopy">
+                        <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        <?php echo esc_html($tr('contact.hero.microcopy', 'Ti rispondiamo rapidamente, di solito entro poche ore.')); ?>
+                    </p>
+                </div>
+                <div class="cw-hero__badges" aria-hidden="true">
+                    <div class="cw-badge cw-badge--blue"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></div>
+                    <div class="cw-badge cw-badge--green"><i class="fa-solid fa-location-dot"></i><span>Milano</span></div>
+                    <div class="cw-badge cw-badge--pink"><i class="fa-regular fa-envelope"></i><span>Email</span></div>
+                    <div class="cw-badge cw-badge--yellow"><i class="fa-solid fa-phone"></i><span><?php echo esc_html($tr('contact.hero.badge4', 'Telefono')); ?></span></div>
+                </div>
             </div>
-            <p class="ws-kpi"><?php echo esc_html($tr('contact.page.microcopy', 'Ti rispondiamo rapidamente')); ?></p>
         </div>
-        <img class="ws-img" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Firefly_Gemini_Flash_inspiring_realistic_photo_of_diverse_people_walking_together_in_an_urban_european_env_725555-3.png'); ?>" alt="<?php echo esc_attr($tr('contact.page.hero.image_alt', 'Contatti WECOOP')); ?>">
-    </div>
-</section>
+    </section>
 
-<section class="ws-section">
-    <div class="ws-container ws-grid-2 ws-pass">
-        <div>
-            <h2><?php echo esc_html($tr('contact.page.booking.title', 'Prenota un appuntamento')); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('contact.page.booking.subtitle', 'Prenota un incontro con un operatore WECOOP.')); ?></p>
-            <p><a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/contact/')); ?>"><?php echo esc_html($tr('contact.page.booking.cta', 'Prenota')); ?></a></p>
+    <!-- INFO + FORM -->
+    <section class="ws-section" id="contatti-main">
+        <div class="ws-container">
+            <div class="ws-grid-2 ws-contact-grid">
 
-            <h2 style="margin-top:24px;"><?php echo esc_html($tr('contact.page.location.title', 'Dove siamo')); ?></h2>
-            <ul class="ws-contact-list">
-                <li><strong><?php echo esc_html($tr('contact.page.location.address_label', 'Indirizzo')); ?></strong><span><?php echo esc_html($tr('contact.page.location.address_value', 'Via Populonia 8, Milano')); ?></span></li>
-                <li><strong><?php echo esc_html($tr('contact.page.location.hours_label', 'Orari')); ?></strong><span><?php echo esc_html($tr('contact.page.location.hours_value', 'Lunedi - Venerdi')); ?></span></li>
-                <li><strong><?php echo esc_html($tr('contact.page.location.map_label', 'Mappa')); ?></strong><span><a href="https://maps.google.com/?q=Via+Populonia+8,+Milano" target="_blank" rel="noopener"><?php echo esc_html($tr('contact.page.location.map_cta', 'Apri su Google Maps')); ?></a></span></li>
-            </ul>
+                <!-- Colonna sinistra: info -->
+                <div class="ws-contact-info">
+                    <h2><?php echo esc_html($tr('contact.info.title', 'Come raggiungerci')); ?></h2>
+                    <p class="ws-lead"><?php echo esc_html($tr('contact.info.lead', 'Vieni a trovarci allo sportello o contattaci attraverso i canali che preferisci.')); ?></p>
+
+                    <ul class="ws-contact-list ws-contact-list--icons">
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.address.label', 'Dove siamo')); ?></strong>
+                                <span><?php echo esc_html($tr('contact.info.address.value', 'Via Populonia 8, Milano, Italia')); ?></span>
+                                <a href="https://maps.google.com/?q=Via+Populonia+8,+Milano" target="_blank" rel="noopener" class="ws-contact-list__link">
+                                    <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                                    <?php echo esc_html($tr('contact.info.address.map', 'Apri su Google Maps')); ?>
+                                </a>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.hours.label', 'Orari')); ?></strong>
+                                <span><?php echo esc_html($tr('contact.info.hours.value', 'Lunedì – Venerdì, 9:00 – 18:00')); ?></span>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-regular fa-envelope" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.email.label', 'Email')); ?></strong>
+                                <a href="mailto:info@wecoop.org" class="ws-contact-list__link">info@wecoop.org</a>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-solid fa-phone" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.phone.label', 'Telefono')); ?></strong>
+                                <a href="tel:+393515112113" class="ws-contact-list__link">+39 351 511 2113</a>
+                            </div>
+                        </li>
+                        <li>
+                            <span class="ws-contact-list__icon ws-contact-list__icon--whatsapp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></span>
+                            <div>
+                                <strong>WhatsApp</strong>
+                                <a href="<?php echo esc_url($wa_url); ?>" target="_blank" rel="noopener noreferrer" class="ws-contact-list__link">
+                                    <?php echo esc_html($tr('contact.info.whatsapp.cta', 'Scrivici su WhatsApp')); ?>
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Colonna destra: form -->
+                <div class="ws-form-shell">
+                    <h3><?php echo esc_html($tr('contact.form.title', 'Oppure scrivici')); ?></h3>
+                    <?php echo do_shortcode('[wecoop_contact_form]'); ?>
+                </div>
+
+            </div>
         </div>
-        <div class="ws-form-shell">
-            <h2><?php echo esc_html($tr('contact.page.form.title', 'Oppure scrivici')); ?></h2>
-            <?php echo do_shortcode('[wecoop_contact_form]'); ?>
-        </div>
-    </div>
-</section>
+    </section>
 
 <?php
 wecoop_ws_page_shell_end();

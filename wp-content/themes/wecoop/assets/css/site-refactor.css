@@ -254,6 +254,42 @@ a {
 }
 
 /* ================================================================
+   WHATSAPP FLOATING BUTTON
+   ================================================================ */
+.wecoop-whatsapp-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #25d366;
+    color: #fff;
+    font-family: "Inter", sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 13px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 18px rgba(37,211,102,.45);
+    transition: transform .2s, box-shadow .2s, background .2s;
+}
+.wecoop-whatsapp-button::before {
+    content: "\f232";
+    font-family: "Font Awesome 6 Brands";
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1;
+}
+.wecoop-whatsapp-button:hover {
+    background: #1ebe5d;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 28px rgba(37,211,102,.5);
+    color: #fff;
+}
+
+/* ================================================================
    HOME PAGE — hide inner header (home uses its own ws-nav layout)
    ================================================================ */
 body.home .ws-header,
@@ -513,6 +549,7 @@ body.home {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     text-decoration: none;
     border-radius: 10px;
     border: 1px solid transparent;
@@ -1148,6 +1185,47 @@ body.home {
     color: var(--ws-pink);
 }
 
+.ws-phygital-card .ws-btn {
+    margin-top: 28px;
+}
+
+/* ── Feature items (accesso section) ── */
+.ws-feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 22px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    transition: transform .2s, box-shadow .2s;
+}
+.ws-feature-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 22px rgba(0,0,0,.1);
+}
+.ws-feature-item i {
+    font-size: 2rem;
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0e6e8a, var(--ws-blue));
+    color: #fff;
+    flex-shrink: 0;
+}
+.ws-feature-item p {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #2c3a42;
+    line-height: 1.4;
+}
+
 #servizi-modulari .ws-services-stack {
     display: grid;
     gap: 26px;
@@ -1463,16 +1541,176 @@ body.home {
     gap: 2px;
 }
 
+/* ── Contact list with icons (new contatti page) ── */
+.ws-contact-grid {
+    align-items: start;
+    gap: 48px;
+}
+
+.ws-contact-info h2 {
+    margin: 0 0 10px;
+}
+
+.ws-contact-info .ws-lead {
+    margin: 0 0 28px;
+}
+
+.ws-contact-list--icons {
+    gap: 16px;
+}
+
+.ws-contact-list--icons li {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 18px;
+    background: #f6f9fc;
+    border-radius: 14px;
+    border: 1px solid #e8eef2;
+}
+
+.ws-contact-list__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 11px;
+    background: var(--ws-blue);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(18,130,168,.35);
+}
+
+.ws-contact-list__icon i,
+.ws-contact-list__icon svg {
+    color: #fff !important;
+}
+
+.ws-contact-list__icon--whatsapp {
+    background: #25d366;
+}
+
+.ws-contact-list--icons li > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ws-contact-list--icons strong {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #8a9ba5;
+}
+
+.ws-contact-list--icons span,
+.ws-contact-list--icons a {
+    font-size: 1rem;
+    color: #2c3a42;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.ws-contact-list__link {
+    font-size: .9rem !important;
+    color: var(--ws-blue) !important;
+    font-weight: 600 !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.ws-contact-list__link:hover {
+    text-decoration: underline;
+}
+
 .ws-form-shell {
-    background: #f6f8fb;
-    border-radius: 16px;
-    padding: 22px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 32px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.07);
+}
+
+.ws-form-shell h3 {
+    margin: 0 0 24px;
+    font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+    font-weight: 800;
+    color: #1a2e3b;
 }
 
 .ws-form-shell .wecoop-contact-form {
     background: transparent;
     border: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.ws-form-shell .wecoop-contact-form label {
+    display: block;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #3a4a52;
+    margin-bottom: 5px;
+}
+
+.ws-form-shell .wecoop-contact-form input[type="text"],
+.ws-form-shell .wecoop-contact-form input[type="email"],
+.ws-form-shell .wecoop-contact-form textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 16px;
+    border: 1.5px solid #d4dde2;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #2c3a42;
+    background: #f6f9fb;
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+}
+
+.ws-form-shell .wecoop-contact-form input[type="text"]:focus,
+.ws-form-shell .wecoop-contact-form input[type="email"]:focus,
+.ws-form-shell .wecoop-contact-form textarea:focus {
+    border-color: var(--ws-blue);
+    box-shadow: 0 0 0 3px rgba(18,130,168,.12);
+    background: #fff;
+}
+
+.ws-form-shell .wecoop-contact-form textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.ws-form-shell .wecoop-contact-form button[type="submit"] {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ws-blue);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 13px 28px;
+    cursor: pointer;
+    transition: background .2s, transform .2s, box-shadow .2s;
+    box-shadow: 0 3px 14px rgba(18,130,168,.3);
+}
+
+.ws-form-shell .wecoop-contact-form button[type="submit"]:hover {
+    background: #0e6e8a;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(18,130,168,.4);
 }
 
 .ws-footer {
@@ -1777,6 +2015,10 @@ body.home {
 .ws-section-cta {
     margin-top: 28px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
 }
 
 /* Yellow card variant */
@@ -1845,9 +2087,23 @@ body.home {
     border: 2px solid var(--ws-blue);
     color: var(--ws-blue);
     font-weight: 600;
-    transition: background .2s, color .2s;
+    transition: background .2s, color .2s, border-color .2s;
 }
 .cw-btn--ghost:hover { background: var(--ws-blue); color: #fff; }
+
+/* ghost su sfondo scuro (hero blu) */
+.cw-hero .cw-btn--ghost,
+.ws-section--cta .cw-btn--ghost {
+    background: rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.7);
+    color: #fff;
+}
+.cw-hero .cw-btn--ghost:hover,
+.ws-section--cta .cw-btn--ghost:hover {
+    background: #fff;
+    color: var(--ws-blue);
+    border-color: #fff;
+}
 .cw-btn--white {
     background: #fff;
     color: var(--ws-blue);

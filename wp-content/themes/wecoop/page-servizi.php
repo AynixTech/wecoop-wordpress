@@ -80,10 +80,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s1.item4', 'Asilo politico')); ?></li>
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s1.item5', 'Visti')); ?></li>
                     </ul>
-                    <a class="sv-card__cta" href="<?php echo esc_url(home_url('/servizi/vivere-in-italia/')); ?>">
-                        <?php echo esc_html($tr('servizi.s1.cta', 'Scopri il servizio')); ?>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
                 </article>
 
                 <!-- 2. Servizi fiscali -->
@@ -103,10 +99,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s2.item4', 'Mediazione fiscale')); ?></li>
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s2.item5', 'Supporto con gli enti')); ?></li>
                     </ul>
-                    <a class="sv-card__cta" href="<?php echo esc_url(home_url('/servizi/servizi-fiscali/')); ?>">
-                        <?php echo esc_html($tr('servizi.s2.cta', 'Scopri il servizio')); ?>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
                 </article>
 
                 <!-- 3. Partita IVA -->
@@ -125,10 +117,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s3.item3', 'Fatturazione')); ?></li>
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s3.item4', 'Modifiche o chiusura attività')); ?></li>
                     </ul>
-                    <a class="sv-card__cta" href="<?php echo esc_url(home_url('/servizi/partita-iva/')); ?>">
-                        <?php echo esc_html($tr('servizi.s3.cta', 'Scopri il servizio')); ?>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
                 </article>
 
                 <!-- 4. Lavoro e orientamento -->
@@ -147,10 +135,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s4.item3', 'Preparazione candidatura')); ?></li>
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s4.item4', 'Accesso a opportunità lavorative')); ?></li>
                     </ul>
-                    <a class="sv-card__cta" href="<?php echo esc_url(home_url('/servizi/lavoro/')); ?>">
-                        <?php echo esc_html($tr('servizi.s4.cta', 'Scopri il servizio')); ?>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
                 </article>
 
                 <!-- 5. Finanza e credito -->
@@ -169,10 +153,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s5.item3', 'Supporto nella richiesta')); ?></li>
                         <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s5.item4', 'Connessione con partner finanziari')); ?></li>
                     </ul>
-                    <a class="sv-card__cta" href="<?php echo esc_url(home_url('/servizi/credito/')); ?>">
-                        <?php echo esc_html($tr('servizi.s5.cta', 'Scopri il servizio')); ?>
-                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                    </a>
                 </article>
 
             </div>

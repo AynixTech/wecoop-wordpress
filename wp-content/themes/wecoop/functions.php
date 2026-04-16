@@ -485,26 +485,50 @@ if (file_exists(get_template_directory() . '/inc/custom-functions.php')) {
 function wecoop_autocreate_pages(): void {
     $pages = [
         [
-            'slug'    => 'cos-e-wecoop',
-            'title'   => 'Cos\'è WECOOP',
-            'status'  => 'publish',
+            'slug'     => 'cos-e-wecoop',
+            'title'    => 'Cos\'è WECOOP',
+            'status'   => 'publish',
+            'template' => 'page-cos-e-wecoop.php',
         ],
         [
-            'slug'    => 'servizi',
-            'title'   => 'Servizi',
-            'status'  => 'publish',
+            'slug'     => 'servizi',
+            'title'    => 'Servizi',
+            'status'   => 'publish',
+            'template' => 'page-servizi.php',
+        ],
+        [
+            'slug'     => 'come-funziona-wecoop',
+            'title'    => 'Come funziona WECOOP',
+            'status'   => 'publish',
+            'template' => 'page-wecoop-model.php',
+        ],
+        [
+            'slug'     => 'contatti',
+            'title'    => 'Contatti',
+            'status'   => 'publish',
+            'template' => 'page-contact.php',
         ],
     ];
 
     foreach ($pages as $page) {
-        if ( ! get_page_by_path( $page['slug'] ) ) {
-            wp_insert_post( [
+        $existing = get_page_by_path( $page['slug'] );
+        if ( ! $existing ) {
+            $id = wp_insert_post( [
                 'post_name'    => $page['slug'],
                 'post_title'   => $page['title'],
                 'post_status'  => $page['status'],
                 'post_type'    => 'page',
                 'post_content' => '',
             ] );
+            if ( $id && ! is_wp_error( $id ) && ! empty( $page['template'] ) ) {
+                update_post_meta( $id, '_wp_page_template', $page['template'] );
+            }
+        } elseif ( ! empty( $page['template'] ) ) {
+            // Ensure template is always assigned even if page already exists
+            $current = get_post_meta( $existing->ID, '_wp_page_template', true );
+            if ( $current !== $page['template'] ) {
+                update_post_meta( $existing->ID, '_wp_page_template', $page['template'] );
+            }
         }
     }
 }

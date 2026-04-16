@@ -166,6 +166,16 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-graduation-cap"></i></span><h3><?php echo esc_html($tr('frontpage.how.step4.title', '4. Ti formiamo')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step4.body', 'Sviluppi competenze utili per il lavoro.')); ?></p></article>
                 <article class="ws-tile"><span class="ws-tile__icon" aria-hidden="true"><i class="fa-solid fa-briefcase"></i></span><h3><?php echo esc_html($tr('frontpage.how.step5.title', '5. Ti accompagniamo al lavoro')); ?></h3><p><?php echo esc_html($tr('frontpage.how.step5.body', 'Ti aiutiamo a candidarti e trovare opportunita.')); ?></p></article>
             </div>
+            <div class="ws-section-cta">
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/come-funziona-wecoop/')); ?>">
+                    <i class="fa-solid fa-route" aria-hidden="true"></i>
+                    <?php echo esc_html($tr('frontpage.how.cta', 'Scopri come funziona')); ?>
+                </a>
+                <p class="ws-microcopy">
+                    <i class="fa-solid fa-shoe-prints" aria-hidden="true"></i>
+                    <?php echo esc_html($tr('frontpage.how.microcopy', 'Ti spieghiamo il percorso passo dopo passo.')); ?>
+                </p>
+            </div>
         </div>
     </section>
 
