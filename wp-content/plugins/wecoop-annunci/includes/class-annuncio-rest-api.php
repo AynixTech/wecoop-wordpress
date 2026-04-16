@@ -490,6 +490,7 @@ class WECOOP_Annuncio_REST_API {
             'data_scadenza'     => $scadenza,
             'giorni_pubb'       => $giorni,
             'stato_pagamento'   => $is_scaduto ? 'scaduto' : ( $get( '_annuncio_stato_pagamento' ) ?: 'gratuito' ),
+            'autore_id'         => (int) $post->post_author,
             'autore_nome'       => $autore ? $autore->display_name : '',
             'permalink'         => get_permalink( $id ),
             'pubblicato'        => $post->post_date,
