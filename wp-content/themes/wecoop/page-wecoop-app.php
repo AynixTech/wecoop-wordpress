@@ -6,7 +6,7 @@ $tr = static function($key, $default = '') {
     return translate_string($key, $default);
 };
 
-$wa_phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'));
+$wa_phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393515112113'));
 $wa_message = rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, ho bisogno di supporto sulla piattaforma digitale.'));
 $whatsapp_url = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
 ?>

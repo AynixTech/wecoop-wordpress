@@ -148,7 +148,7 @@ function wecoop_save_language_cookie() {
 add_action('init', 'wecoop_save_language_cookie');
 
 function wecoop_whatsapp_shortcode() {
-    $phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175'));
+    $phone = preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393515112113'));
     $message = rawurlencode((string) get_option('wecoop_whatsapp_message', 'Hello WECOOP, I would like to receive more information.'));
     $url = 'https://wa.me/' . $phone . '?text=' . $message;
 

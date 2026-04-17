@@ -5,7 +5,7 @@
 get_header();
 $tr = 'translate_string';
 wecoop_ws_page_shell_start($tr('model.aria.page', 'Come funziona WECOOP'));
-$wa_num = esc_attr(preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393341390175')));
+$wa_num = esc_attr(preg_replace('/[^0-9]/', '', (string) get_option('wecoop_whatsapp_number', '393515112113')));
 $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', 'Ciao WECOOP, vorrei capire come posso iniziare il mio percorso.')));
 ?>
 
