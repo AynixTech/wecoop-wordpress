@@ -16,8 +16,11 @@ if ( ! defined('ABSPATH') ) {
     require_once __DIR__ . '/wp-load.php';
 }
 
-if ( ! current_user_can('manage_options') ) {
-    wp_die('Accesso negato. Devi essere amministratore per eseguire questo script.');
+// Token di sicurezza — cambia questo valore dopo l'uso
+define('SETUP_SECRET', 'wecoop2026legal');
+
+if ( empty($_GET['token']) || $_GET['token'] !== SETUP_SECRET ) {
+    wp_die('Accesso negato. Aggiungi ?token=wecoop2026legal all\'URL.');
 }
 
 echo '<style>body{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px}h2{color:#1a472a}.ok{color:green}.skip{color:#888}.err{color:red}</style>';
