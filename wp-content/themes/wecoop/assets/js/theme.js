@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
+    // ── Mobile menu toggle ────────────────────────────────────────────────
     var toggle = document.querySelector('.ws-menu-toggle');
-    var nav = document.querySelector('.ws-header .ws-links');
-
-    if (toggle && nav) {
+    if (toggle) {
         toggle.addEventListener('click', function () {
+            var nav = document.querySelector('.ws-nav .ws-links') || document.querySelector('.ws-header .ws-links');
+            if (!nav) return;
             var isOpen = nav.classList.toggle('is-open');
             toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });

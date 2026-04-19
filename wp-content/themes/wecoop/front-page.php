@@ -37,11 +37,16 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', $lang_default('Impatto', 'Impact', 'Impacto'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
-            <button class="ws-lang-trigger" id="ws-lang-trigger" aria-haspopup="dialog" aria-label="Select language">
-                <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
+            <div class="ws-nav__actions">
+                <button class="ws-lang-trigger" id="ws-lang-trigger" aria-haspopup="dialog" aria-label="Select language">
+                    <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button class="ws-menu-toggle" id="ws-nav-toggle" aria-expanded="false" aria-label="<?php echo esc_attr($tr('frontpage.nav.menu_aria', 'Apri menu')); ?>">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+            <a class="ws-btn ws-btn--primary ws-nav__cta" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
         </div>
     </nav>
 

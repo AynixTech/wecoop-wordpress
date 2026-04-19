@@ -208,6 +208,45 @@ a {
         order: 3;
     }
 
+    .ws-nav .ws-menu-toggle {
+        display: block;
+    }
+
+    .ws-nav__actions {
+        margin-left: auto;
+    }
+
+    .ws-nav__cta {
+        display: none;
+    }
+
+    .ws-nav .ws-links {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border-bottom: 1px solid #dde3e8;
+        padding: 14px 20px;
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+        z-index: 999;
+    }
+
+    .ws-nav .ws-links.is-open {
+        display: flex;
+    }
+
+    .ws-nav__inner {
+        position: relative;
+    }
+
+    .ws-nav .ws-btn--primary {
+        display: none;
+    }
+
     .ws-header .ws-links {
         display: none;
         position: absolute;
@@ -335,6 +374,13 @@ body.home {
     display: flex;
     align-items: center;
     gap: 14px;
+}
+
+.ws-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
 }
 
 .ws-brand img {
@@ -1797,6 +1843,9 @@ body.home {
 /* ── FOOTER NEW ELEMENTS ─────────────────────────── */
 .ws-footer-cols {
     padding-bottom: 32px;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1.2fr;
+    gap: 32px;
 }
 
 .ws-footer-col {
@@ -1867,6 +1916,21 @@ body.home {
     display: block;
 }
 
+@media (max-width: 768px) {
+    .ws-footer-cta__text {
+        font-size: .9rem;
+        flex-basis: 100%;
+    }
+    .ws-footer-cta {
+        padding: 14px 14px;
+        gap: 10px;
+        margin: 4px 0 16px;
+    }
+    .ws-footer-cta__microcopy {
+        display: none;
+    }
+}
+
 .ws-footer-cta__actions {
     display: flex;
     gap: 10px;
@@ -1921,6 +1985,10 @@ body.home {
         display: none;
     }
 
+    .ws-nav .ws-links.is-open {
+        display: flex !important;
+    }
+
     .ws-lang-switcher {
         margin-left: auto;
     }
@@ -1955,6 +2023,37 @@ body.home {
 
     .ws-btn {
         width: 100%;
+    }
+
+    .ws-footer-cta .ws-btn,
+    .ws-btn--sm {
+        width: auto;
+    }
+
+    .ws-footer-cols {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .ws-footer-cta {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px 16px;
+    }
+
+    .ws-footer-cta__actions {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .ws-footer-bottom {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+    }
+
+    .ws-footer-brands {
+        justify-content: center;
     }
 
     .ws-actions {
@@ -2942,5 +3041,23 @@ body.home {
     }
     .wecoop-annunci-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .ws-footer-cols {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .ws-footer-cta__actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .ws-footer-cta__actions .ws-btn {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
     }
 }
