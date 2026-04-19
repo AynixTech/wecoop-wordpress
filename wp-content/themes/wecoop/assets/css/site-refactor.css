@@ -1866,8 +1866,15 @@ body.home {
     font-size: clamp(1.8rem, 4vw, 2.6rem);
     font-weight: 800;
     color: #fff;
-    margin: 0 0 12px;
+    margin: 0 0 8px;
     line-height: 1.15;
+}
+
+.wl-hero__subtitle {
+    font-size: .95rem;
+    opacity: .85;
+    margin: 0 0 12px;
+    line-height: 1.6;
 }
 
 .wl-hero__meta {
@@ -2107,6 +2114,38 @@ body.home {
         align-items: flex-start;
         gap: 20px;
     }
+}
+
+/* RTL (arabo) */
+[dir="rtl"] .wl-hero__inner,
+[dir="rtl"] .wl-hero__breadcrumb,
+[dir="rtl"] .wl-hero__meta,
+[dir="rtl"] .wl-toc__label,
+[dir="rtl"] .wl-toc__contact,
+[dir="rtl"] .wl-related__card {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .wl-toc__link {
+    border-left: none;
+    border-right: 2px solid transparent;
+    padding: 6px 10px 6px 10px;
+}
+
+[dir="rtl"] .wl-toc__link:hover,
+[dir="rtl"] .wl-toc__link--active {
+    border-right-color: #1282a8;
+    border-left: none;
+}
+
+[dir="rtl"] .wl-prose ul,
+[dir="rtl"] .wl-prose ol {
+    padding-left: 0;
+    padding-right: 22px;
+}
+
+[dir="rtl"] .wl-prose h2 {
+    flex-direction: row-reverse;
 }
 
 .ws-footer-legal {

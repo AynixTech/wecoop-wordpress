@@ -748,5 +748,20 @@
   "footer.cta.contact": "Contattaci",
   "footer.cta.microcopy": "Ti rispondiamo rapidamente.",
   "footer.bottom.rights": "Tutti i diritti riservati.",
-  "footer.bottom.brands_label": "Progetti e piattaforma WECOOP"
+  "footer.bottom.brands_label": "Progetti e piattaforma WECOOP",
+  "footer.bottom.privacy": "Privacy Policy",
+  "footer.bottom.cookie": "Cookie Policy",
+  "footer.bottom.legal": "Note Legali",
+  "footer.bottom.legal_aria": "Link legali",
+  "legal.hero.updated": "Ultimo aggiornamento:",
+  "legal.toc.label": "Indice",
+  "legal.toc.contact_label": "Contattaci",
+  "legal.related.label": "Documenti correlati",
+  "legal.breadcrumb.home": "Home",
+  "privacy.title": "Privacy Policy",
+  "privacy.hero.desc": "Come raccogliamo, usiamo e proteggiamo i tuoi dati personali.",
+  "cookie.title": "Cookie Policy",
+  "cookie.hero.desc": "Informazioni sui cookie e tecnologie di tracciamento usate su questo sito.",
+  "legal.title": "Note Legali",
+  "legal.hero.desc": "Informazioni legali, proprietà intellettuale e responsabilità."
 }
