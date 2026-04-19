@@ -1815,6 +1815,30 @@ body.home {
     flex-wrap: wrap;
 }
 
+.ws-footer-legal {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ws-footer-legal a {
+    color: rgba(255,255,255,.6);
+    font-size: .8rem;
+    text-decoration: none;
+    transition: color .2s;
+}
+
+.ws-footer-legal a:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.ws-footer-legal span {
+    color: rgba(255,255,255,.3);
+    font-size: .8rem;
+}
+
 .ws-footer-brands {
     display: flex;
     align-items: center;

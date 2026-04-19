@@ -17,14 +17,19 @@ WordPress Description
 ## Pagine
 
 - [Home](http://localhost:10013/) - WECOOP: access to services, education, and work in networkA model that combines physical local presence with a digital platform to generate real opportunities.Contact usThe problemMany people struggle to access services, guidance, and opportunities due to language, digital, and network barriers.The solution: The WECOOP modelA local access point + WECOOP App + partner network supporting people,
+- [Il Nostro Impatto Sociale](http://localhost:10013/impatto/)
+- [Piattaforma Digitale](http://localhost:10013/piattaforma/)
+- [Passaparola](http://localhost:10013/passaparola/)
+- [Come funziona WECOOP](http://localhost:10013/come-funziona-wecoop/)
+- [Cos'è WECOOP](http://localhost:10013/cos-e-wecoop/)
 - [Generador de CV con AI](http://localhost:10013/generador-cv-ai/)
-- [The WECOOP Model](http://localhost:10013/wecoop-model/) - The WECOOP ModelTerritorial + digital model, scalable and impact-oriented.
-- [PASSAPAROLA Project](http://localhost:10013/passaparola-project/) - PASSAPAROLA ProjectCommunity activation and network-based guidance program.
-- [WECOOP App](http://localhost:10013/wecoop-app/) - WECOOP AppDigital platform for services, tracking, and future integrations.
-- [Social Impact](http://localhost:10013/social-impact/) - Social ImpactIndicators, outcomes, and continuous improvement.
-- [Partners](http://localhost:10013/partners/) - PartnersNetwork of WECOOP allied organizations.
-- [Collaborate with Us](http://localhost:10013/collaborate-with-us/) - Collaborate with UsSpace for organizations, institutions, and professionals who want to contribute.
 - [Contact](http://localhost:10013/contact/) - ContactWrite to us and we will reply as soon as possible.
+- [Collaborate with Us](http://localhost:10013/collaborate-with-us/) - Collaborate with UsSpace for organizations, institutions, and professionals who want to contribute.
+- [Partners](http://localhost:10013/partners/) - PartnersNetwork of WECOOP allied organizations.
+- [Social Impact](http://localhost:10013/social-impact/) - Social ImpactIndicators, outcomes, and continuous improvement.
+- [WECOOP App](http://localhost:10013/wecoop-app/) - WECOOP AppDigital platform for services, tracking, and future integrations.
+- [PASSAPAROLA Project](http://localhost:10013/passaparola-project/) - PASSAPAROLA ProjectCommunity activation and network-based guidance program.
+- [The WECOOP Model](http://localhost:10013/wecoop-model/) - The WECOOP ModelTerritorial + digital model, scalable and impact-oriented.
 - [Login Customizer](http://localhost:10013/login-customizer/) - This page is used for Login Customizer plugin. It will not be visible to your readers. Do not delete it.
 - [Shop](http://localhost:10013/negozio/)
 - [Richiesta Eliminazione Dati](http://localhost:10013/richiesta-eliminazione-dati/)
@@ -53,6 +58,10 @@ WordPress Description
 
 - [Corso di italiano](http://localhost:10013/eventi/corso-di-italiano/) - riassunto
 - [Giorno internazionale del migrante 25 dicembre](http://localhost:10013/eventi/giorno-del-migrante-25-dicembre/) - Il Giorno dei Migranti, celebrato il 25 dicembre, è un momento di riflessione, incontro e condivisione dedicato alle persone migranti e rifugiate. In una data simbolica come il Natale, che richiama accoglienza, speranza e fraternità, la comunità si riunisce per riconoscere il valore della diversità culturale e promuovere una convivenza fondata sul rispetto, sulla solidarietà
+
+## Partners
+
+- [Aynix](http://localhost:10013/partners-list/aynix/) - Technological Partner
 
 ## Categorie
 

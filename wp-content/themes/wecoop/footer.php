@@ -87,6 +87,13 @@
             <!-- FOOTER BOTTOM -->
             <div class="ws-footer-bottom">
                 <p><?php echo esc_html('© ' . gmdate('Y') . ' WECOOP. ' . $_ftr('footer.bottom.rights', 'Tutti i diritti riservati.')); ?></p>
+                <nav class="ws-footer-legal" aria-label="<?php echo esc_attr($_ftr('footer.bottom.legal_aria', 'Link legali')); ?>">
+                    <a href="<?php echo esc_url(home_url('/privacy-policy/')); ?>"><?php echo esc_html($_ftr('footer.bottom.privacy', 'Privacy Policy')); ?></a>
+                    <span aria-hidden="true">·</span>
+                    <a href="<?php echo esc_url(home_url('/cookie-policy/')); ?>"><?php echo esc_html($_ftr('footer.bottom.cookie', 'Cookie Policy')); ?></a>
+                    <span aria-hidden="true">·</span>
+                    <a href="<?php echo esc_url(home_url('/note-legali/')); ?>"><?php echo esc_html($_ftr('footer.bottom.legal', 'Note Legali')); ?></a>
+                </nav>
                 <div class="ws-footer-brands">
                     <span class="ws-footer-brands__label"><?php echo esc_html($_ftr('footer.bottom.brands_label', 'Progetti e piattaforma WECOOP')); ?></span>
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
