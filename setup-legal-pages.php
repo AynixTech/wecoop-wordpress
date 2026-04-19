@@ -306,7 +306,9 @@ foreach ( $pages as $page_data ) {
 
     if ( $existing ) {
         $created_ids[ $page_data['slug'] ] = $existing->ID;
-        echo '<p class="skip">⏭ Pagina già esistente: <strong>' . esc_html($page_data['title']) . '</strong> (ID: ' . $existing->ID . ')</p>';
+        // Aggiorna il template anche se la pagina esiste già
+        update_post_meta( $existing->ID, '_wp_page_template', 'page-legal.php' );
+        echo '<p class="skip">⏭ Pagina già esistente: <strong>' . esc_html($page_data['title']) . '</strong> — template aggiornato (ID: ' . $existing->ID . ')</p>';
         continue;
     }
 
@@ -323,6 +325,8 @@ foreach ( $pages as $page_data ) {
         echo '<p class="err">❌ Errore creazione: <strong>' . esc_html($page_data['title']) . '</strong> — ' . esc_html($page_id->get_error_message()) . '</p>';
     } else {
         $created_ids[ $page_data['slug'] ] = $page_id;
+        // Assegna il template grafico
+        update_post_meta( $page_id, '_wp_page_template', 'page-legal.php' );
         echo '<p class="ok">✅ Creata: <strong>' . esc_html($page_data['title']) . '</strong> → <a href="' . esc_url(get_permalink($page_id)) . '" target="_blank">' . esc_url(get_permalink($page_id)) . '</a></p>';
     }
 }
