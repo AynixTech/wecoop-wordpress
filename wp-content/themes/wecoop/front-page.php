@@ -238,10 +238,6 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             <h2><?php echo esc_html($tr('frontpage.partners.title', 'Red de Partners')); ?></h2>
             <p class="ws-lead"><?php echo esc_html($tr('frontpage.partners.lead', 'Colaboramos con instituciones, organizaciones y empresas comprometidas con la inclusion social.')); ?></p>
             <div class="ws-partners-box">
-                <div class="ws-partner-tech">
-                    <strong><?php echo esc_html($tr('frontpage.partners.tech_label', 'Partner Tecnologico')); ?></strong>
-                    <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_2.png'); ?>" alt="AYNIX">
-                </div>
                 <?php
                 $partners_query = new WP_Query([
                     'post_type'      => 'wecoop_partner',
