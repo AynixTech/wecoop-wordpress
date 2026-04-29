@@ -16,39 +16,41 @@ document.addEventListener('DOMContentLoaded', function () {
     var backdrop = document.getElementById('ws-lang-modal-backdrop');
     var closeBtn = document.getElementById('ws-lang-modal-close');
 
-    if (!modal) return;
+    if (!modal) {
+        // Se il modale non esiste, continua con le altre funzionalità
+    } else {
+        function openModal() {
+            modal.removeAttribute('hidden');
+            document.body.style.overflow = 'hidden';
+            triggers.forEach(function (t) { t.classList.add('is-open'); });
+            closeBtn.focus();
+        }
 
-    function openModal() {
-        modal.removeAttribute('hidden');
-        document.body.style.overflow = 'hidden';
-        triggers.forEach(function (t) { t.classList.add('is-open'); });
-        closeBtn.focus();
-    }
+        function closeModal() {
+            modal.setAttribute('hidden', '');
+            document.body.style.overflow = '';
+            triggers.forEach(function (t) { t.classList.remove('is-open'); });
+        }
 
-    function closeModal() {
-        modal.setAttribute('hidden', '');
-        document.body.style.overflow = '';
-        triggers.forEach(function (t) { t.classList.remove('is-open'); });
-    }
+        triggers.forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
+                if (modal.hasAttribute('hidden')) {
+                    openModal();
+                } else {
+                    closeModal();
+                }
+            });
+        });
 
-    triggers.forEach(function (trigger) {
-        trigger.addEventListener('click', function () {
-            if (modal.hasAttribute('hidden')) {
-                openModal();
-            } else {
+        backdrop.addEventListener('click', closeModal);
+        closeBtn.addEventListener('click', closeModal);
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
                 closeModal();
             }
         });
-    });
-
-    backdrop.addEventListener('click', closeModal);
-    closeBtn.addEventListener('click', closeModal);
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
-            closeModal();
-        }
-    });
+    }
 
     // ── Scroll to Top Button ──────────────────────────────────────────────
     var scrollToTopBtn = document.getElementById('ws-scroll-to-top');

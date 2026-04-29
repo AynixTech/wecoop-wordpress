@@ -1,7 +1,7 @@
 /* Scroll to Top Button */
 .ws-scroll-to-top {
     position: fixed;
-    bottom: 30px;
+    bottom: 96px;
     right: 30px;
     width: 50px;
     height: 50px;
@@ -17,7 +17,7 @@
     transition: all 0.3s ease;
     opacity: 0;
     visibility: hidden;
-    z-index: 999;
+    z-index: 10000;
 }
 
 .ws-scroll-to-top:hover {
@@ -52,7 +52,7 @@
     .ws-scroll-to-top {
         width: 45px;
         height: 45px;
-        bottom: 20px;
+        bottom: 88px;
         right: 20px;
     }
 
@@ -66,7 +66,7 @@
     .ws-scroll-to-top {
         width: 40px;
         height: 40px;
-        bottom: 15px;
+        bottom: 82px;
         right: 15px;
     }
 

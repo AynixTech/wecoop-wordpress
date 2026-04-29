@@ -3159,6 +3159,7 @@ body.home {
 .sv-card--pink   { border-top-color: var(--ws-pink); }
 .sv-card--teal   { border-top-color: #379ac4; }
 .sv-card--yellow { border-top-color: #f0a500; }
+.sv-card--purple { border-top-color: #8b5cf6; }
 
 .sv-card__head {
     display: flex;
@@ -3181,6 +3182,7 @@ body.home {
 .sv-card--pink   .sv-card__icon { background: var(--ws-pink); }
 .sv-card--teal   .sv-card__icon { background: #379ac4; }
 .sv-card--yellow .sv-card__icon { background: #f0a500; }
+.sv-card--purple .sv-card__icon { background: #8b5cf6; }
 
 .sv-card__num {
     display: block;
@@ -3220,6 +3222,7 @@ body.home {
 .sv-card--pink   .sv-card__list li i { color: var(--ws-pink); }
 .sv-card--teal   .sv-card__list li i { color: #379ac4; }
 .sv-card--yellow .sv-card__list li i { color: #f0a500; }
+.sv-card--purple .sv-card__list li i { color: #8b5cf6; }
 
 .sv-card__cta {
     display: inline-flex;
@@ -3236,6 +3239,7 @@ body.home {
 .sv-card--pink   .sv-card__cta { color: var(--ws-pink); }
 .sv-card--teal   .sv-card__cta { color: #379ac4; }
 .sv-card--yellow .sv-card__cta { color: #c07e00; }
+.sv-card--purple .sv-card__cta { color: #7c3aed; }
 .sv-card__cta:hover { gap: 11px; }
 
 /* ── Phygital CTA wrapper ────────────────────────────────────────────── */
