@@ -22,10 +22,6 @@ $_tr = 'translate_string';
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP" class="ws-brand__logo">
             </a>
 
-            <button class="ws-menu-toggle" type="button" aria-expanded="false" aria-controls="ws-main-nav">
-                <span></span><span></span><span></span>
-            </button>
-
             <div id="ws-main-nav" class="ws-links" aria-label="<?php echo esc_attr($_tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
                 <a href="<?php echo esc_url(home_url('/#que-es')); ?>"><?php echo esc_html($_tr('frontpage.nav.about', "Cos'e WECOOP")); ?></a>
                 <a href="<?php echo esc_url(home_url('/#servizi')); ?>"><?php echo esc_html($_tr('frontpage.nav.services', 'Servizi')); ?></a>
@@ -37,10 +33,16 @@ $_tr = 'translate_string';
                 <a href="<?php echo esc_url(home_url('/#contacto')); ?>"><?php echo esc_html($_tr('frontpage.nav.contact', 'Contatti')); ?></a>
             </div>
 
-            <button class="ws-lang-trigger" id="ws-lang-trigger" aria-haspopup="dialog" aria-label="Select language">
-                <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
+            <div class="ws-nav__actions">
+                <button class="ws-lang-trigger" id="ws-lang-trigger" aria-haspopup="dialog" aria-label="Select language">
+                    <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+
+                <button class="ws-menu-toggle" id="ws-nav-toggle" type="button" aria-expanded="false" aria-controls="ws-main-nav">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
 
             <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($_tr('frontpage.nav.cta', 'Collabora')); ?></a>
         </div>
