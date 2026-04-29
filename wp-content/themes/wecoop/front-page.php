@@ -27,7 +27,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             <a class="ws-brand" href="#inicio">
                 <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
             </a>
-            <div class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
+            <div id="ws-main-nav-home" class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
                 <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', $lang_default('Cos\'e WECOOP', 'What is WECOOP', 'Que es WECOOP'))); ?></a>
                 <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', $lang_default('Servizi', 'Services', 'Servicios'))); ?></a>
                 <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', $lang_default('Come funziona', 'How it works', 'Como funciona'))); ?></a>
@@ -42,7 +42,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                     <span class="ws-lang-trigger__flag"><?php echo esc_html(strtoupper($current_lang)); ?></span>
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
-                <button class="ws-menu-toggle" id="ws-nav-toggle" aria-expanded="false" aria-label="<?php echo esc_attr($tr('frontpage.nav.menu_aria', 'Apri menu')); ?>">
+                <button class="ws-menu-toggle" id="ws-nav-toggle" aria-expanded="false" aria-controls="ws-main-nav-home" aria-label="<?php echo esc_attr($tr('frontpage.nav.menu_aria', 'Apri menu')); ?>">
                     <span></span><span></span><span></span>
                 </button>
             </div>
