@@ -155,6 +155,24 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                     </ul>
                 </article>
 
+                <!-- 6. Studiare in Italia -->
+                <article class="sv-card sv-card--purple" id="studiare-italia">
+                    <div class="sv-card__head">
+                        <div class="sv-card__icon"><i class="fa-solid fa-graduation-cap" aria-hidden="true"></i></div>
+                        <div>
+                            <span class="sv-card__num">06</span>
+                            <h3><?php echo esc_html($tr('servizi.s6.title', 'Studiare in Italia')); ?></h3>
+                        </div>
+                    </div>
+                    <p class="sv-card__desc"><?php echo esc_html($tr('servizi.s6.desc', 'Accompagnamento per accedere alla formazione e ai percorsi scolastici in Italia.')); ?></p>
+                    <ul class="sv-card__list">
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s6.item1', 'Percorsi formativi')); ?></li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s6.item2', 'Corsi professionali')); ?></li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s6.item3', 'Accesso a istituti scolastici')); ?></li>
+                        <li><i class="fa-solid fa-check" aria-hidden="true"></i><?php echo esc_html($tr('servizi.s6.item4', 'Supporto linguistico')); ?></li>
+                    </ul>
+                </article>
+
             </div>
         </div>
     </section>

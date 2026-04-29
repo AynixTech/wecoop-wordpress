@@ -49,4 +49,25 @@ document.addEventListener('DOMContentLoaded', function () {
             closeModal();
         }
     });
+
+    // ── Scroll to Top Button ──────────────────────────────────────────────
+    var scrollToTopBtn = document.getElementById('ws-scroll-to-top');
+    if (scrollToTopBtn) {
+        // Mostra/nascondi il bottone in base allo scroll
+        window.addEventListener('scroll', function () {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        // Scroll verso l'alto quando clicchi il bottone
+        scrollToTopBtn.addEventListener('click', function () {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    }
 });

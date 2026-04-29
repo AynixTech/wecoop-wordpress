@@ -377,6 +377,13 @@
   "servizi.s5.item3": "Apoyo en la solicitud",
   "servizi.s5.item4": "Conexión con socios financieros",
   "servizi.s5.cta": "Descubre el servicio",
+  "servizi.s6.title": "Estudiar en Italia",
+  "servizi.s6.desc": "Acompañamiento para acceder a la formación y programas educativos en Italia.",
+  "servizi.s6.item1": "Programas de formación",
+  "servizi.s6.item2": "Cursos profesionales",
+  "servizi.s6.item3": "Acceso a instituciones educativas",
+  "servizi.s6.item4": "Apoyo lingüístico",
+  "servizi.s6.cta": "Descubre el servicio",
   "servizi.model.eyebrow": "El camino",
   "servizi.model.title": "Un único camino, no servicios separados",
   "servizi.model.body": "WECOOP no ofrece servicios aislados, sino un camino integrado. Partimos de tus necesidades y te acompañamos entre documentos, trabajo, formación y acceso a los servicios.",
@@ -845,5 +852,6 @@
   "nl.s5.title": "Ley Aplicable y Jurisdiccion",
   "nl.s5.p1": "Estas notas se rigen por la ley italiana. Tribunal competente: Milan, Italia.",
   "nl.s6.title": "Contacto",
-  "nl.s6.p1": "Para notificaciones legales:"
+  "nl.s6.p1": "Para notificaciones legales:",
+  "common.scroll_to_top": "Desplazarse hacia arriba"
 }

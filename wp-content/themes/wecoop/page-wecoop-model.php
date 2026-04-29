@@ -114,7 +114,6 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <li><i class="fa-regular fa-circle-check" aria-hidden="true"></i><?php echo esc_html($tr('model.dopo.item4', 'Puoi tornare in ogni momento per nuove necessita')); ?></li>
                     </ul>
                     <div class="ws-highlight-box">
-                        <i class="fa-solid fa-quote-left" aria-hidden="true"></i>
                         <p><?php echo esc_html($tr('model.dopo.quote', 'Non importa da dove parti: importa che tu non sia solo nel percorso.')); ?></p>
                     </div>
                 </div>

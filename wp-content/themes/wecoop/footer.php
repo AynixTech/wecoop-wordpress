@@ -104,6 +104,13 @@
         </div>
     </footer>
 
+    <!-- Scroll to Top Button -->
+    <button id="ws-scroll-to-top" class="ws-scroll-to-top" aria-label="<?php echo esc_attr($_ftr('common.scroll_to_top', 'Scorri verso l\'alto')); ?>">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
     <?php echo do_shortcode('[wecoop_whatsapp]'); ?>
     <?php wp_footer(); ?>
 </body>

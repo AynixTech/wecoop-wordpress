@@ -35,6 +35,13 @@ function wecoop_enqueue_assets() {
         file_exists(get_template_directory() . '/assets/css/site-refactor.css') ? filemtime(get_template_directory() . '/assets/css/site-refactor.css') : null
     );
 
+    wp_enqueue_style(
+        'wecoop-scroll-to-top',
+        get_template_directory_uri() . '/assets/css/scroll-to-top.css',
+        ['wecoop-style'],
+        file_exists(get_template_directory() . '/assets/css/scroll-to-top.css') ? filemtime(get_template_directory() . '/assets/css/scroll-to-top.css') : null
+    );
+
     wp_enqueue_script(
         'wecoop-theme-js',
         get_template_directory_uri() . '/assets/js/theme.js',
@@ -44,6 +51,30 @@ function wecoop_enqueue_assets() {
     );
 }
 add_action('wp_enqueue_scripts', 'wecoop_enqueue_assets');
+
+function wecoop_add_meta_tags() {
+    if (is_front_page()) {
+        $lang = wecoop_language();
+        
+        $meta_descriptions = [
+            'it' => 'WECOOP: inclusione sociale e lavoro. Servizi integrati, formazione professionale e accompagnamento personalizzato per migranti e persone vulnerabili in Italia.',
+            'en' => 'WECOOP: Social inclusion and employment. Integrated services, professional training, and personalized support for migrants and vulnerable people in Italy.',
+            'es' => 'WECOOP: Inclusión social y empleo. Servicios integrados, formación profesional y apoyo personalizado para migrantes y personas vulnerables en Italia.',
+            'ar' => 'WECOOP: التضمين الاجتماعي والعمل. خدمات متكاملة والتدريب المهني والدعم الشخصي للمهاجرين والأشخاص الضعفاء في إيطاليا.',
+            'zh' => 'WECOOP：社会融入和就业。为意大利的移民和弱势群体提供综合服务、职业培训和个人支持。'
+        ];
+        
+        $description = $meta_descriptions[$lang] ?? $meta_descriptions['it'];
+        echo '<meta name="description" content="' . esc_attr($description) . '">' . "\n";
+        
+        echo '<meta property="og:title" content="' . esc_attr(get_bloginfo('name')) . ' - ' . esc_attr(get_bloginfo('description')) . '">' . "\n";
+        echo '<meta property="og:description" content="' . esc_attr($description) . '">' . "\n";
+        echo '<meta property="og:type" content="website">' . "\n";
+        echo '<meta property="og:url" content="' . esc_attr(home_url('/')) . '">' . "\n";
+        echo '<meta property="og:image" content="' . esc_attr(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png') . '">' . "\n";
+    }
+}
+add_action('wp_head', 'wecoop_add_meta_tags');
 
 function wecoop_register_partner_cpt() {
     register_post_type('wecoop_partner', [

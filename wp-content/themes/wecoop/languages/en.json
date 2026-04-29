@@ -377,6 +377,13 @@
   "servizi.s5.item3": "Support with applications",
   "servizi.s5.item4": "Connection with financial partners",
   "servizi.s5.cta": "Discover the service",
+  "servizi.s6.title": "Study in Italy",
+  "servizi.s6.desc": "Guidance to access training and educational pathways in Italy.",
+  "servizi.s6.item1": "Training programs",
+  "servizi.s6.item2": "Professional courses",
+  "servizi.s6.item3": "Access to educational institutions",
+  "servizi.s6.item4": "Language support",
+  "servizi.s6.cta": "Discover the service",
   "servizi.model.eyebrow": "The path",
   "servizi.model.title": "One integrated path, not separate services",
   "servizi.model.body": "WECOOP does not offer isolated services, but an integrated path. We start from your needs and guide you through documents, work, training and access to services.",
@@ -845,5 +852,6 @@
   "nl.s5.title": "Governing Law and Jurisdiction",
   "nl.s5.p1": "These Legal Notes are governed by Italian law. Disputes fall under the jurisdiction of the Court of Milan, Italy.",
   "nl.s6.title": "Contact",
-  "nl.s6.p1": "For legal notices or requests:"
+  "nl.s6.p1": "For legal notices or requests:",
+  "common.scroll_to_top": "Scroll to top"
 }

@@ -377,6 +377,13 @@
   "servizi.s5.item3": "Supporto nella richiesta",
   "servizi.s5.item4": "Connessione con partner finanziari",
   "servizi.s5.cta": "Scopri il servizio",
+  "servizi.s6.title": "Studiare in Italia",
+  "servizi.s6.desc": "Accompagnamento per accedere alla formazione e ai percorsi scolastici in Italia.",
+  "servizi.s6.item1": "Percorsi formativi",
+  "servizi.s6.item2": "Corsi professionali",
+  "servizi.s6.item3": "Accesso a istituti scolastici",
+  "servizi.s6.item4": "Supporto linguistico",
+  "servizi.s6.cta": "Scopri il servizio",
   "servizi.model.eyebrow": "Il percorso",
   "servizi.model.title": "Un unico percorso, non servizi separati",
   "servizi.model.body": "WECOOP non offre servizi isolati, ma un percorso integrato. Partiamo dai tuoi bisogni e ti accompagniamo tra documenti, lavoro, formazione e accesso ai servizi.",
@@ -763,5 +770,6 @@
   "cookie.title": "Cookie Policy",
   "cookie.hero.desc": "Informazioni sui cookie e tecnologie di tracciamento usate su questo sito.",
   "legal.title": "Note Legali",
-  "legal.hero.desc": "Informazioni legali, proprietà intellettuale e responsabilità."
+  "legal.hero.desc": "Informazioni legali, proprietà intellettuale e responsabilità.",
+  "common.scroll_to_top": "Scorri verso l'alto"
 }
