@@ -14,7 +14,7 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
         <div class="ws-container">
             <div class="cw-hero__inner">
                 <div class="cw-hero__text">
-                    <img class="ws-logo-app" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
+                    <img class="ws-logo-app ws-logo-app--on-dark" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/Recurso_3@3x.png'); ?>" alt="Passaparola">
                     <span class="cw-eyebrow"><?php echo esc_html($tr('passaparola.hero.eyebrow', 'Progetto territoriale')); ?></span>
                     <h1><?php echo esc_html($tr('passaparola.hero.title', 'Passaparola – il progetto WECOOP sul territorio')); ?></h1>
                     <p class="cw-hero__lead"><?php echo esc_html($tr('passaparola.hero.subtitle', 'Il progetto territoriale di WECOOP che connette persone, servizi e opportunità.')); ?></p>

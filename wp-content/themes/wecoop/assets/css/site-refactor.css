@@ -1187,6 +1187,23 @@ body.home {
     margin-bottom: 10px;
 }
 
+.ws-logo-app--on-dark {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 14px;
+    padding: 8px 14px;
+    box-shadow: 0 10px 26px rgba(8, 35, 53, 0.28);
+    max-height: 120px;
+}
+
+@media (max-width: 768px) {
+    .ws-logo-app--on-dark {
+        max-height: 96px;
+        padding: 6px 10px;
+        border-radius: 12px;
+    }
+}
+
 .ws-mini {
     box-shadow: 0 10px 22px rgba(17, 34, 53, 0.1);
 }
