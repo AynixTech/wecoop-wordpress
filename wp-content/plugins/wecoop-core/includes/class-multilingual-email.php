@@ -104,10 +104,10 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_action' => 'Per procedere, completa il pagamento cliccando sul pulsante qui sotto.',
             'service_payment_required_button_text' => '💳 Paga Ora',
             'service_payment_required_footer' => 'Una volta completato il pagamento, verrà generata automaticamente la fattura del servizio.',
-            'service_payment_required_note' => '<strong>Nota:</strong> Il pagamento e la fatturazione sono gestiti da KINTI SRL nell\'ambito del progetto WECOOP. I prezzi mostrati sono comprensivi di IVA.',
+            'service_payment_required_note' => '<strong>Nota:</strong> Il pagamento e la fatturazione sono gestiti da KINTI SRL nell\'ambito del progetto WECOOP. Dati KINTI SRL: sede legale Via San Martino di Tours, 2 - 20900 Monza (MB), ufficio Via Populonia, 8 - 20159 Milano (MI), CF/P.IVA 12201260960, SDI T9K4ZHO, tel. +39 331 393 5170, email info@kinti.it. I prezzi mostrati sono comprensivi di IVA.',
             'service_payment_required_preheader' => 'Completa il pagamento della tua pratica',
             'service_payment_required_methods_title' => '💳 Metodi di pagamento accettati',
-            'service_payment_required_methods_text' => 'Stripe (KINTI SRL) • Bonifico bancario • PayPal',
+            'service_payment_required_methods_text' => 'Stripe (KINTI SRL - P.IVA 12201260960) • Bonifico bancario • PayPal',
             'service_payment_required_help_title' => 'Hai bisogno di aiuto?',
 
             // OTP firma digitale
@@ -209,10 +209,10 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_action' => 'To proceed, complete the payment by clicking the button below.',
             'service_payment_required_button_text' => '💳 Pay Now',
             'service_payment_required_footer' => 'Once payment is completed, the service invoice will be generated automatically.',
-            'service_payment_required_note' => '<strong>Note:</strong> Payment and invoicing are managed by KINTI SRL within the WECOOP project. All displayed prices include VAT.',
+            'service_payment_required_note' => '<strong>Note:</strong> Payment and invoicing are managed by KINTI SRL within the WECOOP project. KINTI SRL details: registered office Via San Martino di Tours, 2 - 20900 Monza (MB), office Via Populonia, 8 - 20159 Milano (MI), Tax code/VAT 12201260960, SDI T9K4ZHO, tel. +39 331 393 5170, email info@kinti.it. All displayed prices include VAT.',
             'service_payment_required_preheader' => 'Complete the payment for your case',
             'service_payment_required_methods_title' => '💳 Accepted payment methods',
-            'service_payment_required_methods_text' => 'Stripe (KINTI SRL) • Bank transfer • PayPal',
+            'service_payment_required_methods_text' => 'Stripe (KINTI SRL - VAT 12201260960) • Bank transfer • PayPal',
             'service_payment_required_help_title' => 'Need help?',
 
             // OTP digital signature
@@ -299,10 +299,10 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_action' => 'Pour continuer, complétez le paiement en cliquant sur le bouton ci-dessous.',
             'service_payment_required_button_text' => '💳 Payer Maintenant',
             'service_payment_required_footer' => 'Une fois le paiement effectué, la facture du service sera générée automatiquement.',
-            'service_payment_required_note' => '<strong>Remarque:</strong> Le paiement et la facturation sont gérés par KINTI SRL dans le cadre du projet WECOOP. Tous les prix affichés incluent la TVA.',
+            'service_payment_required_note' => '<strong>Remarque:</strong> Le paiement et la facturation sont gérés par KINTI SRL dans le cadre du projet WECOOP. Informations KINTI SRL: siège social Via San Martino di Tours, 2 - 20900 Monza (MB), bureau Via Populonia, 8 - 20159 Milano (MI), code fiscal/TVA 12201260960, SDI T9K4ZHO, tél. +39 331 393 5170, email info@kinti.it. Tous les prix affichés incluent la TVA.',
             'service_payment_required_preheader' => 'Finalisez le paiement de votre dossier',
             'service_payment_required_methods_title' => '💳 Moyens de paiement acceptés',
-            'service_payment_required_methods_text' => 'Stripe (KINTI SRL) • Virement bancaire • PayPal',
+            'service_payment_required_methods_text' => 'Stripe (KINTI SRL - TVA 12201260960) • Virement bancaire • PayPal',
             'service_payment_required_help_title' => 'Besoin d\'aide?',
 
             // OTP signature numérique
@@ -389,10 +389,10 @@ class WeCoop_Multilingual_Email {
             'service_payment_required_action' => 'Para continuar, completa el pago haciendo clic en el botón de abajo.',
             'service_payment_required_button_text' => '💳 Pagar Ahora',
             'service_payment_required_footer' => 'Una vez completado el pago, la factura del servicio se generará automáticamente.',
-            'service_payment_required_note' => '<strong>Nota:</strong> El pago y la facturación son gestionados por KINTI SRL en el marco del proyecto WECOOP. Todos los precios mostrados incluyen IVA.',
+            'service_payment_required_note' => '<strong>Nota:</strong> El pago y la facturación son gestionados por KINTI SRL en el marco del proyecto WECOOP. Datos de KINTI SRL: sede legal Via San Martino di Tours, 2 - 20900 Monza (MB), oficina Via Populonia, 8 - 20159 Milano (MI), NIF/IVA 12201260960, SDI T9K4ZHO, tel. +39 331 393 5170, email info@kinti.it. Todos los precios mostrados incluyen IVA.',
             'service_payment_required_preheader' => 'Completa el pago de tu expediente',
             'service_payment_required_methods_title' => '💳 Métodos de pago aceptados',
-            'service_payment_required_methods_text' => 'Stripe (KINTI SRL) • Transferencia bancaria • PayPal',
+            'service_payment_required_methods_text' => 'Stripe (KINTI SRL - IVA 12201260960) • Transferencia bancaria • PayPal',
             'service_payment_required_help_title' => '¿Necesitas ayuda?',
 
             // OTP firma digital

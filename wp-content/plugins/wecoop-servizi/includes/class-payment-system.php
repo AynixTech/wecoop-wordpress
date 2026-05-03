@@ -166,8 +166,8 @@ class WECOOP_Servizi_Payment_System {
                     'amount' => 'Totale servizio (IVA inclusa): €%s',
                     'app' => "Apri nell'app:",
                     'web' => 'O paga sul web:',
-                    'legal' => 'Il pagamento e la fatturazione sono gestiti da KINTI SRL nell\'ambito del progetto WECOOP.',
-                    'thanks' => "Grazie,\nKINTI SRL / WECOOP",
+                    'legal' => 'Il pagamento e la fatturazione sono gestiti da KINTI SRL nell\'ambito del progetto WECOOP (sede legale: Via San Martino di Tours, 2 - 20900 Monza (MB), ufficio: Via Populonia, 8 - 20159 Milano (MI), CF/P.IVA: 12201260960, SDI: T9K4ZHO, tel: +39 331 393 5170, email: info@kinti.it).',
+                    'thanks' => "Grazie,\nKINTI SRL\nCF/P.IVA: 12201260960\nSDI: T9K4ZHO\ninfo@kinti.it",
                 ],
                 'en' => [
                     'subject' => '💳 Payment Request - KINTI SRL',
@@ -177,8 +177,8 @@ class WECOOP_Servizi_Payment_System {
                     'amount' => 'Service total (VAT included): €%s',
                     'app' => 'Open in the app:',
                     'web' => 'Or pay on the web:',
-                    'legal' => 'Payment and invoicing are managed by KINTI SRL within the WECOOP project.',
-                    'thanks' => "Thank you,\nKINTI SRL / WECOOP",
+                    'legal' => 'Payment and invoicing are managed by KINTI SRL within the WECOOP project (registered office: Via San Martino di Tours, 2 - 20900 Monza (MB), office: Via Populonia, 8 - 20159 Milano (MI), Tax code/VAT: 12201260960, SDI: T9K4ZHO, tel: +39 331 393 5170, email: info@kinti.it).',
+                    'thanks' => "Thank you,\nKINTI SRL\nTax code/VAT: 12201260960\nSDI: T9K4ZHO\ninfo@kinti.it",
                 ],
                 'es' => [
                     'subject' => '💳 Solicitud de Pago - KINTI SRL',
@@ -188,8 +188,8 @@ class WECOOP_Servizi_Payment_System {
                     'amount' => 'Total del servicio (IVA incluida): €%s',
                     'app' => 'Abrir en la app:',
                     'web' => 'O pagar en la web:',
-                    'legal' => 'El pago y la facturación son gestionados por KINTI SRL en el marco del proyecto WECOOP.',
-                    'thanks' => "Gracias,\nKINTI SRL / WECOOP",
+                    'legal' => 'El pago y la facturación son gestionados por KINTI SRL en el marco del proyecto WECOOP (sede legal: Via San Martino di Tours, 2 - 20900 Monza (MB), oficina: Via Populonia, 8 - 20159 Milano (MI), NIF/IVA: 12201260960, SDI: T9K4ZHO, tel: +39 331 393 5170, email: info@kinti.it).',
+                    'thanks' => "Gracias,\nKINTI SRL\nNIF/IVA: 12201260960\nSDI: T9K4ZHO\ninfo@kinti.it",
                 ],
                 'fr' => [
                     'subject' => '💳 Demande de Paiement - KINTI SRL',
@@ -199,8 +199,8 @@ class WECOOP_Servizi_Payment_System {
                     'amount' => 'Total du service (TVA incluse) : €%s',
                     'app' => "Ouvrir dans l'app :",
                     'web' => 'Ou payer sur le web :',
-                    'legal' => 'Le paiement et la facturation sont gérés par KINTI SRL dans le cadre du projet WECOOP.',
-                    'thanks' => "Merci,\nKINTI SRL / WECOOP",
+                    'legal' => 'Le paiement et la facturation sont gérés par KINTI SRL dans le cadre du projet WECOOP (siège social: Via San Martino di Tours, 2 - 20900 Monza (MB), bureau: Via Populonia, 8 - 20159 Milano (MI), code fiscal/TVA: 12201260960, SDI: T9K4ZHO, tél: +39 331 393 5170, email: info@kinti.it).',
+                    'thanks' => "Merci,\nKINTI SRL\nCode fiscal/TVA: 12201260960\nSDI: T9K4ZHO\ninfo@kinti.it",
                 ],
             ][$lang];
 

@@ -71,12 +71,18 @@ class WeCoop_Ricevuta_PDF {
     }
 
     private static function get_company_details() {
+        $default_registered_office = 'Via San Martino di Tours, 2 - 20900 Monza (MB)';
+        $default_office = 'Via Populonia, 8 - 20159 Milano (MI)';
+
         return [
             'name' => get_option('wecoop_kinti_company_name', 'KINTI SRL'),
-            'address' => get_option('wecoop_kinti_address', '{{kinti_address}}'),
-            'vat' => get_option('wecoop_kinti_vat', '{{kinti_vat}}'),
-            'email' => get_option('wecoop_kinti_email', '{{kinti_email}}'),
-            'sdi' => get_option('wecoop_kinti_sdi', '{{kinti_sdi}}'),
+            'registered_office' => get_option('wecoop_kinti_registered_office', $default_registered_office),
+            'office' => get_option('wecoop_kinti_office', $default_office),
+            'address' => get_option('wecoop_kinti_address', $default_office),
+            'vat' => get_option('wecoop_kinti_vat', '12201260960'),
+            'email' => get_option('wecoop_kinti_email', 'info@kinti.it'),
+            'phone' => get_option('wecoop_kinti_phone', '+39 331 393 5170'),
+            'sdi' => get_option('wecoop_kinti_sdi', 'T9K4ZHO'),
             'pec' => get_option('wecoop_kinti_pec', '{{kinti_pec}}'),
         ];
     }
@@ -216,9 +222,12 @@ class WeCoop_Ricevuta_PDF {
             'invoice_number' => $numero_ricevuta,
             'invoice_date' => $data_pagamento,
             'company_name' => $company['name'],
+            'company_registered_office' => $company['registered_office'],
+            'company_office' => $company['office'],
             'company_address' => $company['address'],
             'company_vat' => $company['vat'],
             'company_email' => $company['email'],
+            'company_phone' => $company['phone'],
             'company_sdi' => $company['sdi'],
             'company_pec' => $company['pec'],
             'customer_name' => $customer_name,
@@ -310,9 +319,13 @@ class WeCoop_Ricevuta_PDF {
                     <td style="width: 50%; padding-right: 10px;">
                         <div class="card">
                             <div class="section-title"><?php echo esc_html($data['company_name']); ?></div>
-                            <div><?php echo esc_html($data['company_address']); ?></div>
-                            <div>P.IVA: <?php echo esc_html($data['company_vat']); ?></div>
+                            <div>Sede legale: <?php echo esc_html($data['company_registered_office']); ?></div>
+                            <div>Ufficio: <?php echo esc_html($data['company_office']); ?></div>
+                            <div>CF/P.IVA: <?php echo esc_html($data['company_vat']); ?></div>
                             <div>Email: <?php echo esc_html($data['company_email']); ?></div>
+                            <?php if (!empty($data['company_phone'])): ?>
+                                <div>Tel: <?php echo esc_html($data['company_phone']); ?></div>
+                            <?php endif; ?>
                             <?php if (!empty($data['company_sdi'])): ?>
                                 <div>SDI: <?php echo esc_html($data['company_sdi']); ?></div>
                             <?php endif; ?>
@@ -384,7 +397,7 @@ class WeCoop_Ricevuta_PDF {
             <div class="legal-note">
                 <div><strong>Note</strong></div>
                 <div>Servizio erogato nell'ambito del progetto WECOOP.</div>
-                <div>La gestione economica e la fatturazione sono a cura di KINTI SRL.</div>
+                <div>La gestione economica e la fatturazione sono a cura di KINTI SRL (CF/P.IVA <?php echo esc_html($data['company_vat']); ?>, SDI <?php echo esc_html($data['company_sdi']); ?>, Email <?php echo esc_html($data['company_email']); ?>).</div>
                 <div>Documento generato automaticamente.</div>
             </div>
         </body>

@@ -120,13 +120,16 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
                     'servizio' => $servizio,
                     'numero_pratica' => $numero_pratica,
                     'invoice_entity' => 'KINTI SRL',
+                    'invoice_vat' => '12201260960',
+                    'invoice_sdi' => 'T9K4ZHO',
+                    'invoice_email' => 'info@kinti.it',
                     'project' => 'WECOOP',
                     'vat_included' => 'yes',
                 ],
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
-                'description' => "KINTI SRL - {$servizio} ({$numero_pratica})",
+                'description' => "KINTI SRL (P.IVA 12201260960) - {$servizio} ({$numero_pratica})",
             ]);
             
             // Salva nel DB
@@ -269,11 +272,18 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
             $nome = $user->display_name ?: 'Cliente';
         }
 
-        $subject = 'Fattura servizio WECOOP - KINTI SRL';
+        $subject = 'Fattura servizio WECOOP - KINTI SRL (CF/P.IVA 12201260960)';
         $message = "Gentile {$nome},\n\nin allegato trovi la fattura relativa al servizio richiesto tramite la piattaforma WECOOP.\n\n";
         if ($numero_pratica !== '') {
             $message .= "Pratica: {$numero_pratica}\n";
         }
+        $message .= "\nDati di fatturazione KINTI SRL:\n";
+        $message .= "Sede legale: Via San Martino di Tours, 2 - 20900 Monza (MB)\n";
+        $message .= "Ufficio: Via Populonia, 8 - 20159 Milano (MI)\n";
+        $message .= "CF/P.IVA: 12201260960\n";
+        $message .= "SDI: T9K4ZHO\n";
+        $message .= "Tel: +39 331 393 5170\n";
+        $message .= "Email: info@kinti.it\n";
         $message .= "\nCordiali saluti,\nKINTI SRL";
 
         $upload_dir = wp_upload_dir();
