@@ -159,44 +159,48 @@ class WECOOP_Servizi_Payment_System {
             $lang = in_array($lang, ['it', 'en', 'es', 'fr'], true) ? $lang : 'it';
             $copy = [
                 'it' => [
-                    'subject' => '💳 Richiesta di Pagamento - WeCoop',
+                    'subject' => '💳 Richiesta di Pagamento - KINTI SRL',
                     'hello' => 'Ciao %s',
                     'service' => 'È richiesto un pagamento per il servizio: %s',
                     'case' => 'Pratica: %s',
-                    'amount' => 'Importo: €%s',
+                    'amount' => 'Totale servizio (IVA inclusa): €%s',
                     'app' => "Apri nell'app:",
                     'web' => 'O paga sul web:',
-                    'thanks' => "Grazie,\nIl team WeCoop",
+                    'legal' => 'Il pagamento e la fatturazione sono gestiti da KINTI SRL nell\'ambito del progetto WECOOP.',
+                    'thanks' => "Grazie,\nKINTI SRL / WECOOP",
                 ],
                 'en' => [
-                    'subject' => '💳 Payment Request - WeCoop',
+                    'subject' => '💳 Payment Request - KINTI SRL',
                     'hello' => 'Hello %s',
                     'service' => 'A payment is required for the service: %s',
                     'case' => 'Case: %s',
-                    'amount' => 'Amount: €%s',
+                    'amount' => 'Service total (VAT included): €%s',
                     'app' => 'Open in the app:',
                     'web' => 'Or pay on the web:',
-                    'thanks' => "Thank you,\nThe WeCoop team",
+                    'legal' => 'Payment and invoicing are managed by KINTI SRL within the WECOOP project.',
+                    'thanks' => "Thank you,\nKINTI SRL / WECOOP",
                 ],
                 'es' => [
-                    'subject' => '💳 Solicitud de Pago - WeCoop',
+                    'subject' => '💳 Solicitud de Pago - KINTI SRL',
                     'hello' => 'Hola %s',
                     'service' => 'Se requiere un pago para el servicio: %s',
                     'case' => 'Expediente: %s',
-                    'amount' => 'Importe: €%s',
+                    'amount' => 'Total del servicio (IVA incluida): €%s',
                     'app' => 'Abrir en la app:',
                     'web' => 'O pagar en la web:',
-                    'thanks' => "Gracias,\nEl equipo de WeCoop",
+                    'legal' => 'El pago y la facturación son gestionados por KINTI SRL en el marco del proyecto WECOOP.',
+                    'thanks' => "Gracias,\nKINTI SRL / WECOOP",
                 ],
                 'fr' => [
-                    'subject' => '💳 Demande de Paiement - WeCoop',
+                    'subject' => '💳 Demande de Paiement - KINTI SRL',
                     'hello' => 'Bonjour %s',
                     'service' => 'Un paiement est requis pour le service : %s',
                     'case' => 'Dossier : %s',
-                    'amount' => 'Montant : €%s',
+                    'amount' => 'Total du service (TVA incluse) : €%s',
                     'app' => "Ouvrir dans l'app :",
                     'web' => 'Ou payer sur le web :',
-                    'thanks' => "Merci,\nL'équipe WeCoop",
+                    'legal' => 'Le paiement et la facturation sont gérés par KINTI SRL dans le cadre du projet WECOOP.',
+                    'thanks' => "Merci,\nKINTI SRL / WECOOP",
                 ],
             ][$lang];
 
@@ -205,6 +209,7 @@ class WECOOP_Servizi_Payment_System {
             $message .= sprintf($copy['service'], $servizio) . "\n";
             $message .= sprintf($copy['case'], $numero_pratica) . "\n";
             $message .= sprintf($copy['amount'], number_format($importo, 2)) . "\n\n";
+            $message .= $copy['legal'] . "\n\n";
             $message .= $copy['app'] . "\n{$redirect_pagamento}\n\n";
             $message .= $copy['web'] . "\n{$web_payment_url}\n\n";
             $message .= $copy['thanks'];

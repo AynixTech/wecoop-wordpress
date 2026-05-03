@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) exit;
 
 class WeCoop_Ricevuta_PDF {
 
+    private const VAT_RATE = 0.22;
+
     /**
      * Estrae l'importo corretto dal record pagamento.
      */
@@ -56,17 +58,89 @@ class WeCoop_Ricevuta_PDF {
             $detail = 'Canale non specificato';
         }
 
-        // Se il pagamento passa da Stripe ma il canale finale noto e carta, rendi il testo piu chiaro.
         if ($raw_method === 'stripe') {
-            $detail = 'Stripe';
+            $detail = 'Stripe - KINTI SRL';
         }
 
         return [
-            'label' => 'Pagamento online',
+            'label' => 'Pagamento',
             'detail' => $detail,
             'is_bank_transfer' => in_array($raw_method, ['bank_transfer', 'bonifico', 'bonifico_bancario', 'sepa_debit'], true),
             'is_card' => in_array($raw_method, ['stripe', 'card', 'carta', 'carta_di_credito', 'credit_card'], true),
         ];
+    }
+
+    private static function get_company_details() {
+        return [
+            'name' => get_option('wecoop_kinti_company_name', 'KINTI SRL'),
+            'address' => get_option('wecoop_kinti_address', '{{kinti_address}}'),
+            'vat' => get_option('wecoop_kinti_vat', '{{kinti_vat}}'),
+            'email' => get_option('wecoop_kinti_email', '{{kinti_email}}'),
+            'sdi' => get_option('wecoop_kinti_sdi', '{{kinti_sdi}}'),
+            'pec' => get_option('wecoop_kinti_pec', '{{kinti_pec}}'),
+        ];
+    }
+
+    private static function format_address(array $parts) {
+        $filtered = array_filter(array_map(static function ($value) {
+            return trim((string) $value);
+        }, $parts));
+
+        return implode(', ', $filtered);
+    }
+
+    private static function calculate_vat_breakdown($gross_amount) {
+        $total = round((float) $gross_amount, 2);
+        $net = round($total / (1 + self::VAT_RATE), 2);
+        $vat = round($total - $net, 2);
+
+        return [
+            'net' => $net,
+            'vat' => $vat,
+            'total' => $total,
+            'net_formatted' => number_format($net, 2, ',', '.'),
+            'vat_formatted' => number_format($vat, 2, ',', '.'),
+            'total_formatted' => number_format($total, 2, ',', '.'),
+        ];
+    }
+
+    private static function maybe_send_to_sdi(array $invoice_data, array $pdf_result) {
+        $payload = [
+            'invoice' => $invoice_data,
+            'pdf_url' => $pdf_result['url'] ?? '',
+            'generated_at' => current_time('mysql'),
+        ];
+
+        do_action('wecoop_kinti_invoice_ready', $payload, $pdf_result);
+
+        $endpoint = trim((string) get_option('wecoop_kinti_sdi_endpoint', ''));
+        if ($endpoint === '') {
+            error_log('[WECOOP FATTURA] Endpoint SDI non configurato, payload esposto via hook wecoop_kinti_invoice_ready');
+            return;
+        }
+
+        $headers = [
+            'Content-Type' => 'application/json; charset=utf-8',
+        ];
+
+        $token = trim((string) get_option('wecoop_kinti_sdi_token', ''));
+        if ($token !== '') {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+
+        $response = wp_remote_post($endpoint, [
+            'headers' => $headers,
+            'body' => wp_json_encode($payload),
+            'timeout' => 20,
+        ]);
+
+        if (is_wp_error($response)) {
+            error_log('[WECOOP FATTURA] Errore invio SDI: ' . $response->get_error_message());
+            return;
+        }
+
+        error_log('[WECOOP FATTURA] Payload SDI inviato. HTTP ' . wp_remote_retrieve_response_code($response));
+        do_action('wecoop_kinti_invoice_sdi_response', $payload, $response);
     }
     
     /**
@@ -75,7 +149,7 @@ class WeCoop_Ricevuta_PDF {
     public static function generate_ricevuta($payment_id) {
         global $wpdb;
         
-        error_log("[WECOOP RICEVUTA] Inizio generazione per payment_id: $payment_id");
+        error_log("[WECOOP FATTURA] Inizio generazione per payment_id: $payment_id");
         
         // Recupera dati pagamento
         $table = $wpdb->prefix . 'wecoop_pagamenti';
@@ -85,17 +159,17 @@ class WeCoop_Ricevuta_PDF {
         ));
         
         if (!$payment) {
-            error_log("[WECOOP RICEVUTA] Pagamento non trovato");
+            error_log("[WECOOP FATTURA] Pagamento non trovato");
             return [
                 'success' => false,
                 'message' => 'Pagamento non trovato'
             ];
         }
         
-        error_log("[WECOOP RICEVUTA] Pagamento trovato - stato: {$payment->stato}");
+        error_log("[WECOOP FATTURA] Pagamento trovato - stato: {$payment->stato}");
         
         if (!in_array($payment->stato, ['paid', 'completed'])) {
-            error_log("[WECOOP RICEVUTA] Stato non valido: {$payment->stato}");
+            error_log("[WECOOP FATTURA] Stato non valido: {$payment->stato}");
             return [
                 'success' => false,
                 'message' => 'Pagamento non completato (stato: ' . $payment->stato . ')'
@@ -120,58 +194,55 @@ class WeCoop_Ricevuta_PDF {
         }
         $provincia = get_user_meta($user_id, 'provincia', true);
         $codice_fiscale = get_user_meta($user_id, 'codice_fiscale', true);
+        if (empty($codice_fiscale)) {
+            $codice_fiscale = get_user_meta($user_id, 'partita_iva', true);
+        }
         
-        // Dati associazione (configurabili)
-        $nome_associazione = get_option('wecoop_nome_associazione', 'WeCoop APS');
-        $rappresentante_legale = get_option('wecoop_rappresentante_legale', 'Mario Rossi');
-        $data_iscrizione_runts = get_option('wecoop_data_runts', '01/01/2023');
-        
-        // Metodo pagamento
         $payment_method = self::get_payment_method_details($payment);
-        
-        // Genera numero ricevuta
-        $anno = date('Y', strtotime($payment->paid_at));
+        $company = self::get_company_details();
+        $paid_timestamp = !empty($payment->paid_at) ? strtotime($payment->paid_at) : current_time('timestamp');
+        $anno = date('Y', $paid_timestamp);
         $numero_ricevuta = $payment_id . '/' . $anno;
-        
-        // Data pagamento
-        $data_pagamento = date('d/m/Y', strtotime($payment->paid_at));
-        
-        // Importo
+        $data_pagamento = date('d/m/Y', $paid_timestamp);
+
         $importo = self::get_payment_amount($payment);
-        $importo_num = number_format($importo, 2, ',', '.');
-        $importo_lettere = self::numero_in_lettere($importo);
-        
-        // Genera HTML ricevuta
-        $html = self::genera_html_ricevuta([
-            'numero_ricevuta' => $numero_ricevuta,
-            'anno' => $anno,
-            'data_pagamento' => $data_pagamento,
-            'nome_associazione' => $nome_associazione,
-            'rappresentante_legale' => $rappresentante_legale,
-            'data_runts' => $data_iscrizione_runts,
-            'importo_cifre' => $importo_num,
-            'importo_lettere' => $importo_lettere,
+        $amounts = self::calculate_vat_breakdown($importo);
+        $customer_name = trim($nome . ' ' . $cognome);
+        if ($customer_name === '') {
+            $customer_name = $user ? $user->display_name : 'Cliente';
+        }
+
+        $invoice_data = [
+            'invoice_number' => $numero_ricevuta,
+            'invoice_date' => $data_pagamento,
+            'company_name' => $company['name'],
+            'company_address' => $company['address'],
+            'company_vat' => $company['vat'],
+            'company_email' => $company['email'],
+            'company_sdi' => $company['sdi'],
+            'company_pec' => $company['pec'],
+            'customer_name' => $customer_name,
+            'customer_address' => self::format_address([$indirizzo, $cap, $comune, $provincia]),
+            'customer_tax_id' => $codice_fiscale ?: '{{customer_tax_id}}',
+            'customer_email' => $user ? $user->user_email : '',
+            'service_name' => $servizio ?: 'Servizio WECOOP',
             'metodo_pagamento' => $payment_method['label'],
             'metodo_pagamento_dettaglio' => $payment_method['detail'],
-            'is_bank_transfer' => $payment_method['is_bank_transfer'],
-            'is_card_payment' => $payment_method['is_card'],
-            'nominativo' => trim($nome . ' ' . $cognome),
-            'indirizzo' => $indirizzo,
-            'cap' => $cap,
-            'comune' => $comune,
-            'provincia' => $provincia,
-            'codice_fiscale' => $codice_fiscale,
             'transaction_id' => $payment->transaction_id,
             'numero_pratica' => $numero_pratica,
-            'servizio' => $servizio
-        ]);
+            'importo_imponibile' => $amounts['net_formatted'],
+            'importo_iva' => $amounts['vat_formatted'],
+            'importo_totale' => $amounts['total_formatted'],
+            'vat_rate' => (int) round(self::VAT_RATE * 100),
+        ];
+
+        $html = self::genera_html_ricevuta($invoice_data);
         
-        error_log("[WECOOP RICEVUTA] Generazione HTML completata");
+        error_log("[WECOOP FATTURA] Generazione HTML completata");
         
-        // Genera PDF
-        $result = self::html_to_pdf($html, "Ricevuta_{$numero_ricevuta}");
+        $result = self::html_to_pdf($html, "Fattura_{$numero_ricevuta}");
         
-        error_log("[WECOOP RICEVUTA] Risultato html_to_pdf: " . json_encode($result));
+        error_log("[WECOOP FATTURA] Risultato html_to_pdf: " . json_encode($result));
         
         if (!$result['success']) {
             return [
@@ -180,7 +251,7 @@ class WeCoop_Ricevuta_PDF {
             ];
         }
         
-        error_log("[WECOOP RICEVUTA] PDF generato: {$result['url']}");
+        error_log("[WECOOP FATTURA] PDF generato: {$result['url']}");
         
         // Salva URL ricevuta nel database
         $wpdb->update(
@@ -191,11 +262,13 @@ class WeCoop_Ricevuta_PDF {
             ['%d']
         );
         
-        error_log("[WECOOP RICEVUTA] URL salvato nel database");
+        error_log("[WECOOP FATTURA] URL salvato nel database");
+
+        self::maybe_send_to_sdi($invoice_data, $result);
         
         return [
             'success' => true,
-            'message' => 'Ricevuta generata con successo',
+            'message' => 'Fattura generata con successo',
             'receipt_url' => $result['url'],
             'filepath' => $result['filepath']
         ];
@@ -205,9 +278,6 @@ class WeCoop_Ricevuta_PDF {
      * Genera HTML ricevuta
      */
     private static function genera_html_ricevuta($data) {
-        $firma_path = WECOOP_SERVIZI_PLUGIN_DIR . 'assets/img/firma_mary_delgado.png';
-        $firma_disponibile = file_exists($firma_path);
-
         ob_start();
         ?>
         <!DOCTYPE html>
@@ -215,153 +285,107 @@ class WeCoop_Ricevuta_PDF {
         <head>
             <meta charset="UTF-8">
             <style>
-                body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
-                .header { text-align: center; margin-bottom: 30px; }
-                .header h1 { font-size: 16pt; margin: 10px 0; }
-                .header h2 { font-size: 14pt; margin: 5px 0; font-weight: normal; }
-                .section { margin: 20px 0; }
-                .label { font-weight: bold; }
-                .box { border: 1px solid #000; padding: 15px; margin: 15px 0; }
-                .checkbox { display: inline-block; width: 15px; height: 15px; border: 1px solid #000; margin-right: 5px; text-align: center; }
-                .checkbox.checked::before { content: '✓'; }
-                .footer { margin-top: 50px; font-size: 10pt; line-height: 1.4; }
-                .firma { margin-top: 60px; text-align: right; }
-                .firma img { max-width: 220px; height: auto; margin-top: 8px; }
+                body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #202124; }
+                .header { margin-bottom: 24px; }
+                .header h1 { font-size: 24pt; margin: 0; letter-spacing: 1px; }
+                .grid { width: 100%; margin-bottom: 20px; }
+                .card { border: 1px solid #d9d9d9; padding: 14px; border-radius: 8px; vertical-align: top; }
+                .section-title { font-size: 11pt; font-weight: bold; text-transform: uppercase; color: #4a4a4a; margin-bottom: 8px; }
+                .muted { color: #666; }
+                .legal-note { background: #f6f6f6; border-left: 4px solid #1b8f5a; padding: 12px 14px; margin: 20px 0; }
+                .amount-box { background: #faf7ef; border: 1px solid #eadfca; padding: 14px; margin-top: 18px; }
+                .total { font-size: 16pt; font-weight: bold; }
                 table { width: 100%; border-collapse: collapse; }
-                td { padding: 5px; }
+                td, th { padding: 7px 6px; text-align: left; border-bottom: 1px solid #eee; }
+                .right { text-align: right; }
             </style>
         </head>
         <body>
             <div class="header">
-                <h1>RICEVUTA PER EROGAZIONI LIBERALI A APS E ETS</h1>
-                <h2>da persone fisiche, aziende o enti</h2>
+                <h1>FATTURA</h1>
             </div>
-            
-            <div class="section">
-                <table>
-                    <tr>
-                        <td style="width: 50%;">Data: <strong><?php echo esc_html($data['data_pagamento']); ?></strong></td>
-                        <td style="width: 50%; text-align: right;">
-                            Ricevuta N. <strong><?php echo esc_html($data['numero_ricevuta']); ?></strong> / Anno <strong><?php echo esc_html($data['anno']); ?></strong>
-                        </td>
-                    </tr>
-                </table>
+
+            <table class="grid">
+                <tr>
+                    <td style="width: 50%; padding-right: 10px;">
+                        <div class="card">
+                            <div class="section-title"><?php echo esc_html($data['company_name']); ?></div>
+                            <div><?php echo esc_html($data['company_address']); ?></div>
+                            <div>P.IVA: <?php echo esc_html($data['company_vat']); ?></div>
+                            <div>Email: <?php echo esc_html($data['company_email']); ?></div>
+                            <?php if (!empty($data['company_sdi'])): ?>
+                                <div>SDI: <?php echo esc_html($data['company_sdi']); ?></div>
+                            <?php endif; ?>
+                            <?php if (!empty($data['company_pec'])): ?>
+                                <div>PEC: <?php echo esc_html($data['company_pec']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                    <td style="width: 50%; padding-left: 10px;">
+                        <div class="card">
+                            <div class="section-title">Cliente</div>
+                            <div><?php echo esc_html($data['customer_name']); ?></div>
+                            <div><?php echo esc_html($data['customer_address']); ?></div>
+                            <div>CF/P.IVA: <?php echo esc_html($data['customer_tax_id']); ?></div>
+                            <?php if (!empty($data['customer_email'])): ?>
+                                <div>Email: <?php echo esc_html($data['customer_email']); ?></div>
+                            <?php endif; ?>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table>
+                <tr>
+                    <th>Numero</th>
+                    <th>Data</th>
+                    <th>Pagamento</th>
+                    <th>ID transazione</th>
+                </tr>
+                <tr>
+                    <td><?php echo esc_html($data['invoice_number']); ?></td>
+                    <td><?php echo esc_html($data['invoice_date']); ?></td>
+                    <td><?php echo esc_html($data['metodo_pagamento_dettaglio']); ?></td>
+                    <td><?php echo esc_html($data['transaction_id']); ?></td>
+                </tr>
+            </table>
+
+            <div class="legal-note">
+                <div class="section-title">Servizio</div>
+                <div><?php echo esc_html($data['service_name']); ?></div>
+                <div class="muted">Pratica: <?php echo esc_html($data['numero_pratica']); ?></div>
+                <div style="margin-top: 8px;">Servizio erogato nell'ambito del progetto WECOOP.</div>
             </div>
-            
-            <div class="section">
-                <p>
-                    L'Associazione <strong><?php echo esc_html($data['nome_associazione']); ?></strong> 
-                    nella persona del suo rappresentante legale <strong><?php echo esc_html($data['rappresentante_legale']); ?></strong> 
-                    dichiara di aver ricevuto quale erogazione liberale in data odierna 
-                    Euro (in cifre) <strong>€ <?php echo esc_html($data['importo_cifre']); ?></strong> 
-                    (in lettere) <strong><?php echo esc_html($data['importo_lettere']); ?></strong> tramite <strong><?php echo esc_html($data['metodo_pagamento']); ?></strong>:
-                </p>
+
+            <table>
+                <tr>
+                    <th>Voce</th>
+                    <th class="right">Importo</th>
+                </tr>
+                <tr>
+                    <td>Imponibile</td>
+                    <td class="right">€ <?php echo esc_html($data['importo_imponibile']); ?></td>
+                </tr>
+                <tr>
+                    <td>IVA (<?php echo esc_html($data['vat_rate']); ?>%)</td>
+                    <td class="right">€ <?php echo esc_html($data['importo_iva']); ?></td>
+                </tr>
+                <tr>
+                    <td><strong>Totale</strong></td>
+                    <td class="right"><strong>€ <?php echo esc_html($data['importo_totale']); ?></strong></td>
+                </tr>
+            </table>
+
+            <div class="amount-box">
+                <div class="section-title">Totale da pagare</div>
+                <div class="total">€ <?php echo esc_html($data['importo_totale']); ?></div>
             </div>
-            
-            <div class="box">
-                <table>
-                    <tr>
-                        <td style="width: 50%;">
-                            <span class="checkbox <?php echo !empty($data['is_bank_transfer']) ? 'checked' : ''; ?>"></span> Bonifico bancario<br>
-                            <span class="checkbox <?php echo $data['metodo_pagamento'] === 'Versamento postale' ? 'checked' : ''; ?>"></span> Versamento con bollettino postale<br>
-                            <span class="checkbox"></span> Assegno circolare<br>
-                            <span class="checkbox"></span> Assegno bancario non trasferibile
-                        </td>
-                        <td style="width: 50%;">
-                            <span class="checkbox <?php echo !empty($data['is_card_payment']) ? 'checked' : ''; ?>"></span> Carta di credito<br>
-                            <span class="checkbox"></span> Carta di debito<br>
-                            <span class="checkbox"></span> Bonifico postale<br>
-                            <span class="checkbox checked"></span> <?php echo esc_html($data['metodo_pagamento']); ?>
-                        </td>
-                    </tr>
-                </table>
-                <p style="margin-top: 10px; font-size: 10pt; color: #666;">
-                    <em>Dettaglio pagamento: <?php echo esc_html($data['metodo_pagamento_dettaglio']); ?></em><br>
-                    <em>Riferimento: Pratica <?php echo esc_html($data['numero_pratica']); ?> - <?php echo esc_html($data['servizio']); ?></em><br>
-                    <em>ID Transazione: <?php echo esc_html($data['transaction_id']); ?></em>
-                </p>
-            </div>
-            
-            <div class="section">
-                <p class="label">Da:</p>
-                <table>
-                    <tr>
-                        <td>Nominativo (o denominazione azienda o ente):</td>
-                        <td><strong><?php echo esc_html($data['nominativo']); ?></strong></td>
-                    </tr>
-                    <tr>
-                        <td>Indirizzo:</td>
-                        <td><strong><?php echo esc_html($data['indirizzo']); ?></strong></td>
-                    </tr>
-                    <tr>
-                        <td>Cap:</td>
-                        <td><strong><?php echo esc_html($data['cap']); ?></strong></td>
-                    </tr>
-                    <tr>
-                        <td>Comune:</td>
-                        <td><strong><?php echo esc_html($data['comune']); ?></strong></td>
-                    </tr>
-                    <tr>
-                        <td>Provincia:</td>
-                        <td><strong><?php echo esc_html($data['provincia']); ?></strong></td>
-                    </tr>
-                    <tr>
-                        <td>C.F. o P. IVA:</td>
-                        <td><strong><?php echo esc_html($data['codice_fiscale']); ?></strong></td>
-                    </tr>
-                </table>
-            </div>
-            
-            <div class="section">
-                <p>
-                    L'Associazione/Ente <strong><?php echo esc_html($data['nome_associazione']); ?></strong> 
-                    è ente non commerciale iscritta nel <strong>RUNTS</strong> (Registro Unico Nazionale del Terzo Settore) 
-                    di cui all'art. 45 del D.Lgs. 117/2017 e s.m.i. in data <strong><?php echo esc_html($data['data_runts']); ?></strong>.
-                </p>
-            </div>
-            
-            <div class="box" style="background-color: #f9f9f9;">
-                <p style="margin: 5px 0;">
-                    <strong>Per le persone fisiche:</strong> l'erogazione liberale è <strong>detraibile al 30%</strong> 
-                    fino a € 30.000 (art. 83 co. 1 del D.Lgs. n. 117/2017) o, in alternativa, 
-                    è <strong>deducibile nel limite del 10%</strong> reddito complessivo dichiarato 
-                    (art. 83 co. 2 del D.Lgs. n. 117/2017).
-                </p>
-                <p style="margin: 5px 0;">
-                    <strong>Per gli enti e le aziende:</strong> l'erogazione liberale è <strong>deducibile 
-                    nel limite del 10%</strong> reddito complessivo dichiarato (art. 83 co. 2 del D.Lgs. n. 117/2017).
-                </p>
-            </div>
-            
-            <div class="section">
-                <p>
-                    Si rammenta che è condizione di deducibilità o detraibilità delle donazioni 
-                    l'erogazione delle stesse tramite banca, posta o altro sistema tracciabile previsto dalle norme.
-                </p>
-            </div>
-            
-            <div class="section">
-                <p>
-                    <strong>La presente ricevuta è esente da imposta di bollo ex art. 82 co. 5 del D.Lgs. n. 117/2017.</strong>
-                </p>
-            </div>
-            
-            <div class="firma">
-                <p><strong>FIRMA LEGALE RAPPRESENTANTE e TIMBRO</strong></p>
-                <?php if ($firma_disponibile): ?>
-                    <img src="<?php echo esc_attr($firma_path); ?>" alt="Firma legale rappresentante">
-                <?php else: ?>
-                    <br><br>
-                    <p>____________________________________</p>
-                <?php endif; ?>
-            </div>
-            
-            <div class="footer">
-                <hr style="border: 0; border-top: 1px solid #ccc; margin: 20px 0;">
-                <p style="font-size: 9pt; color: #666;">
-                    I dati personali collegati alla donazione verranno trattati nel rispetto del GDPR 679/2016 e D.lgs 196/03. 
-                    Per l'informativa completa si rimanda alla privacy policy sui canali istituzionali dell'ente.
-                </p>
+
+            <div class="legal-note">
+                <div><strong>Note</strong></div>
+                <div>Servizio erogato nell'ambito del progetto WECOOP.</div>
+                <div>La gestione economica e la fatturazione sono a cura di KINTI SRL.</div>
+                <div>Documento generato automaticamente.</div>
             </div>
         </body>
         </html>
@@ -373,20 +397,20 @@ class WeCoop_Ricevuta_PDF {
      * Converte HTML in PDF usando mPDF
      */
     private static function html_to_pdf($html, $filename) {
-        error_log("[WECOOP RICEVUTA] html_to_pdf chiamato per: $filename");
+        error_log("[WECOOP FATTURA] html_to_pdf chiamato per: $filename");
         
         // Carica mPDF dal vendor del plugin
         $autoload = dirname(WECOOP_SERVIZI_FILE) . '/vendor/autoload.php';
-        error_log("[WECOOP RICEVUTA] Percorso autoload: $autoload");
-        error_log("[WECOOP RICEVUTA] Autoload esiste: " . (file_exists($autoload) ? 'SI' : 'NO'));
+        error_log("[WECOOP FATTURA] Percorso autoload: $autoload");
+        error_log("[WECOOP FATTURA] Autoload esiste: " . (file_exists($autoload) ? 'SI' : 'NO'));
         
         if (file_exists($autoload)) {
             require_once $autoload;
-            error_log("[WECOOP RICEVUTA] Autoload caricato");
+            error_log("[WECOOP FATTURA] Autoload caricato");
         }
         
         $mpdf_exists = class_exists('Mpdf\Mpdf');
-        error_log("[WECOOP RICEVUTA] Classe Mpdf\\Mpdf esiste: " . ($mpdf_exists ? 'SI' : 'NO'));
+        error_log("[WECOOP FATTURA] Classe Mpdf\\Mpdf esiste: " . ($mpdf_exists ? 'SI' : 'NO'));
         
         if (!$mpdf_exists) {
             return [
@@ -396,7 +420,7 @@ class WeCoop_Ricevuta_PDF {
         }
         
         try {
-            error_log("[WECOOP RICEVUTA] Creazione oggetto mPDF...");
+            error_log("[WECOOP FATTURA] Creazione oggetto mPDF...");
             
             $mpdf = new Mpdf\Mpdf([
                 'mode' => 'utf-8',
@@ -409,34 +433,33 @@ class WeCoop_Ricevuta_PDF {
                 'margin_footer' => 5
             ]);
             
-            error_log("[WECOOP RICEVUTA] Oggetto mPDF creato");
+            error_log("[WECOOP FATTURA] Oggetto mPDF creato");
             
-            $mpdf->SetTitle('Ricevuta Erogazione Liberale - ' . $filename);
-            $mpdf->SetAuthor('WeCoop APS');
+            $mpdf->SetTitle('Fattura Servizio WECOOP - ' . $filename);
+            $mpdf->SetAuthor(self::get_company_details()['name']);
             $mpdf->SetDisplayMode('fullpage');
             
-            error_log("[WECOOP RICEVUTA] Scrittura HTML...");
+            error_log("[WECOOP FATTURA] Scrittura HTML...");
             $mpdf->WriteHTML($html);
             
-            // Salva in wp-content/uploads/ricevute/
             $upload_dir = wp_upload_dir();
-            $ricevute_dir = $upload_dir['basedir'] . '/ricevute';
+            $ricevute_dir = $upload_dir['basedir'] . '/fatture-wecoop';
             
-            error_log("[WECOOP RICEVUTA] Directory ricevute: $ricevute_dir");
+            error_log("[WECOOP FATTURA] Directory fatture: $ricevute_dir");
             
             if (!file_exists($ricevute_dir)) {
-                error_log("[WECOOP RICEVUTA] Creazione directory ricevute...");
+                error_log("[WECOOP FATTURA] Creazione directory fatture...");
                 wp_mkdir_p($ricevute_dir);
             }
             
             $filepath = $ricevute_dir . '/' . sanitize_file_name($filename) . '.pdf';
-            error_log("[WECOOP RICEVUTA] Salvataggio PDF in: $filepath");
+            error_log("[WECOOP FATTURA] Salvataggio PDF in: $filepath");
             
             $mpdf->Output($filepath, 'F');
             
-            error_log("[WECOOP RICEVUTA] PDF salvato con successo");
+            error_log("[WECOOP FATTURA] PDF salvato con successo");
             
-            $url = $upload_dir['baseurl'] . '/ricevute/' . sanitize_file_name($filename) . '.pdf';
+            $url = $upload_dir['baseurl'] . '/fatture-wecoop/' . sanitize_file_name($filename) . '.pdf';
             
             return [
                 'success' => true,
@@ -445,8 +468,8 @@ class WeCoop_Ricevuta_PDF {
             ];
             
         } catch (Exception $e) {
-            error_log("[WECOOP RICEVUTA] ERRORE EXCEPTION: " . $e->getMessage());
-            error_log("[WECOOP RICEVUTA] Stack trace: " . $e->getTraceAsString());
+            error_log("[WECOOP FATTURA] ERRORE EXCEPTION: " . $e->getMessage());
+            error_log("[WECOOP FATTURA] Stack trace: " . $e->getTraceAsString());
             
             return [
                 'success' => false,

@@ -111,6 +111,7 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
             $paymentIntent = \Stripe\PaymentIntent::create([
                 'amount' => $amount,
                 'currency' => $currency,
+                'receipt_email' => $user ? $user->user_email : null,
                 'metadata' => [
                     'payment_id' => $payment_id,
                     'user_id' => $payment->user_id,
@@ -118,11 +119,14 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
                     'richiesta_id' => $payment->richiesta_id,
                     'servizio' => $servizio,
                     'numero_pratica' => $numero_pratica,
+                    'invoice_entity' => 'KINTI SRL',
+                    'project' => 'WECOOP',
+                    'vat_included' => 'yes',
                 ],
                 'automatic_payment_methods' => [
                     'enabled' => true,
                 ],
-                'description' => "WeCoop - {$servizio} ({$numero_pratica})",
+                'description' => "KINTI SRL - {$servizio} ({$numero_pratica})",
             ]);
             
             // Salva nel DB
@@ -224,15 +228,73 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
             'note' => 'Pagato via Stripe Webhook',
         ]);
         
-        // Genera ricevuta PDF automaticamente
+        // Genera fattura PDF automaticamente
         if (class_exists('WeCoop_Ricevuta_PDF')) {
             $result = WeCoop_Ricevuta_PDF::generate_ricevuta($payment_id);
             if (!$result['success']) {
-                error_log("[WECOOP STRIPE] Errore generazione ricevuta: " . $result['message']);
+                error_log("[WECOOP STRIPE] Errore generazione fattura: " . $result['message']);
             } else {
-                error_log("[WECOOP STRIPE] Ricevuta generata: " . $result['receipt_url']);
+                error_log("[WECOOP STRIPE] Fattura generata: " . $result['receipt_url']);
+                self::send_invoice_email($payment_id, $result['receipt_url']);
             }
         }
+    }
+
+    /**
+     * Invia fattura PDF via email al cliente.
+     */
+    private static function send_invoice_email($payment_id, $invoice_url) {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'wecoop_pagamenti';
+        $payment = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM $table WHERE id = %d",
+            $payment_id
+        ));
+
+        if (!$payment || empty($payment->user_id)) {
+            error_log("[WECOOP STRIPE] Email fattura: pagamento non trovato ($payment_id)");
+            return;
+        }
+
+        $user = get_userdata((int) $payment->user_id);
+        if (!$user || empty($user->user_email)) {
+            error_log("[WECOOP STRIPE] Email fattura: utente/email non disponibile ($payment_id)");
+            return;
+        }
+
+        $numero_pratica = (string) get_post_meta((int) $payment->richiesta_id, 'numero_pratica', true);
+        $nome = (string) get_user_meta((int) $payment->user_id, 'nome', true);
+        if ($nome === '') {
+            $nome = $user->display_name ?: 'Cliente';
+        }
+
+        $subject = 'Fattura servizio WECOOP - KINTI SRL';
+        $message = "Gentile {$nome},\n\nin allegato trovi la fattura relativa al servizio richiesto tramite la piattaforma WECOOP.\n\n";
+        if ($numero_pratica !== '') {
+            $message .= "Pratica: {$numero_pratica}\n";
+        }
+        $message .= "\nCordiali saluti,\nKINTI SRL";
+
+        $upload_dir = wp_upload_dir();
+        $attachment = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], (string) $invoice_url);
+        $attachments = [];
+
+        if (file_exists($attachment)) {
+            $attachments[] = $attachment;
+        } else {
+            error_log("[WECOOP STRIPE] Email fattura: allegato non trovato {$attachment}");
+        }
+
+        $headers = ['Content-Type: text/plain; charset=UTF-8'];
+        $sent = wp_mail($user->user_email, $subject, $message, $headers, $attachments);
+
+        if (!$sent) {
+            error_log("[WECOOP STRIPE] Email fattura non inviata a {$user->user_email}");
+            return;
+        }
+
+        error_log("[WECOOP STRIPE] Email fattura inviata a {$user->user_email} (payment #{$payment_id})");
     }
     
     /**

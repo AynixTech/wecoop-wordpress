@@ -822,14 +822,14 @@ class WECOOP_Servizi_Endpoint {
         $richiesta_user_id = get_post_meta($payment->richiesta_id, 'user_id', true);
         
         if ($richiesta_user_id != $current_user_id && !current_user_can('manage_options')) {
-            return new WP_Error('forbidden', 'Non hai i permessi per scaricare questa ricevuta', ['status' => 403]);
+            return new WP_Error('forbidden', 'Non hai i permessi per scaricare questa fattura', ['status' => 403]);
         }
         
         // Verifica che il pagamento sia completato
         if (!in_array($payment->stato, ['paid', 'completed'])) {
             return new WP_Error(
                 'payment_not_completed',
-                'La ricevuta sarà disponibile dopo il completamento del pagamento',
+                'La fattura sarà disponibile dopo il completamento del pagamento',
                 ['status' => 400]
             );
         }
@@ -852,7 +852,7 @@ class WECOOP_Servizi_Endpoint {
         $file_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $receipt_url);
         
         if (!file_exists($file_path)) {
-            return new WP_Error('file_not_found', 'File ricevuta non trovato sul server', ['status' => 404]);
+            return new WP_Error('file_not_found', 'File fattura non trovato sul server', ['status' => 404]);
         }
         
         // Leggi il file
