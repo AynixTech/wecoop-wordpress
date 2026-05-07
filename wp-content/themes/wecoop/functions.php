@@ -578,6 +578,12 @@ function wecoop_autocreate_pages(): void {
             'status'   => 'publish',
             'template' => 'page-impatto.php',
         ],
+        [
+            'slug'     => 'elimina-account',
+            'title'    => 'Elimina Account',
+            'status'   => 'publish',
+            'template' => 'page-elimina-account.php',
+        ],
     ];
 
     foreach ($pages as $page) {
