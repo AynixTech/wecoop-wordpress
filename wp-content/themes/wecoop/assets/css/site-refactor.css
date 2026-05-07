@@ -3505,6 +3505,8 @@ body.home {
 
 /* Hero */
 .wda-hero { background: linear-gradient(135deg, #fff5f5 0%, #fff 60%); }
+.wda-hero h1 { color: #1a1a2e; }
+.wda-hero .cw-hero__lead { color: #444; opacity: 1; }
 .wda-eyebrow { color: #e53935; }
 
 /* Banner di stato */
