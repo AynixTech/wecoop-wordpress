@@ -120,3 +120,6 @@ temp/
 
 # Local WordPress backups
 wp-content/ai1wm-backups/*.wpress
+
+# Deployment staging directory
+stage/
