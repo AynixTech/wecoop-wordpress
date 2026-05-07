@@ -3498,3 +3498,149 @@ body.home {
         justify-content: center;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Pagina Elimina Account (.wda-*)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Hero */
+.wda-hero { background: linear-gradient(135deg, #fff5f5 0%, #fff 60%); }
+.wda-eyebrow { color: #e53935; }
+
+/* Banner di stato */
+.wda-status-section { padding-top: 0; }
+.wda-alert {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 20px 24px;
+    border-radius: 10px;
+    max-width: 700px;
+    margin: 0 auto;
+}
+.wda-alert i { font-size: 22px; margin-top: 2px; flex-shrink: 0; }
+.wda-alert p { margin: 4px 0 0; }
+.wda-alert--success { background: #e8f5e9; border-left: 4px solid #43a047; }
+.wda-alert--success i { color: #43a047; }
+.wda-alert--warning { background: #fff8e1; border-left: 4px solid #ffa000; }
+.wda-alert--warning i { color: #ffa000; }
+.wda-alert--error   { background: #ffebee; border-left: 4px solid #e53935; }
+.wda-alert--error   i { color: #e53935; }
+
+/* Layout griglia */
+.wda-grid { gap: 48px; align-items: start; }
+
+/* Icone passi info */
+.wda-icon--green  { background: #e8f5e9; color: #43a047; }
+.wda-icon--blue   { background: #e3f2fd; color: #1e88e5; }
+.wda-icon--red    { background: #fce4ec; color: #e53935; }
+.wda-icon--purple { background: #f3e5f5; color: #8e24aa; }
+
+/* Nota privacy */
+.wda-privacy-note {
+    margin-top: 32px;
+    padding: 16px 20px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    font-size: .9rem;
+    color: #555;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+.wda-privacy-note i { color: #1e88e5; margin-top: 2px; flex-shrink: 0; }
+.wda-privacy-note a { color: #1e88e5; }
+
+/* Stato: inviato */
+.wda-sent-state { text-align: center; padding: 40px 20px; }
+.wda-sent-icon  { font-size: 56px; color: #43a047; }
+.wda-home-btn   { margin-top: 20px; display: inline-flex; }
+
+/* Stato: non loggato */
+.wda-login-state { text-align: center; padding: 40px 20px; background: #fff8e1; border-radius: 14px; }
+.wda-login-icon  { font-size: 48px; color: #ffa000; }
+.wda-alt-contact { margin-top: 16px; font-size: .9rem; color: #777; }
+.wda-alt-contact a { color: #1e88e5; }
+
+/* Card form */
+.wda-form-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 14px;
+    padding: 32px;
+}
+.wda-form-card h2 { margin-top: 0; }
+
+/* Warning irreversibile */
+.wda-warning {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #ffebee;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 20px 0;
+    font-size: .9rem;
+}
+.wda-warning i { color: #e53935; font-size: 20px; margin-top: 2px; flex-shrink: 0; }
+.wda-warning p { margin: 0; }
+
+/* Checkbox conferma */
+.wda-confirm-label {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    cursor: pointer;
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    font-size: .95rem;
+}
+.wda-confirm-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    cursor: pointer;
+    accent-color: #e53935;
+}
+
+/* Bottone elimina */
+.wda-btn-delete {
+    background: #e53935;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    font-size: 1rem;
+    padding: 14px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background .2s;
+}
+.wda-btn-delete:hover { background: #c62828; }
+
+/* GDPR footer note */
+.wda-gdpr-note {
+    text-align: center;
+    margin-top: 16px;
+    font-size: .85rem;
+    color: #777;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    align-items: center;
+}
+
+/* Sezione contatto */
+.wda-contact-section .wda-contact-inner { text-align: center; max-width: 680px; }
+
+/* Responsive */
+@media (max-width: 760px) {
+    .wda-grid { grid-template-columns: 1fr; }
+    .wda-form-card { padding: 24px 16px; }
+}
