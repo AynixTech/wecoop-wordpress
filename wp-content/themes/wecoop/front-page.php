@@ -34,7 +34,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a href="<?php echo esc_url($job_offers_url); ?>"><?php echo esc_html($tr('frontpage.nav.jobs', $lang_default('Offerte di lavoro', 'Job Offers', 'Ofertas de trabajo'))); ?></a>
                 <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', $lang_default('Passaparola', 'Passaparola', 'Passaparola'))); ?></a>
                 <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', $lang_default('Piattaforma Digitale', 'Digital Platform', 'Plataforma Digital'))); ?></a>
-                <a href="<?php echo esc_url(home_url('/donazioni/')); ?>"><?php echo esc_html($tr('frontpage.nav.donations', $lang_default('Donazioni', 'Donations', 'Donaciones'))); ?></a>
+                <a href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.nav.donations', $lang_default('Sostieni WECOOP', 'Support WECOOP', 'Apoya WECOOP'))); ?></a>
                 <a href="#impacto"><?php echo esc_html($tr('frontpage.nav.impact', $lang_default('Impatto', 'Impact', 'Impacto'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
@@ -47,7 +47,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                     <span></span><span></span><span></span>
                 </button>
             </div>
-            <a class="ws-btn ws-btn--primary ws-nav__cta" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Collabora')); ?></a>
+            <a class="ws-btn ws-btn--primary ws-nav__cta" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Sostieni WECOOP')); ?></a>
         </div>
     </nav>
 
@@ -174,7 +174,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             </div>
             <div class="ws-actions" style="margin-top:18px;">
                 <a class="ws-btn ws-btn--secondary" href="<?php echo esc_url(home_url('/passaparola/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta1', 'Scopri Passaparola')); ?></a>
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta2', 'Collabora con noi')); ?></a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.passaparola.cta2', 'Collabora con noi')); ?></a>
             </div>
         </div>
     </section>
@@ -229,7 +229,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             </div>
             <div class="ws-actions" style="margin-top:18px;">
                 <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/impatto/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta1', 'Scopri il nostro impatto')); ?></a>
-                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta2', 'Collabora con noi')); ?></a>
+                <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta2', 'Collabora con noi')); ?></a>
             </div>
         </div>
     </section>
@@ -295,7 +295,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                     </article>
                 </div>
                 <div class="ws-actions" style="margin-top:20px;">
-                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">
                         <?php echo esc_html($tr('frontpage.collab.cta1', 'Collabora con noi')); ?>
                     </a>
                     <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/contatti/')); ?>">

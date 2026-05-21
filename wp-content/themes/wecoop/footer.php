@@ -39,8 +39,8 @@
                 <div class="ws-footer-col">
                     <h4><?php echo esc_html($_ftr('footer.col3.title', 'Collabora')); ?></h4>
                     <nav aria-label="<?php echo esc_attr($_ftr('footer.col3.aria', 'Footer collabora')); ?>">
-                        <a href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($_ftr('footer.col3.link1', 'Collabora con WECOOP')); ?></a>
-                        <a href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>"><?php echo esc_html($_ftr('footer.col3.link2', 'Diventa partner')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($_ftr('footer.col3.link1', 'Collabora con WECOOP')); ?></a>
+                        <a href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($_ftr('footer.col3.link2', 'Diventa partner')); ?></a>
                         <a href="<?php echo esc_url(home_url('/passaparola/')); ?>"><?php echo esc_html($_ftr('footer.col3.link3', 'Progetti e iniziative')); ?></a>
                         <a href="<?php echo esc_url(home_url('/contatti/')); ?>"><?php echo esc_html($_ftr('footer.col3.link4', 'Contattaci')); ?></a>
                     </nav>

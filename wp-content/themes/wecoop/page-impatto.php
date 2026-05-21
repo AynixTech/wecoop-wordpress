@@ -16,7 +16,7 @@ wecoop_ws_page_shell_start($tr('impact.aria.page', 'Il nostro impatto sociale â€
                     <h1><?php echo esc_html($tr('impact.hero.title', 'Il nostro impatto sociale')); ?></h1>
                     <p class="cw-hero__lead"><?php echo esc_html($tr('impact.hero.subtitle', 'Trasformiamo bisogni reali in percorsi concreti di autonomia.')); ?></p>
                     <div class="ws-hero-ctas">
-                        <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                        <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">
                             <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                             <?php echo esc_html($tr('impact.hero.cta1', 'Collabora con noi')); ?>
                         </a>
@@ -218,7 +218,7 @@ wecoop_ws_page_shell_start($tr('impact.aria.page', 'Il nostro impatto sociale â€
             <h2><?php echo esc_html($tr('impact.cta.title', 'Vuoi contribuire al nostro impatto?')); ?></h2>
             <p class="ws-lead"><?php echo esc_html($tr('impact.cta.body', 'Collabora con noi per sviluppare nuove opportunitÃ  e ampliare l\'impatto sul territorio.')); ?></p>
             <div class="ws-hero-ctas">
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">
                     <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
                     <?php echo esc_html($tr('impact.cta.btn1', 'Collabora con noi')); ?>
                 </a>

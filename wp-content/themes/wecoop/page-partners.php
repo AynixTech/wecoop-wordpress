@@ -48,7 +48,7 @@ wecoop_ws_page_shell_start(translate_string('partners.aria.page', 'Partners page
 
         <section class="ws-cta-box">
             <h2>Would you like to become a WECOOP partner?</h2>
-            <p><a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us')); ?>">Propose a partnership</a></p>
+            <p><a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">Propose a partnership</a></p>
         </section>
     </article>
     </div>

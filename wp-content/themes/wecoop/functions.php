@@ -103,7 +103,7 @@ function wecoop_register_block_patterns() {
         register_block_pattern('wecoop/cta-collabora', [
             'title' => __('CTA Collaborate', 'wecoop'),
             'categories' => ['wecoop-sections'],
-            'content' => "<!-- wp:group {\"className\":\"ws-cta-box\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group ws-cta-box\"><!-- wp:heading {\"level\":3} --><h3>Build local impact together</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Contact WECOOP to activate new collaborations with institutions, organizations, and businesses.</p><!-- /wp:paragraph --><!-- wp:buttons --><div class=\"wp-block-buttons\"><!-- wp:button {\"className\":\"is-style-fill\"} --><div class=\"wp-block-button is-style-fill\"><a class=\"wp-block-button__link wp-element-button\" href=\"/contact\">Contact us</a></div><!-- /wp:button --><!-- wp:button {\"className\":\"is-style-outline\"} --><div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link wp-element-button\" href=\"/collaborate-with-us\">Collaborate</a></div><!-- /wp:button --></div><!-- /wp:buttons --></div>\n<!-- /wp:group -->",
+            'content' => "<!-- wp:group {\"className\":\"ws-cta-box\",\"layout\":{\"type\":\"constrained\"}} -->\n<div class=\"wp-block-group ws-cta-box\"><!-- wp:heading {\"level\":3} --><h3>Build local impact together</h3><!-- /wp:heading --><!-- wp:paragraph --><p>Contact WECOOP to activate new collaborations with institutions, organizations, and businesses.</p><!-- /wp:paragraph --><!-- wp:buttons --><div class=\"wp-block-buttons\"><!-- wp:button {\"className\":\"is-style-fill\"} --><div class=\"wp-block-button is-style-fill\"><a class=\"wp-block-button__link wp-element-button\" href=\"/contact\">Contact us</a></div><!-- /wp:button --><!-- wp:button {\"className\":\"is-style-outline\"} --><div class=\"wp-block-button is-style-outline\"><a class=\"wp-block-button__link wp-element-button\" href=\"/sostieni-wecoop\">Support WECOOP</a></div><!-- /wp:button --></div><!-- /wp:buttons --></div>\n<!-- /wp:group -->",
         ]);
     }
 }
@@ -293,7 +293,7 @@ function wecoop_default_home_content() {
         . '<section class="ws-content-section"><h2>Digital platform - WECOOP App</h2><p>Digital experience to manage requests, documents, payments, and service tracking.</p><a class="ws-btn ws-btn--ghost" href="/wecoop-app">Discover the app</a></section>'
         . '<section class="ws-content-section"><h2>Social impact</h2><p>Measurable results in service access, employability, and community connection.</p><a class="ws-btn ws-btn--ghost" href="/social-impact">View impact</a></section>'
         . '<section class="ws-content-section"><h2>Partners</h2><p>WECOOP works in network with social entities, companies, schools, and institutions.</p><a class="ws-btn ws-btn--ghost" href="/partners">Meet our partners</a></section>'
-        . '<section class="ws-cta-box"><h2>Collaborate with WECOOP</h2><p>If you are an institution or an interested individual, we can build a joint project together.</p><p><a class="ws-btn ws-btn--light" href="/contact">Contact us</a> <a class="ws-btn ws-btn--ghost" href="/collaborate-with-us">Collaborate</a></p></section>';
+        . '<section class="ws-cta-box"><h2>Collaborate with WECOOP</h2><p>If you are an institution or an interested individual, we can build a joint project together.</p><p><a class="ws-btn ws-btn--light" href="/contact">Contact us</a> <a class="ws-btn ws-btn--ghost" href="/sostieni-wecoop">Support WECOOP</a></p></section>';
 }
 
 function wecoop_seed_pages_and_menu() {
@@ -304,7 +304,7 @@ function wecoop_seed_pages_and_menu() {
         'wecoop-app' => ['title' => 'WECOOP App', 'content' => '<h1>WECOOP App</h1><p>Digital platform for services, tracking, and future integrations.</p>'],
         'social-impact' => ['title' => 'Social Impact', 'content' => '<h1>Social Impact</h1><p>Indicators, outcomes, and continuous improvement.</p>'],
         'partners' => ['title' => 'Partners', 'content' => '<h1>Partners</h1><p>Network of WECOOP allied organizations.</p>'],
-        'collaborate-with-us' => ['title' => 'Collaborate with Us', 'content' => '<h1>Collaborate with Us</h1><p>Space for organizations, institutions, and professionals who want to contribute.</p>'],
+        'sostieni-wecoop' => ['title' => 'Sostieni WECOOP', 'content' => '<h1>Sostieni WECOOP</h1><p>Supporta i progetti WECOOP e contribuisci a creare impatto concreto sul territorio.</p>'],
         'contact' => ['title' => 'Contact', 'content' => '<h1>Contact</h1><p>Write to us and we will reply as soon as possible.</p>[wecoop_contact_form]'],
         'news' => ['title' => 'News', 'content' => '<h1>News</h1><p>Institutional updates and blog content.</p>'],
     ];
@@ -338,7 +338,7 @@ function wecoop_seed_pages_and_menu() {
     $menu_id = $menu ? (int) $menu->term_id : wp_create_nav_menu($menu_name);
 
     if ($menu_id && is_array($created)) {
-        $order = ['home', 'wecoop-model', 'passaparola-project', 'wecoop-app', 'social-impact', 'partners', 'collaborate-with-us', 'contact'];
+        $order = ['home', 'wecoop-model', 'passaparola-project', 'wecoop-app', 'social-impact', 'partners', 'sostieni-wecoop', 'contact'];
         foreach ($order as $slug) {
             if (empty($created[$slug])) {
                 continue;
@@ -390,7 +390,8 @@ function wecoop_migrate_legacy_slugs() {
         'proyecto-passaparola' => 'passaparola-project',
         'app-wecoop' => 'wecoop-app',
         'impacto-social' => 'social-impact',
-        'colabora-con-nosotros' => 'collaborate-with-us',
+        'colabora-con-nosotros' => 'sostieni-wecoop',
+        'collaborate-with-us' => 'sostieni-wecoop',
         'contactos' => 'contact',
         'noticias' => 'news',
     ];
@@ -420,7 +421,8 @@ function wecoop_redirect_legacy_slugs() {
         'proyecto-passaparola' => 'passaparola-project',
         'app-wecoop' => 'wecoop-app',
         'impacto-social' => 'social-impact',
-        'colabora-con-nosotros' => 'collaborate-with-us',
+        'colabora-con-nosotros' => 'sostieni-wecoop',
+        'collaborate-with-us' => 'sostieni-wecoop',
         'contactos' => 'contact',
         'noticias' => 'news',
     ];
@@ -585,10 +587,10 @@ function wecoop_autocreate_pages(): void {
             'template' => 'page-elimina-account.php',
         ],
         [
-            'slug'     => 'donazioni',
-            'title'    => 'Donazioni',
+            'slug'     => 'sostieni-wecoop',
+            'title'    => 'Sostieni WECOOP',
             'status'   => 'publish',
-            'template' => 'page-donations.php',
+            'template' => 'page-sostieni-wecoop.php',
         ],
     ];
 

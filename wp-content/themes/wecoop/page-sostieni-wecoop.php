@@ -1,6 +1,6 @@
 <?php
 /**
- * Template Name: Donazioni
+ * Template Name: Sostieni WECOOP
  * Template Post Type: page
  *
  * @package WeCoop
@@ -9,15 +9,15 @@
 get_header();
 
 $tr = 'translate_string';
-$donate_url = trim((string) get_option('wecoop_donation_url', ''));
-if ($donate_url === '') {
-    $donate_url = home_url('/contatti/');
+$support_cta_url = trim((string) get_option('wecoop_donation_url', ''));
+if ($support_cta_url === '') {
+    $support_cta_url = home_url('/contatti/');
 }
 
-wecoop_ws_page_shell_start($tr('donations.aria.page', 'Donazioni - WeCoop'));
+wecoop_ws_page_shell_start($tr('donations.aria.page', 'Sostieni WECOOP - WeCoop'));
 ?>
 
-<section class="cw-hero" id="donazioni-hero">
+<section class="cw-hero" id="sostieni-wecoop-hero">
     <div class="ws-container">
         <div class="cw-hero__inner">
             <div class="cw-hero__text">
@@ -32,7 +32,7 @@ wecoop_ws_page_shell_start($tr('donations.aria.page', 'Donazioni - WeCoop'));
     </div>
 </section>
 
-<section class="ws-section" id="donazioni-main">
+<section class="ws-section" id="sostieni-wecoop-main">
     <div class="ws-container">
         <div class="ws-grid-2">
             <article class="ws-form-shell">
@@ -71,9 +71,9 @@ wecoop_ws_page_shell_start($tr('donations.aria.page', 'Donazioni - WeCoop'));
                 </ul>
                 <p><?php echo esc_html($tr('donations.free.closing', 'Ogni contributo aiuta WECOOP a costruire un impatto reale e sostenibile.')); ?></p>
                 <p>
-                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($donate_url); ?>">
+                    <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($support_cta_url); ?>">
                         <i class="fa-solid fa-heart" aria-hidden="true"></i>
-                        <?php echo esc_html($tr('donations.free.cta', 'DONA')); ?>
+                        <?php echo esc_html($tr('donations.free.cta', 'SOSTIENI WECOOP')); ?>
                     </a>
                 </p>
             </article>

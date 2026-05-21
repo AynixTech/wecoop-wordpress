@@ -28,7 +28,7 @@ wecoop_ws_page_shell_start(translate_string('passaparola.aria.page', 'Passaparol
         <section class="ws-cta-box">
             <h2>Join the project</h2>
             <p>
-                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/collaborate-with-us')); ?>">Collaborate</a>
+                <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">Collaborate</a>
                 <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/contact')); ?>">Contact us</a>
             </p>
         </section>

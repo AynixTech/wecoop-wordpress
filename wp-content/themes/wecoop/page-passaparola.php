@@ -24,7 +24,7 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                             <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
                             <?php echo esc_html($tr('passaparola.hero.cta1', 'Contattaci')); ?>
                         </a>
-                        <a class="ws-btn cw-btn--ghost" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                        <a class="ws-btn cw-btn--ghost" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">
                             <i class="fa-solid fa-handshake" aria-hidden="true"></i>
                             <?php echo esc_html($tr('passaparola.hero.cta2', 'Collabora con noi')); ?>
                         </a>
@@ -237,7 +237,7 @@ $wa_msg = esc_attr(rawurlencode((string) get_option('wecoop_whatsapp_message', '
                         <i class="fa-regular fa-calendar-check" aria-hidden="true"></i>
                         <?php echo esc_html($tr('passaparola.cta.btn1', 'Contattaci')); ?>
                     </a>
-                    <a class="ws-btn cw-btn--whatsapp" href="<?php echo esc_url(home_url('/collaborate-with-us/')); ?>">
+                    <a class="ws-btn cw-btn--whatsapp" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>">
                         <i class="fa-solid fa-handshake" aria-hidden="true"></i>
                         <?php echo esc_html($tr('passaparola.cta.btn2', 'Collabora con noi')); ?>
                     </a>
