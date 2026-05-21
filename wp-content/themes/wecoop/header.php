@@ -29,6 +29,7 @@ $_tr = 'translate_string';
                 <a href="<?php echo esc_url(home_url('/annunci-lavoro-wecoop/')); ?>"><?php echo esc_html($_tr('frontpage.nav.jobs', 'Offerte di lavoro')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#passaparola')); ?>"><?php echo esc_html($_tr('frontpage.nav.passaparola', 'Passaparola')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#plataforma')); ?>"><?php echo esc_html($_tr('frontpage.nav.platform', 'Piattaforma Digitale')); ?></a>
+                <a href="<?php echo esc_url(home_url('/donazioni/')); ?>"><?php echo esc_html($_tr('frontpage.nav.donations', 'Donazioni')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#impacto')); ?>"><?php echo esc_html($_tr('frontpage.nav.impact', 'Impatto')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#contacto')); ?>"><?php echo esc_html($_tr('frontpage.nav.contact', 'Contatti')); ?></a>
             </div>
