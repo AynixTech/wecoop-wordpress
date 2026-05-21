@@ -584,6 +584,12 @@ function wecoop_autocreate_pages(): void {
             'status'   => 'publish',
             'template' => 'page-elimina-account.php',
         ],
+        [
+            'slug'     => 'donazioni',
+            'title'    => 'Donazioni',
+            'status'   => 'publish',
+            'template' => 'page-donations.php',
+        ],
     ];
 
     foreach ($pages as $page) {
