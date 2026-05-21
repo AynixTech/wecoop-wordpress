@@ -25,7 +25,7 @@ wecoop_ws_page_shell_start($tr('donations.aria.page', 'Sostieni WECOOP - WeCoop'
                     <i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i>
                     <?php echo esc_html($tr('donations.hero.eyebrow', 'Sostieni WECOOP')); ?>
                 </span>
-                <h1><?php echo esc_html($tr('donations.hero.title', 'Dona per creare opportunita concrete')); ?></h1>
+                <h1><?php echo esc_html($tr('donations.hero.title', 'Sostieni per creare opportunita concrete')); ?></h1>
                 <p class="cw-hero__lead"><?php echo esc_html($tr('donations.hero.lead', 'Con il tuo contributo aiutiamo persone, famiglie, giovani e studenti internazionali ad accedere a servizi, orientamento e percorsi di inclusione sul territorio.')); ?></p>
             </div>
         </div>
@@ -73,7 +73,7 @@ wecoop_ws_page_shell_start($tr('donations.aria.page', 'Sostieni WECOOP - WeCoop'
                 <p>
                     <a class="ws-btn ws-btn--primary" href="<?php echo esc_url($support_cta_url); ?>">
                         <i class="fa-solid fa-heart" aria-hidden="true"></i>
-                        <?php echo esc_html($tr('donations.free.cta', 'SOSTIENI WECOOP')); ?>
+                        <?php echo esc_html($tr('donations.free.cta', 'Sostieni')); ?>
                     </a>
                 </p>
             </article>
