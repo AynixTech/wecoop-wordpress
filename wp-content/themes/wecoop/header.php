@@ -26,8 +26,6 @@ $_tr = 'translate_string';
                 <a href="<?php echo esc_url(home_url('/#que-es')); ?>"><?php echo esc_html($_tr('frontpage.nav.about', "Cos'e WECOOP")); ?></a>
                 <a href="<?php echo esc_url(home_url('/#servizi')); ?>"><?php echo esc_html($_tr('frontpage.nav.services', 'Servizi')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#come-funziona')); ?>"><?php echo esc_html($_tr('frontpage.nav.how', 'Come funziona')); ?></a>
-                <a href="<?php echo esc_url(home_url('/annunci-lavoro-wecoop/')); ?>"><?php echo esc_html($_tr('frontpage.nav.jobs', 'Offerte di lavoro')); ?></a>
-                <a href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($_tr('frontpage.nav.donations', 'Sostieni WECOOP')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#contacto')); ?>"><?php echo esc_html($_tr('frontpage.nav.contact', 'Contatti')); ?></a>
             </div>
 
@@ -42,7 +40,6 @@ $_tr = 'translate_string';
                 </button>
             </div>
 
-            <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($_tr('frontpage.nav.cta', 'Sostieni WECOOP')); ?></a>
         </div>
     </nav>
 </header>
