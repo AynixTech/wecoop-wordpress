@@ -26,6 +26,7 @@ $_tr = 'translate_string';
                 <a href="<?php echo esc_url(home_url('/#que-es')); ?>"><?php echo esc_html($_tr('frontpage.nav.about', "Cos'e WECOOP")); ?></a>
                 <a href="<?php echo esc_url(home_url('/#servizi')); ?>"><?php echo esc_html($_tr('frontpage.nav.services', 'Servizi')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#come-funziona')); ?>"><?php echo esc_html($_tr('frontpage.nav.how', 'Come funziona')); ?></a>
+                <a href="<?php echo esc_url(home_url('/impatto/')); ?>"><?php echo esc_html($_tr('frontpage.nav.impact', 'Impatto')); ?></a>
                 <a href="<?php echo esc_url(home_url('/#contacto')); ?>"><?php echo esc_html($_tr('frontpage.nav.contact', 'Contatti')); ?></a>
             </div>
 
