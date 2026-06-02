@@ -31,8 +31,7 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', $lang_default('Cos\'e WECOOP', 'What is WECOOP', 'Que es WECOOP'))); ?></a>
                 <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', $lang_default('Servizi', 'Services', 'Servicios'))); ?></a>
                 <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', $lang_default('Come funziona', 'How it works', 'Como funciona'))); ?></a>
-                <a href="<?php echo esc_url($job_offers_url); ?>"><?php echo esc_html($tr('frontpage.nav.jobs', $lang_default('Offerte di lavoro', 'Job Offers', 'Ofertas de trabajo'))); ?></a>
-                <a href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.nav.donations', $lang_default('Sostieni WECOOP', 'Support WECOOP', 'Apoya WECOOP'))); ?></a>
+                <a class="ws-nav__hide-mobile-menu" href="<?php echo esc_url($job_offers_url); ?>"><?php echo esc_html($tr('frontpage.nav.jobs', $lang_default('Offerte di lavoro', 'Job Offers', 'Ofertas de trabajo'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
             <div class="ws-nav__actions">
@@ -44,7 +43,6 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                     <span></span><span></span><span></span>
                 </button>
             </div>
-            <a class="ws-btn ws-btn--primary ws-nav__cta" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.nav.cta', 'Sostieni WECOOP')); ?></a>
         </div>
     </nav>
 

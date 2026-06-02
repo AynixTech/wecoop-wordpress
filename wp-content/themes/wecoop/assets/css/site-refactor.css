@@ -276,6 +276,14 @@ a {
         outline: none;
     }
 
+    .ws-nav__hide-mobile-menu {
+        display: none;
+    }
+
+    .ws-nav .ws-links.is-open .ws-nav__hide-mobile-menu {
+        display: none;
+    }
+
     .ws-nav__inner {
         position: relative;
     }
