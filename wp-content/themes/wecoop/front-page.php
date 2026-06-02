@@ -31,7 +31,8 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', $lang_default('Cos\'e WECOOP', 'What is WECOOP', 'Que es WECOOP'))); ?></a>
                 <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', $lang_default('Servizi', 'Services', 'Servicios'))); ?></a>
                 <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', $lang_default('Come funziona', 'How it works', 'Como funciona'))); ?></a>
-                <a class="ws-nav__hide-mobile-menu" href="<?php echo esc_url($job_offers_url); ?>"><?php echo esc_html($tr('frontpage.nav.jobs', $lang_default('Offerte di lavoro', 'Job Offers', 'Ofertas de trabajo'))); ?></a>
+                <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', $lang_default('Passaparola', 'Passaparola', 'Passaparola'))); ?></a>
+                <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', $lang_default('Piattaforma Digitale', 'Digital Platform', 'Plataforma Digital'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
             </div>
             <div class="ws-nav__actions">
