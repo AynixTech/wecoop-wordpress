@@ -434,6 +434,22 @@ function wecoop_redirect_legacy_slugs() {
 }
 add_action('template_redirect', 'wecoop_redirect_legacy_slugs');
 
+function wecoop_operator_visible_plugins($all_plugins) {
+    if (!is_admin()) {
+        return $all_plugins;
+    }
+
+    $user = wp_get_current_user();
+    if (empty($user->roles) || !in_array('operator', $user->roles, true)) {
+        return $all_plugins;
+    }
+
+    return array_filter($all_plugins, static function ($plugin_file) {
+        return strpos($plugin_file, 'wecoop-') === 0;
+    }, ARRAY_FILTER_USE_KEY);
+}
+add_filter('all_plugins', 'wecoop_operator_visible_plugins');
+
 function wecoop_refactor_admin_notice() {
     if (!is_admin() || !current_user_can('activate_plugins')) {
         return;
