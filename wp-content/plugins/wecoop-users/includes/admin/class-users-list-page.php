@@ -124,6 +124,9 @@ class WeCoop_Users_List_Page {
                 <span class="dashicons dashicons-groups" style="font-size: 32px; width: 32px; height: 32px;"></span>
                 Utenti Registrati
             </h1>
+            <?php if (current_user_can('wecoop_dataentry_access') || current_user_can('manage_options')): ?>
+                <a href="<?php echo esc_url(admin_url('users.php?page=wecoop-dataentry')); ?>" class="page-title-action">Nuovo utente</a>
+            <?php endif; ?>
             
             <?php if ($message === 'bulk_approved'): ?>
                 <div class="notice notice-success is-dismissible">
