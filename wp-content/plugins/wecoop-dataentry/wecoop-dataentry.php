@@ -64,13 +64,15 @@ class WeCoop_DataEntry {
             return;
         }
 
-        add_submenu_page(
-            'users.php',
+        add_menu_page(
             'WeCoop Data Entry',
             'WeCoop Data Entry',
             'wecoop_dataentry_access',
             self::MENU_SLUG,
             [$this, 'render_page']
+            ,
+            'dashicons-database-add',
+            26
         );
     }
 
@@ -91,7 +93,7 @@ class WeCoop_DataEntry {
     private function get_page_url(array $args = []) {
         return add_query_arg(array_merge([
             'page' => self::MENU_SLUG,
-        ], $args), admin_url('users.php'));
+        ], $args), admin_url('admin.php'));
     }
 
     private function get_view() {

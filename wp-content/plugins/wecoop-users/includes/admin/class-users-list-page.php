@@ -125,7 +125,7 @@ class WeCoop_Users_List_Page {
                 Utenti Registrati
             </h1>
             <?php if (current_user_can('wecoop_dataentry_access') || current_user_can('manage_options')): ?>
-                <a href="<?php echo esc_url(admin_url('users.php?page=wecoop-dataentry')); ?>" class="page-title-action">Nuovo utente</a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=wecoop-dataentry')); ?>" class="page-title-action">Nuovo utente</a>
             <?php endif; ?>
             
             <?php if ($message === 'bulk_approved'): ?>
