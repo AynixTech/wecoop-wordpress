@@ -1736,6 +1736,8 @@ class WECOOP_Servizi_Management {
                                 <select id="stato" name="stato">
                                     <option value="pending">⏳ In Attesa</option>
                                     <option value="awaiting_payment">💳 Da Pagare</option>
+                                    <option value="awaiting_signature">✍️ Da Firmare</option>
+                                    <option value="integrazione_documentale">📎 Integrazione Documentale</option>
                                     <option value="processing">🔄 In Lavorazione</option>
                                     <option value="completed">✅ Completata</option>
                                     <option value="cancelled">❌ Annullata</option>
