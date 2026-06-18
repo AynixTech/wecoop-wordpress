@@ -35,6 +35,13 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
             'callback' => [__CLASS__, 'handle_webhook'],
             'permission_callback' => '__return_true', // Stripe usa signature
         ]);
+
+        // Config pubblica Stripe (solo publishable key) per l'app mobile
+        register_rest_route('wecoop/v1', '/stripe-config', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'get_stripe_config'],
+            'permission_callback' => '__return_true', // La publishable key e' pubblica
+        ]);
     }
     
     /**
@@ -365,6 +372,40 @@ class WECOOP_Servizi_Stripe_Payment_Intent {
         }
         
         return get_option('wecoop_stripe_webhook_secret');
+    }
+
+    /**
+     * Publishable Key (pubblica, usata dall'app mobile)
+     */
+    private static function get_stripe_publishable_key() {
+        if (defined('WECOOP_STRIPE_PUBLISHABLE_KEY')) {
+            return WECOOP_STRIPE_PUBLISHABLE_KEY;
+        }
+
+        return get_option('wecoop_stripe_publishable_key');
+    }
+
+    /**
+     * GET /stripe-config
+     * Restituisce la publishable key configurata in wp-config-stripe.php
+     */
+    public static function get_stripe_config($request) {
+        $publishable_key = self::get_stripe_publishable_key();
+
+        if (empty($publishable_key)) {
+            return new WP_Error(
+                'stripe_not_configured',
+                'Stripe non configurato sul server',
+                ['status' => 503]
+            );
+        }
+
+        $mode = (strpos($publishable_key, 'pk_live_') === 0) ? 'live' : 'test';
+
+        return new WP_REST_Response([
+            'publishable_key' => $publishable_key,
+            'mode' => $mode,
+        ], 200);
     }
 }
 
