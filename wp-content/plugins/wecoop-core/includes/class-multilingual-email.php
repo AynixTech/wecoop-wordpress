@@ -50,6 +50,17 @@ class WeCoop_Multilingual_Email {
             'service_created_next_steps' => 'Ti contatteremo presto per confermare e fissare i dettagli.',
             'service_created_button_text' => 'Vedi le Tue Richieste',
             'service_created_preheader' => 'Abbiamo ricevuto la tua richiesta di servizio',
+
+            // Integrazione documentale richiesta
+            'service_document_integration_subject' => '📎 Documenti mancanti - Pratica {numero_pratica}',
+            'service_document_integration_title' => 'Ciao {nome}, servono alcuni documenti',
+            'service_document_integration_intro' => 'Per proseguire con la tua richiesta per il servizio <strong>{servizio}</strong> abbiamo bisogno che tu carichi alcuni documenti mancanti.',
+            'service_document_integration_practice_label' => 'Numero Pratica:',
+            'service_document_integration_docs_title' => 'Documenti da caricare:',
+            'service_document_integration_note_label' => 'Note dell\'operatore:',
+            'service_document_integration_action' => 'Apri l\'app WECOOP, vai nella tua richiesta e carica i documenti richiesti per continuare.',
+            'service_document_integration_button_text' => '📂 Carica Documenti',
+            'service_document_integration_preheader' => 'Carica i documenti mancanti per la tua pratica',
             
             // Richiesta servizio approvata
             'service_approved_subject' => '✅ Richiesta Servizio Approvata',
@@ -155,6 +166,17 @@ class WeCoop_Multilingual_Email {
             'service_created_next_steps' => 'We will contact you soon to confirm and arrange details.',
             'service_created_button_text' => 'View Your Requests',
             'service_created_preheader' => 'We have received your service request',
+
+            // Document integration requested
+            'service_document_integration_subject' => '📎 Missing documents - Case {numero_pratica}',
+            'service_document_integration_title' => 'Hi {nome}, we need some documents',
+            'service_document_integration_intro' => 'To proceed with your request for the service <strong>{servizio}</strong> we need you to upload some missing documents.',
+            'service_document_integration_practice_label' => 'Case Number:',
+            'service_document_integration_docs_title' => 'Documents to upload:',
+            'service_document_integration_note_label' => 'Operator notes:',
+            'service_document_integration_action' => 'Open the WECOOP app, go to your request and upload the requested documents to continue.',
+            'service_document_integration_button_text' => '📂 Upload Documents',
+            'service_document_integration_preheader' => 'Upload the missing documents for your case',
             
             // Service approved
             'service_approved_subject' => '✅ Service Request Approved',
@@ -261,6 +283,17 @@ class WeCoop_Multilingual_Email {
             'service_created_button_text' => 'Voir Vos Demandes',
             'service_created_preheader' => 'Nous avons reçu votre demande de service',
 
+            // Intégration documentaire demandée
+            'service_document_integration_subject' => '📎 Documents manquants - Dossier {numero_pratica}',
+            'service_document_integration_title' => 'Bonjour {nome}, nous avons besoin de documents',
+            'service_document_integration_intro' => 'Pour traiter votre demande pour le service <strong>{servizio}</strong>, nous avons besoin que vous téléchargiez certains documents manquants.',
+            'service_document_integration_practice_label' => 'Numéro de dossier:',
+            'service_document_integration_docs_title' => 'Documents à télécharger:',
+            'service_document_integration_note_label' => 'Notes de l\'opérateur:',
+            'service_document_integration_action' => 'Ouvrez l\'application WECOOP, accédez à votre demande et téléchargez les documents demandés pour continuer.',
+            'service_document_integration_button_text' => '📂 Télécharger les documents',
+            'service_document_integration_preheader' => 'Téléchargez les documents manquants pour votre dossier',
+
             // Demande de service approuvée
             'service_approved_subject' => '✅ Demande de Service Approuvée',
             'service_approved_title' => 'Excellente nouvelle, {nome}! 🎉',
@@ -350,6 +383,17 @@ class WeCoop_Multilingual_Email {
             'service_created_next_steps' => 'Te contactaremos pronto para confirmar y definir los detalles.',
             'service_created_button_text' => 'Ver Tus Solicitudes',
             'service_created_preheader' => 'Hemos recibido tu solicitud de servicio',
+
+            // Integración documental solicitada
+            'service_document_integration_subject' => '📎 Documentos faltantes - Expediente {numero_pratica}',
+            'service_document_integration_title' => 'Hola {nome}, necesitamos algunos documentos',
+            'service_document_integration_intro' => 'Para continuar con tu solicitud del servicio <strong>{servizio}</strong> necesitamos que subas algunos documentos faltantes.',
+            'service_document_integration_practice_label' => 'Número de expediente:',
+            'service_document_integration_docs_title' => 'Documentos a subir:',
+            'service_document_integration_note_label' => 'Notas del operador:',
+            'service_document_integration_action' => 'Abre la app WECOOP, entra en tu solicitud y sube los documentos solicitados para continuar.',
+            'service_document_integration_button_text' => '📂 Subir Documentos',
+            'service_document_integration_preheader' => 'Sube los documentos faltantes para tu expediente',
 
             // Solicitud aprobada
             'service_approved_subject' => '✅ Solicitud de Servicio Aprobada',
@@ -534,6 +578,8 @@ class WeCoop_Multilingual_Email {
                 return self::build_service_rejected_content($lang, $data);
             case 'service_payment_required':
                 return self::build_service_payment_required_content($lang, $data);
+            case 'service_document_integration':
+                return self::build_service_document_integration_content($lang, $data);
             case 'event_registered':
                 return self::build_event_registered_content($lang, $data);
             case 'event_unregistered':
@@ -689,6 +735,45 @@ class WeCoop_Multilingual_Email {
         ";
     }
     
+    /**
+     * Template: Integrazione documentale richiesta
+     */
+    private static function build_service_document_integration_content($lang, $data) {
+        $t = function($key) use ($lang, $data) {
+            return self::get_translation($key, $lang, $data);
+        };
+
+        $docs_html = '';
+        if (!empty($data['documenti']) && is_array($data['documenti'])) {
+            $docs_html .= "<ul style='line-height: 1.8;'>";
+            foreach ($data['documenti'] as $doc) {
+                $label = isset($doc['label']) ? $doc['label'] : (isset($doc['tipo']) ? ucfirst(str_replace('_', ' ', $doc['tipo'])) : '');
+                $motivo = !empty($doc['motivo']) ? " <span style='color:#666;'>(" . esc_html($doc['motivo']) . ")</span>" : '';
+                $docs_html .= "<li><strong>" . esc_html($label) . "</strong>{$motivo}</li>";
+            }
+            $docs_html .= "</ul>";
+        }
+
+        $note_html = '';
+        if (!empty($data['note'])) {
+            $note_html = "<p style='background: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;'><strong>{$t('service_document_integration_note_label')}</strong><br>" . esc_html($data['note']) . "</p>";
+        }
+
+        $practice = !empty($data['numero_pratica'])
+            ? "<p><strong>{$t('service_document_integration_practice_label')}</strong> {$data['numero_pratica']}</p>"
+            : '';
+
+        return "
+            <h1>{$t('service_document_integration_title')}</h1>
+            <p>{$t('service_document_integration_intro')}</p>
+            {$practice}
+            <h2 style='color: #2c3e50; font-size: 18px; margin: 25px 0 15px 0;'>{$t('service_document_integration_docs_title')}</h2>
+            {$docs_html}
+            {$note_html}
+            <p style='font-size: 16px; line-height: 1.6;'>{$t('service_document_integration_action')}</p>
+        ";
+    }
+
     /**
      * Template: Pagamento servizio richiesto
      */

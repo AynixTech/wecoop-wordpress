@@ -101,6 +101,7 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_delete_richiesta_servizio', [__CLASS__, 'ajax_delete_richiesta']);
         add_action('wp_ajax_update_stato_richiesta', [__CLASS__, 'ajax_update_stato']);
         add_action('wp_ajax_send_payment_request', [__CLASS__, 'ajax_send_payment_request']);
+        add_action('wp_ajax_request_document_integration', [__CLASS__, 'ajax_request_document_integration']);
         add_action('wp_ajax_export_richieste_csv', [__CLASS__, 'ajax_export_csv']);
         add_action('wp_ajax_get_dashboard_data', [__CLASS__, 'ajax_get_dashboard_data']);
         add_action('wp_ajax_normalize_all_servizi', [__CLASS__, 'ajax_normalize_all_servizi']);
@@ -1376,6 +1377,7 @@ class WECOOP_Servizi_Management {
         
         <?php self::render_edit_modal(); ?>
         <?php self::render_payment_modal(); ?>
+        <?php self::render_document_integration_modal(); ?>
         <?php
     }
     
@@ -1439,6 +1441,7 @@ class WECOOP_Servizi_Management {
             'awaiting_payment' => '💳 Da Pagare',
             'paid' => '✅ Pagato',
             'awaiting_signature' => '✍️ Da Firmare',
+            'integrazione_documentale' => '📋 Integrazione Documentale',
             'processing' => '🔄 In Lavorazione',
             'completed' => '✅ Completata',
             'cancelled' => '❌ Annullata'
@@ -1449,6 +1452,7 @@ class WECOOP_Servizi_Management {
             'awaiting_payment' => '#9c27b0',
             'paid' => '#673ab7',
             'awaiting_signature' => '#ff6f00',
+            'integrazione_documentale' => '#e91e63',
             'processing' => '#2196f3',
             'completed' => '#4caf50',
             'cancelled' => '#f44336'
@@ -1535,6 +1539,16 @@ class WECOOP_Servizi_Management {
                 <button class="button button-small edit-richiesta" data-id="<?php echo $post_id; ?>">
                     👁️ Dettagli
                 </button>
+                <?php if (!in_array($stato, ['completed', 'cancelled'], true)): ?>
+                    <?php $integrazione_attiva = ($stato === 'integrazione_documentale'); ?>
+                    <button class="button button-small request-document-integration"
+                            data-id="<?php echo $post_id; ?>"
+                            data-servizio="<?php echo esc_attr($servizio); ?>"
+                            style="margin-top: 5px; background: #e91e63; color: white; border-color: #e91e63;"
+                            title="Richiedi al cliente di caricare documenti mancanti">
+                        📋 <?php echo $integrazione_attiva ? 'Aggiorna Integrazione' : 'Richiedi Integrazione'; ?>
+                    </button>
+                <?php endif; ?>
                 <?php if (!$payment || $payment->stato === 'pending'): ?>
                     <button class="button button-small button-primary open-payment-modal" 
                             data-id="<?php echo $post_id; ?>"
@@ -1618,6 +1632,68 @@ class WECOOP_Servizi_Management {
         <?php
     }
     
+    /**
+     * Modal richiesta integrazione documentale
+     */
+    private static function render_document_integration_modal() {
+        ?>
+        <div id="document-integration-modal" class="wecoop-modal" style="display:none;">
+            <div class="wecoop-modal-backdrop">
+                <div class="wecoop-modal-content" style="max-width: 560px;">
+                    <div class="wecoop-modal-header">
+                        <h2>📋 Richiedi Integrazione Documentale</h2>
+                        <button class="wecoop-modal-close">&times;</button>
+                    </div>
+                    <div class="wecoop-modal-body">
+                        <form id="document-integration-form">
+                            <input type="hidden" id="integration_richiesta_id" name="richiesta_id">
+
+                            <div class="form-field">
+                                <label for="integration_documenti">
+                                    Documenti mancanti <span style="color: red;">*</span>
+                                </label>
+                                <textarea id="integration_documenti"
+                                          name="documenti"
+                                          rows="6"
+                                          required
+                                          placeholder="Un documento per riga. Es:&#10;Permesso di soggiorno&#10;Codice fiscale | motivo opzionale dopo la barra verticale&#10;Busta paga"
+                                          style="width: 100%; padding: 8px; font-size: 14px;"></textarea>
+                                <p class="description">Scrivi un documento per riga. Puoi aggiungere un motivo dopo il carattere "|".</p>
+                            </div>
+
+                            <div class="form-field" style="margin-top: 15px;">
+                                <label for="integration_note">Nota per il cliente (opzionale)</label>
+                                <textarea id="integration_note"
+                                          name="note"
+                                          rows="3"
+                                          placeholder="Messaggio aggiuntivo che il cliente vedrà nell'app e nell'email"
+                                          style="width: 100%; padding: 8px; font-size: 14px;"></textarea>
+                            </div>
+
+                            <div style="background: #fdecf2; border-left: 4px solid #e91e63; padding: 12px; margin: 15px 0; border-radius: 4px;">
+                                <strong>📧 Cosa succede:</strong>
+                                <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+                                    <li>Lo stato della richiesta diventa "Integrazione Documentale"</li>
+                                    <li>Il cliente riceve una notifica push e un'email</li>
+                                    <li>Il cliente carica i documenti dall'app</li>
+                                    <li>A integrazione completata lo stato torna "In Lavorazione"</li>
+                                </ul>
+                            </div>
+
+                            <div class="wecoop-modal-footer">
+                                <button type="button" class="button wecoop-modal-close">Annulla</button>
+                                <button type="submit" class="button button-primary" style="background: #e91e63; border-color: #e91e63;">
+                                    📋 Invia Richiesta
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
     /**
      * Modal modifica
      */
@@ -1905,6 +1981,80 @@ class WECOOP_Servizi_Management {
                             statusCode: xhr.status
                         });
                         alert('❌ Errore di comunicazione con il server. Controlla la console (F12) per dettagli.');
+                        $submitBtn.prop('disabled', false).text(originalText);
+                    }
+                });
+            });
+            
+            // 📋 Apri modal integrazione documentale
+            $(document).on('click', '.request-document-integration', function(e) {
+                e.preventDefault();
+                const richiestaId = $(this).data('id');
+                $('#integration_richiesta_id').val(richiestaId);
+                $('#document-integration-modal').fadeIn(200);
+                $('body').css('overflow', 'hidden');
+            });
+
+            // Chiudi modal integrazione - X
+            $(document).on('click', '#document-integration-modal .wecoop-modal-close', function(e) {
+                e.preventDefault();
+                $('#document-integration-modal').fadeOut(200);
+                $('body').css('overflow', '');
+            });
+
+            // Chiudi modal integrazione - backdrop
+            $(document).on('click', '#document-integration-modal .wecoop-modal-backdrop', function(e) {
+                if (e.target === this) {
+                    $('#document-integration-modal').fadeOut(200);
+                    $('body').css('overflow', '');
+                }
+            });
+
+            // Submit form integrazione documentale
+            $('#document-integration-form').on('submit', function(e) {
+                e.preventDefault();
+
+                const richiestaId = $('#integration_richiesta_id').val();
+                const documenti = $('#integration_documenti').val();
+                const note = $('#integration_note').val();
+                const $submitBtn = $(this).find('button[type="submit"]');
+                const originalText = $submitBtn.text();
+
+                if (!documenti || documenti.trim() === '') {
+                    alert('❌ Inserisci almeno un documento da richiedere');
+                    return;
+                }
+
+                if (!confirm('Inviare la richiesta di integrazione documentale al cliente?\n\nIl cliente riceverà una notifica e un\'email.')) {
+                    return;
+                }
+
+                $submitBtn.prop('disabled', true).text('⏳ Invio in corso...');
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'request_document_integration',
+                        richiesta_id: richiestaId,
+                        documenti: documenti,
+                        note: note,
+                        nonce: '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert('✅ ' + response.data);
+                            $('#document-integration-modal').fadeOut(200);
+                            $('body').css('overflow', '');
+                            location.reload();
+                        } else {
+                            alert('❌ Errore: ' + response.data);
+                            $submitBtn.prop('disabled', false).text(originalText);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('❌ Errore AJAX integrazione:', { status, error, responseText: xhr.responseText });
+                        alert('❌ Errore di comunicazione con il server.');
                         $submitBtn.prop('disabled', false).text(originalText);
                     }
                 });
@@ -2814,6 +2964,135 @@ class WECOOP_Servizi_Management {
     }
     
     /**
+     * AJAX: Richiedi integrazione documentale al cliente
+     */
+    public static function ajax_request_document_integration() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+
+        $richiesta_id = absint($_POST['richiesta_id']);
+        $documenti_raw = isset($_POST['documenti']) ? wp_unslash($_POST['documenti']) : '';
+        $note = isset($_POST['note']) ? sanitize_textarea_field(wp_unslash($_POST['note'])) : '';
+
+        if (!$richiesta_id) {
+            wp_send_json_error('Richiesta non valida');
+        }
+
+        $richiesta = get_post($richiesta_id);
+        if (!$richiesta || $richiesta->post_type !== 'richiesta_servizio') {
+            wp_send_json_error('Richiesta non trovata');
+        }
+
+        // Parsing documenti: una riga per documento, "Label | motivo"
+        $documenti = [];
+        $righe = preg_split('/\r\n|\r|\n/', (string) $documenti_raw);
+        foreach ($righe as $riga) {
+            $riga = trim($riga);
+            if ($riga === '') {
+                continue;
+            }
+            $parti = array_map('trim', explode('|', $riga, 2));
+            $label = sanitize_text_field($parti[0]);
+            $motivo = isset($parti[1]) ? sanitize_text_field($parti[1]) : '';
+            if ($label === '') {
+                continue;
+            }
+            // Genera tipo slug univoco
+            $tipo = sanitize_key(str_replace(' ', '_', remove_accents($label)));
+            if ($tipo === '') {
+                $tipo = 'documento_' . count($documenti);
+            }
+            // Evita duplicati di tipo
+            $base_tipo = $tipo;
+            $suffix = 1;
+            foreach ($documenti as $d) {
+                if ($d['tipo'] === $tipo) {
+                    $tipo = $base_tipo . '_' . $suffix;
+                    $suffix++;
+                }
+            }
+            $documenti[] = [
+                'tipo' => $tipo,
+                'label' => $label,
+                'motivo' => $motivo,
+                'stato' => 'richiesto',
+                'attachment_id' => 0,
+                'url' => '',
+                'data_caricamento' => '',
+            ];
+        }
+
+        if (empty($documenti)) {
+            wp_send_json_error('Inserisci almeno un documento da richiedere');
+        }
+
+        $old_stato = get_post_meta($richiesta_id, 'stato', true);
+
+        // Salva lo stato precedente (per tornare indietro al completamento), se non è già integrazione
+        if ($old_stato !== 'integrazione_documentale') {
+            $stato_precedente = in_array($old_stato, ['', 'integrazione_documentale'], true) ? 'processing' : $old_stato;
+            update_post_meta($richiesta_id, 'integrazione_stato_precedente', $stato_precedente);
+        }
+
+        update_post_meta($richiesta_id, 'documenti_integrazione_richiesti', $documenti);
+        update_post_meta($richiesta_id, 'integrazione_note', $note);
+        update_post_meta($richiesta_id, 'stato', 'integrazione_documentale');
+
+        // Notifica push (gestita dall'hook) + cambio stato
+        if ($old_stato !== 'integrazione_documentale') {
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, $old_stato, 'integrazione_documentale');
+        }
+
+        // Invia email dedicata con la lista documenti
+        self::send_document_integration_email($richiesta_id, $documenti, $note);
+
+        wp_send_json_success('Richiesta di integrazione inviata al cliente (' . count($documenti) . ' documenti)');
+    }
+
+    /**
+     * Invia email di richiesta integrazione documentale al cliente
+     */
+    private static function send_document_integration_email($richiesta_id, $documenti, $note) {
+        if (!class_exists('WeCoop_Multilingual_Email')) {
+            return;
+        }
+
+        $user_id = intval(get_post_meta($richiesta_id, 'user_id', true));
+        if ($user_id <= 0) {
+            $user_id = intval(get_post_field('post_author', $richiesta_id));
+        }
+        if ($user_id <= 0) {
+            return;
+        }
+
+        $user = get_userdata($user_id);
+        if (!$user) {
+            return;
+        }
+
+        $nome = get_user_meta($user_id, 'nome', true) ?: $user->display_name;
+        $servizio = get_post_meta($richiesta_id, 'servizio', true) ?: 'servizio';
+        $numero_pratica = get_post_meta($richiesta_id, 'numero_pratica', true);
+
+        WeCoop_Multilingual_Email::send(
+            $user->user_email,
+            'service_document_integration',
+            [
+                'nome' => $nome,
+                'servizio' => $servizio,
+                'numero_pratica' => $numero_pratica,
+                'documenti' => $documenti,
+                'note' => $note,
+                'button_url' => "wecoop://app/richieste/{$richiesta_id}",
+            ],
+            $user_id
+        );
+    }
+    
+    /**
      * AJAX: Invia richiesta di pagamento
      */
     public static function ajax_send_payment_request() {
@@ -3243,6 +3522,7 @@ class WECOOP_Servizi_Management {
                                     $stato_labels = [
                                         'pending' => '⏳ In Attesa',
                                         'awaiting_payment' => '💳 Da Pagare',
+                                        'integrazione_documentale' => '📋 Integrazione Documentale',
                                         'processing' => '🔄 In Lavorazione',
                                         'completed' => '✅ Completata',
                                         'cancelled' => '❌ Annullata'
@@ -3251,6 +3531,7 @@ class WECOOP_Servizi_Management {
                                     $stato_colors = [
                                         'pending' => '#ff9800',
                                         'awaiting_payment' => '#9c27b0',
+                                        'integrazione_documentale' => '#e91e63',
                                         'processing' => '#2196f3',
                                         'completed' => '#4caf50',
                                         'cancelled' => '#f44336'
@@ -3427,6 +3708,7 @@ class WECOOP_Servizi_Management {
                 $stato_labels = [
                     'pending' => 'In Attesa',
                     'awaiting_payment' => 'Da Pagare',
+                    'integrazione_documentale' => 'Integrazione Documentale',
                     'processing' => 'In Lavorazione',
                     'completed' => 'Completata',
                     'cancelled' => 'Annullata'

@@ -155,6 +155,16 @@ class WECOOP_Servizi_Endpoint {
             ]
         ]);
         
+        // POST /richiesta-servizio/{id}/integrazione-documenti - Carica documenti mancanti (integrazione documentale)
+        register_rest_route('wecoop/v1', '/richiesta-servizio/(?P<id>\d+)/integrazione-documenti', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'upload_integrazione_documenti'],
+            'permission_callback' => [__CLASS__, 'check_jwt_permission'],
+            'args' => [
+                'id' => ['required' => true, 'type' => 'integer']
+            ]
+        ]);
+        
         // GET /pagamento/{id}/ricevuta - Download ricevuta PDF
         register_rest_route('wecoop/v1', '/pagamento/(?P<id>\d+)/ricevuta', [
             'methods' => 'GET',
@@ -601,12 +611,206 @@ class WECOOP_Servizi_Endpoint {
             'has_payment' => ($pagamento !== null),
             'payment_id' => $pagamento ? $pagamento->id : null,
             'payment_status' => $pagamento ? $pagamento->stato : null,
-            'importo' => $pagamento ? floatval($pagamento->importo) : null
+            'importo' => $pagamento ? floatval($pagamento->importo) : null,
+            'integrazione_documentale' => self::get_integrazione_documentale_data($richiesta->ID)
         ];
         
         return new WP_REST_Response([
             'success' => true,
             'data' => $data
+        ], 200);
+    }
+    
+    /**
+     * Helper: dati integrazione documentale di una richiesta
+     *
+     * @param int $richiesta_id
+     * @return array
+     */
+    public static function get_integrazione_documentale_data($richiesta_id) {
+        $stato = get_post_meta($richiesta_id, 'stato', true);
+        $documenti = get_post_meta($richiesta_id, 'documenti_integrazione_richiesti', true);
+        if (!is_array($documenti)) {
+            $documenti = [];
+        }
+
+        $documenti_out = [];
+        $tutti_caricati = true;
+        foreach ($documenti as $doc) {
+            $stato_doc = isset($doc['stato']) ? $doc['stato'] : 'richiesto';
+            if ($stato_doc !== 'caricato') {
+                $tutti_caricati = false;
+            }
+            $documenti_out[] = [
+                'tipo' => isset($doc['tipo']) ? $doc['tipo'] : '',
+                'label' => isset($doc['label']) ? $doc['label'] : (isset($doc['tipo']) ? ucfirst(str_replace('_', ' ', $doc['tipo'])) : ''),
+                'motivo' => isset($doc['motivo']) ? $doc['motivo'] : '',
+                'stato' => $stato_doc,
+                'url' => isset($doc['url']) ? $doc['url'] : '',
+                'attachment_id' => isset($doc['attachment_id']) ? intval($doc['attachment_id']) : 0,
+                'data_caricamento' => isset($doc['data_caricamento']) ? $doc['data_caricamento'] : '',
+            ];
+        }
+
+        return [
+            'attiva' => ($stato === 'integrazione_documentale'),
+            'note' => (string) get_post_meta($richiesta_id, 'integrazione_note', true),
+            'documenti' => $documenti_out,
+            'tutti_caricati' => (count($documenti_out) > 0 && $tutti_caricati),
+        ];
+    }
+
+    /**
+     * POST /richiesta-servizio/{id}/integrazione-documenti
+     * Il cliente carica i documenti mancanti richiesti dall'operatore.
+     */
+    public static function upload_integrazione_documenti($request) {
+        $richiesta_id = intval($request->get_param('id'));
+        $current_user_id = self::get_user_id_from_jwt($request);
+
+        if (!$current_user_id) {
+            return new WP_Error('unauthorized', 'Utente non autenticato', ['status' => 401]);
+        }
+
+        $richiesta = get_post($richiesta_id);
+        if (!$richiesta || $richiesta->post_type !== 'richiesta_servizio') {
+            return new WP_Error('not_found', 'Richiesta non trovata', ['status' => 404]);
+        }
+
+        $owner_id = intval(get_post_meta($richiesta_id, 'user_id', true));
+        if ($owner_id !== intval($current_user_id) && !current_user_can('manage_options')) {
+            return new WP_Error('forbidden', 'Non sei autorizzato a modificare questa richiesta', ['status' => 403]);
+        }
+
+        $stato = get_post_meta($richiesta_id, 'stato', true);
+        if ($stato !== 'integrazione_documentale') {
+            return new WP_Error('invalid_status', 'Questa richiesta non è in attesa di integrazione documentale', ['status' => 400]);
+        }
+
+        $documenti_richiesti = get_post_meta($richiesta_id, 'documenti_integrazione_richiesti', true);
+        if (!is_array($documenti_richiesti) || empty($documenti_richiesti)) {
+            return new WP_Error('no_documents', 'Nessun documento da integrare per questa richiesta', ['status' => 400]);
+        }
+
+        $files = $request->get_file_params();
+        if (empty($files)) {
+            return new WP_Error('no_files', 'Nessun file caricato', ['status' => 400]);
+        }
+
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        $documenti_allegati = get_post_meta($richiesta_id, 'documenti_allegati', true);
+        if (!is_array($documenti_allegati)) {
+            $documenti_allegati = [];
+        }
+
+        $caricati = [];
+
+        foreach ($files as $field_name => $file_data) {
+            if (strpos($field_name, 'documento_') !== 0) {
+                continue;
+            }
+
+            $tipo_documento = substr($field_name, strlen('documento_'));
+
+            // Trova il documento richiesto corrispondente
+            $indice = -1;
+            foreach ($documenti_richiesti as $i => $doc) {
+                if (isset($doc['tipo']) && $doc['tipo'] === $tipo_documento) {
+                    $indice = $i;
+                    break;
+                }
+            }
+            if ($indice === -1) {
+                continue; // tipo non richiesto, ignora
+            }
+
+            // Validazioni
+            $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
+            if (!in_array($file_data['type'], $allowed_types)) {
+                continue;
+            }
+            if ($file_data['size'] > 10 * 1024 * 1024) {
+                continue;
+            }
+            if ($file_data['error'] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $_FILES['upload_file'] = $file_data;
+            $attachment_id = media_handle_upload('upload_file', $richiesta_id, [], [
+                'test_form' => false,
+                'test_type' => false,
+            ]);
+
+            if (is_wp_error($attachment_id)) {
+                continue;
+            }
+
+            update_post_meta($attachment_id, 'tipo_documento', $tipo_documento);
+            update_post_meta($attachment_id, 'richiesta_id', $richiesta_id);
+            update_post_meta($attachment_id, 'integrazione_documentale', 'yes');
+
+            $file_url = wp_get_attachment_url($attachment_id);
+
+            // Aggiorna stato documento richiesto
+            $documenti_richiesti[$indice]['stato'] = 'caricato';
+            $documenti_richiesti[$indice]['attachment_id'] = $attachment_id;
+            $documenti_richiesti[$indice]['url'] = $file_url;
+            $documenti_richiesti[$indice]['data_caricamento'] = current_time('mysql');
+
+            // Aggiungi/aggiorna documenti_allegati
+            $documenti_allegati[] = [
+                'tipo' => $tipo_documento,
+                'attachment_id' => $attachment_id,
+                'file_name' => basename($file_data['name']),
+                'url' => $file_url,
+                'data_scadenza' => '',
+            ];
+
+            $caricati[] = $tipo_documento;
+        }
+
+        if (empty($caricati)) {
+            return new WP_Error('upload_failed', 'Impossibile caricare i documenti. Verifica formato (jpg, png, pdf) e dimensione (max 10MB).', ['status' => 400]);
+        }
+
+        update_post_meta($richiesta_id, 'documenti_integrazione_richiesti', $documenti_richiesti);
+        update_post_meta($richiesta_id, 'documenti_allegati', $documenti_allegati);
+
+        // Verifica se tutti i documenti sono stati caricati
+        $tutti_caricati = true;
+        foreach ($documenti_richiesti as $doc) {
+            if (!isset($doc['stato']) || $doc['stato'] !== 'caricato') {
+                $tutti_caricati = false;
+                break;
+            }
+        }
+
+        $nuovo_stato = $stato;
+        if ($tutti_caricati) {
+            $stato_precedente = get_post_meta($richiesta_id, 'integrazione_stato_precedente', true);
+            if (empty($stato_precedente) || $stato_precedente === 'integrazione_documentale') {
+                $stato_precedente = 'processing';
+            }
+            update_post_meta($richiesta_id, 'stato', $stato_precedente);
+            do_action('wecoop_richiesta_servizio_status_changed', $richiesta_id, 'integrazione_documentale', $stato_precedente);
+            $nuovo_stato = $stato_precedente;
+
+            // Notifica operatori che l'integrazione è completata
+            do_action('wecoop_integrazione_documentale_completata', $richiesta_id, $caricati);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => $tutti_caricati
+                ? 'Documenti caricati con successo. La tua richiesta è stata aggiornata.'
+                : 'Documenti caricati. Mancano ancora alcuni documenti da integrare.',
+            'stato' => $nuovo_stato,
+            'tutti_caricati' => $tutti_caricati,
+            'integrazione_documentale' => self::get_integrazione_documentale_data($richiesta_id),
         ], 200);
     }
     
@@ -689,6 +893,7 @@ class WECOOP_Servizi_Endpoint {
                     'pending_payment' => 'In attesa di pagamento',
                     'paid' => 'Pagato',
                     'awaiting_signature' => 'Da firmare',
+                    'integrazione_documentale' => 'Integrazione documentale',
                     'processing' => 'In lavorazione',
                     'completed' => 'Completata',
                     'cancelled' => 'Annullata'
@@ -716,6 +921,7 @@ class WECOOP_Servizi_Endpoint {
                     ],
                     'payment_link' => get_post_meta($post_id, 'payment_link', true),
                     'puo_pagare' => in_array($stato, ['awaiting_payment', 'pending_payment']) && !$pagamento_ricevuto,
+                    'integrazione_documentale' => ($stato === 'integrazione_documentale') ? self::get_integrazione_documentale_data($post_id) : null,
                     'dati' => $dati
                 ];
             }
