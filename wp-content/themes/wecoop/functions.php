@@ -486,6 +486,73 @@ function wecoop_operator_wc_login_redirect_to_admin($redirect, $user = null) {
 }
 add_filter('woocommerce_login_redirect', 'wecoop_operator_wc_login_redirect_to_admin', 100, 2);
 
+/**
+ * Operator: accesso completo alle aree admin dei plugin WECOOP.
+ *
+ * I menu dei plugin wecoop-* (servizi, soci, interessati, leads, ...) sono
+ * registrati con la capability `manage_options`. La concediamo all'operator a
+ * runtime (senza persistere sul ruolo nel DB) cosi' che possa vedere e gestire
+ * tutti i plugin che cominciano con "wecoop-".
+ */
+function wecoop_grant_operator_wecoop_caps($allcaps, $caps, $args, $user) {
+    if (!($user instanceof WP_User) || !in_array('operator', (array) $user->roles, true)) {
+        return $allcaps;
+    }
+
+    $allcaps['manage_options'] = true;
+    $allcaps['activate_plugins'] = true;
+
+    return $allcaps;
+}
+add_filter('user_has_cap', 'wecoop_grant_operator_wecoop_caps', 10, 4);
+
+/**
+ * Operator: limita la sidebar admin ai soli plugin WECOOP.
+ *
+ * Avendo concesso `manage_options`, l'operator vedrebbe anche i menu core di
+ * WordPress e di plugin di terze parti. Qui rimuoviamo i menu non WECOOP,
+ * mantenendo solo: Bacheca, Profilo e la pagina Plugin (gia' filtrata ai soli
+ * plugin wecoop-*).
+ */
+function wecoop_restrict_operator_admin_menu() {
+    if (!wecoop_user_is_operator()) {
+        return;
+    }
+
+    global $menu;
+
+    if (empty($menu) || !is_array($menu)) {
+        return;
+    }
+
+    $allowed_exact = ['index.php', 'profile.php', 'plugins.php'];
+
+    foreach ($menu as $item) {
+        $slug = isset($item[2]) ? (string) $item[2] : '';
+
+        if ($slug === '') {
+            continue;
+        }
+
+        // Mantieni i separatori della sidebar.
+        if (isset($item[4]) && strpos((string) $item[4], 'wp-menu-separator') !== false) {
+            continue;
+        }
+
+        if (in_array($slug, $allowed_exact, true)) {
+            continue;
+        }
+
+        // Mantieni qualunque menu dei plugin WECOOP.
+        if (strpos($slug, 'wecoop') !== false) {
+            continue;
+        }
+
+        remove_menu_page($slug);
+    }
+}
+add_action('admin_menu', 'wecoop_restrict_operator_admin_menu', 999);
+
 function wecoop_refactor_admin_notice() {
     if (!is_admin() || !current_user_can('activate_plugins')) {
         return;
