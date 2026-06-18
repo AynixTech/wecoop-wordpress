@@ -450,6 +450,42 @@ function wecoop_operator_visible_plugins($all_plugins) {
 }
 add_filter('all_plugins', 'wecoop_operator_visible_plugins');
 
+function wecoop_user_is_operator($user = null) {
+    if ($user instanceof WP_User) {
+        return in_array('operator', (array) $user->roles, true);
+    }
+
+    $current_user = wp_get_current_user();
+    return $current_user instanceof WP_User && in_array('operator', (array) $current_user->roles, true);
+}
+
+function wecoop_allow_operator_wp_admin($prevent_access) {
+    if (wecoop_user_is_operator()) {
+        return false;
+    }
+
+    return $prevent_access;
+}
+add_filter('woocommerce_prevent_admin_access', 'wecoop_allow_operator_wp_admin', 10, 1);
+
+function wecoop_operator_login_redirect_to_admin($redirect_to, $requested_redirect_to, $user) {
+    if (!($user instanceof WP_User) || !wecoop_user_is_operator($user)) {
+        return $redirect_to;
+    }
+
+    return admin_url();
+}
+add_filter('login_redirect', 'wecoop_operator_login_redirect_to_admin', 100, 3);
+
+function wecoop_operator_wc_login_redirect_to_admin($redirect, $user = null) {
+    if ($user instanceof WP_User && wecoop_user_is_operator($user)) {
+        return admin_url();
+    }
+
+    return $redirect;
+}
+add_filter('woocommerce_login_redirect', 'wecoop_operator_wc_login_redirect_to_admin', 100, 2);
+
 function wecoop_refactor_admin_notice() {
     if (!is_admin() || !current_user_can('activate_plugins')) {
         return;
