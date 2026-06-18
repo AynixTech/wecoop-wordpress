@@ -529,7 +529,12 @@ class WeCoop_Multilingual_Email {
         
         // Sostituisci placeholders {nome}, {servizio}, ecc.
         foreach ($replacements as $placeholder => $value) {
-            $text = str_replace('{' . $placeholder . '}', $value, $text);
+            // Salta valori non scalari (es. array 'documenti') per evitare
+            // TypeError di str_replace su PHP 8.
+            if (!is_scalar($value) && $value !== null) {
+                continue;
+            }
+            $text = str_replace('{' . $placeholder . '}', (string) $value, $text);
         }
         
         return $text;
