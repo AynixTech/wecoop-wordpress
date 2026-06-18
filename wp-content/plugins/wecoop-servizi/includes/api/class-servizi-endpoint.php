@@ -727,9 +727,27 @@ class WECOOP_Servizi_Endpoint {
                 continue; // tipo non richiesto, ignora
             }
 
-            // Validazioni
+            // Validazioni - non fidarsi del MIME inviato dal client (le app inviano spesso application/octet-stream)
             $allowed_types = ['image/jpeg', 'image/png', 'application/pdf'];
-            if (!in_array($file_data['type'], $allowed_types)) {
+            $allowed_ext   = ['jpg', 'jpeg', 'png', 'pdf'];
+
+            $ext = strtolower(pathinfo($file_data['name'], PATHINFO_EXTENSION));
+
+            // Determina il MIME reale dal contenuto del file
+            $real_mime = '';
+            if (function_exists('finfo_open') && !empty($file_data['tmp_name']) && file_exists($file_data['tmp_name'])) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                if ($finfo) {
+                    $real_mime = finfo_file($finfo, $file_data['tmp_name']);
+                    finfo_close($finfo);
+                }
+            }
+
+            $type_ok = in_array($ext, $allowed_ext, true)
+                || in_array($file_data['type'], $allowed_types, true)
+                || in_array($real_mime, $allowed_types, true);
+
+            if (!$type_ok) {
                 continue;
             }
             if ($file_data['size'] > 10 * 1024 * 1024) {
