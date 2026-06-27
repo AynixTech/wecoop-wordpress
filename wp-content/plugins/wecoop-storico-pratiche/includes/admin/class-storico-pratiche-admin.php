@@ -20,6 +20,7 @@ class WeCoop_Storico_Pratiche_Admin {
         add_action('admin_post_wecoop_pratiche_upload', [__CLASS__, 'handle_upload']);
         add_action('admin_post_wecoop_pratiche_delete', [__CLASS__, 'handle_delete']);
         add_action('admin_post_wecoop_pratiche_download', [__CLASS__, 'handle_download']);
+        add_action('wp_ajax_wecoop_pratiche_search_users', [__CLASS__, 'ajax_search_users']);
 
         // Sezione nella scheda utente.
         add_action('show_user_profile', [__CLASS__, 'render_user_section']);
@@ -28,6 +29,98 @@ class WeCoop_Storico_Pratiche_Admin {
 
     private static function can_manage() {
         return current_user_can(self::CAP) || current_user_can('manage_options');
+    }
+
+    /**
+     * Cerca utenti per nome, cognome, email, login, telefono o codice fiscale.
+     * Ritorna un array di utenti (max $limit) con dati essenziali.
+     */
+    public static function search_users($term, $limit = 15) {
+        $term = trim((string) $term);
+        if ($term === '') {
+            return [];
+        }
+
+        $ids = [];
+
+        // 1) Ricerca sulle colonne utente (login, email, display_name, nicename).
+        $col_q = new WP_User_Query([
+            'number'         => $limit,
+            'fields'         => 'ID',
+            'search'         => '*' . esc_attr($term) . '*',
+            'search_columns' => ['user_login', 'user_email', 'display_name', 'user_nicename'],
+        ]);
+        foreach ((array) $col_q->get_results() as $id) {
+            $ids[(int) $id] = true;
+        }
+
+        // 2) Ricerca sui meta del profilo (nome, cognome, telefono, CF, citta).
+        $meta_q = new WP_User_Query([
+            'number'     => $limit,
+            'fields'     => 'ID',
+            'meta_query' => [
+                'relation' => 'OR',
+                ['key' => 'nome', 'value' => $term, 'compare' => 'LIKE'],
+                ['key' => 'cognome', 'value' => $term, 'compare' => 'LIKE'],
+                ['key' => 'telefono', 'value' => $term, 'compare' => 'LIKE'],
+                ['key' => 'telefono_completo', 'value' => $term, 'compare' => 'LIKE'],
+                ['key' => 'codice_fiscale', 'value' => $term, 'compare' => 'LIKE'],
+                ['key' => 'citta', 'value' => $term, 'compare' => 'LIKE'],
+            ],
+        ]);
+        foreach ((array) $meta_q->get_results() as $id) {
+            $ids[(int) $id] = true;
+        }
+
+        $ids = array_slice(array_keys($ids), 0, $limit);
+        if (empty($ids)) {
+            return [];
+        }
+
+        $results = [];
+        foreach ($ids as $id) {
+            $user = get_userdata($id);
+            if (!$user) {
+                continue;
+            }
+
+            $nome = get_user_meta($id, 'nome', true) ?: $user->first_name;
+            $cognome = get_user_meta($id, 'cognome', true) ?: $user->last_name;
+            $full = trim($nome . ' ' . $cognome);
+            $cf = get_user_meta($id, 'codice_fiscale', true);
+            $tel = get_user_meta($id, 'telefono_completo', true) ?: get_user_meta($id, 'telefono', true);
+
+            $results[] = [
+                'id'      => (int) $id,
+                'name'    => $full !== '' ? $full : $user->display_name,
+                'email'   => $user->user_email,
+                'cf'      => $cf,
+                'tel'     => $tel,
+                'doc_count' => WeCoop_Storico_Pratiche_Repository::count_by_user($id),
+            ];
+        }
+
+        // Ordina alfabeticamente per nome.
+        usort($results, function ($a, $b) {
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        return $results;
+    }
+
+    /**
+     * Endpoint AJAX per la ricerca live degli utenti.
+     */
+    public static function ajax_search_users() {
+        if (!self::can_manage()) {
+            wp_send_json_error(['message' => 'Permessi insufficienti'], 403);
+        }
+        check_ajax_referer('wecoop_pratiche_search', 'nonce');
+
+        $term = isset($_GET['term']) ? sanitize_text_field(wp_unslash($_GET['term'])) : '';
+        $results = self::search_users($term);
+
+        wp_send_json_success(['users' => $results]);
     }
 
     public static function register_menu() {
@@ -195,10 +288,11 @@ class WeCoop_Storico_Pratiche_Admin {
         $user = $user_id ? get_userdata($user_id) : null;
         $status = isset($_GET['wecoop_pratiche_status']) ? sanitize_key($_GET['wecoop_pratiche_status']) : '';
         $msg = isset($_GET['wecoop_pratiche_msg']) ? rawurldecode((string) $_GET['wecoop_pratiche_msg']) : '';
+        $search_term = isset($_GET['us']) ? sanitize_text_field(wp_unslash($_GET['us'])) : '';
 
         echo '<div class="wrap">';
         echo '<h1>Storico Pratiche</h1>';
-        echo '<p>Carica i documenti (730, ISEE, ...) e associali al cliente. Il cliente li trovera\' nella sezione "Storico pratiche" dell\'app.</p>';
+        echo '<p>Cerca il cliente, apri la scheda e carica i documenti (730, ISEE, ...). Il cliente li trovera\' nella sezione "Storico pratiche" dell\'app.</p>';
 
         if ($status === 'uploaded' || $status === 'deleted') {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';
@@ -206,33 +300,168 @@ class WeCoop_Storico_Pratiche_Admin {
             echo '<div class="notice notice-error is-dismissible"><p>' . esc_html($msg) . '</p></div>';
         }
 
-        echo '<div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:18px;max-width:760px;margin-top:16px;">';
-        echo '<h2 style="margin-top:0;">Seleziona cliente</h2>';
-        echo '<form method="get" action="' . esc_url(admin_url('admin.php')) . '">';
-        echo '<input type="hidden" name="page" value="' . esc_attr(self::MENU_SLUG) . '">';
-        wp_dropdown_users([
-            'name' => 'user_id',
-            'selected' => $user_id,
-            'show_option_none' => '— Seleziona un cliente —',
-            'option_none_value' => 0,
-            'show' => 'display_name_with_login',
-        ]);
-        echo ' <button class="button button-primary">Apri scheda</button>';
-        echo '</form>';
-        echo '</div>';
+        self::render_search_box($search_term, $user_id);
 
         if ($user) {
             $self_url = add_query_arg(['page' => self::MENU_SLUG, 'user_id' => $user_id], admin_url('admin.php'));
             echo '<h2 style="margin-top:28px;">Documenti di ' . esc_html($user->display_name) . ' <small>(' . esc_html($user->user_email) . ')</small></h2>';
+            echo '<p><a href="' . esc_url(add_query_arg(['page' => self::MENU_SLUG], admin_url('admin.php'))) . '">&larr; Cambia cliente</a></p>';
             self::render_upload_form($user_id, $self_url);
             self::render_documents_table($user_id, $self_url);
         } else {
-            echo '<h2 style="margin-top:28px;">Documenti recenti</h2>';
+            echo '<h2 style="margin-top:28px;">Riepilogo</h2>';
             echo '<p>Totale documenti archiviati: <strong>' . esc_html((string) WeCoop_Storico_Pratiche_Repository::count_all()) . '</strong></p>';
         }
 
         echo '</div>';
+
+        self::render_search_assets();
     }
+
+    /**
+     * Box di ricerca cliente: input con ricerca live (AJAX) + risultati,
+     * con fallback server-side se JS non e' disponibile.
+     */
+    private static function render_search_box($search_term, $selected_user_id) {
+        ?>
+        <div style="background:#fff;border:1px solid #dcdcde;border-radius:8px;padding:18px;max-width:760px;margin-top:16px;">
+            <h2 style="margin-top:0;">Cerca cliente</h2>
+            <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>" id="wecoop-pratiche-search-form">
+                <input type="hidden" name="page" value="<?php echo esc_attr(self::MENU_SLUG); ?>">
+                <div style="position:relative;">
+                    <input
+                        type="search"
+                        name="us"
+                        id="wecoop-pratiche-search"
+                        value="<?php echo esc_attr($search_term); ?>"
+                        placeholder="Nome, cognome, email, telefono o codice fiscale..."
+                        autocomplete="off"
+                        style="width:100%;max-width:520px;height:38px;padding:0 12px;font-size:14px;"
+                    >
+                    <button type="submit" class="button button-primary" style="height:38px;vertical-align:top;">Cerca</button>
+                    <div id="wecoop-pratiche-suggest" style="display:none;position:absolute;z-index:50;left:0;top:40px;width:100%;max-width:520px;background:#fff;border:1px solid #c3c4c7;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:340px;overflow:auto;"></div>
+                </div>
+                <p class="description" style="margin-top:8px;">Inizia a digitare per vedere i suggerimenti, oppure premi Cerca.</p>
+            </form>
+
+            <?php
+            // Risultati server-side (fallback / submit esplicito).
+            if ($search_term !== '') {
+                $matches = self::search_users($search_term, 30);
+                echo '<div style="margin-top:12px;">';
+                if (empty($matches)) {
+                    echo '<p>Nessun cliente trovato per <strong>' . esc_html($search_term) . '</strong>.</p>';
+                } else {
+                    echo '<p style="color:#646970;">' . esc_html(count($matches)) . ' risultati per "<strong>' . esc_html($search_term) . '</strong>":</p>';
+                    echo '<table class="widefat striped" style="max-width:720px;"><thead><tr><th>Cliente</th><th>Contatti</th><th>Documenti</th><th></th></tr></thead><tbody>';
+                    foreach ($matches as $m) {
+                        $open_url = add_query_arg(['page' => self::MENU_SLUG, 'user_id' => $m['id']], admin_url('admin.php'));
+                        echo '<tr>';
+                        echo '<td><strong>' . esc_html($m['name']) . '</strong><br><small>' . esc_html($m['email']) . '</small>';
+                        if (!empty($m['cf'])) {
+                            echo '<br><small>CF: ' . esc_html($m['cf']) . '</small>';
+                        }
+                        echo '</td>';
+                        echo '<td>' . esc_html($m['tel'] ?: '-') . '</td>';
+                        echo '<td>' . esc_html((string) $m['doc_count']) . '</td>';
+                        echo '<td><a class="button button-small button-primary" href="' . esc_url($open_url) . '">Apri scheda</a></td>';
+                        echo '</tr>';
+                    }
+                    echo '</tbody></table>';
+                }
+                echo '</div>';
+            }
+            ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Inline JS/CSS per la ricerca live (autocomplete).
+     */
+    private static function render_search_assets() {
+        $ajax_url = admin_url('admin-ajax.php');
+        $nonce = wp_create_nonce('wecoop_pratiche_search');
+        $base_url = add_query_arg(['page' => self::MENU_SLUG], admin_url('admin.php'));
+        ?>
+        <script>
+        (function () {
+            var input = document.getElementById('wecoop-pratiche-search');
+            var box = document.getElementById('wecoop-pratiche-suggest');
+            if (!input || !box) { return; }
+
+            var ajaxUrl = <?php echo wp_json_encode($ajax_url); ?>;
+            var nonce = <?php echo wp_json_encode($nonce); ?>;
+            var baseUrl = <?php echo wp_json_encode($base_url); ?>;
+            var timer = null;
+            var lastTerm = '';
+
+            function hide() { box.style.display = 'none'; box.innerHTML = ''; }
+
+            function escapeHtml(s) {
+                return String(s == null ? '' : s)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function render(users) {
+                if (!users || !users.length) {
+                    box.innerHTML = '<div style="padding:10px 12px;color:#646970;">Nessun cliente trovato</div>';
+                    box.style.display = 'block';
+                    return;
+                }
+                var html = '';
+                users.forEach(function (u) {
+                    var url = baseUrl + '&user_id=' + encodeURIComponent(u.id);
+                    var meta = [];
+                    if (u.email) meta.push(escapeHtml(u.email));
+                    if (u.cf) meta.push('CF: ' + escapeHtml(u.cf));
+                    if (u.tel) meta.push(escapeHtml(u.tel));
+                    html += '<a href="' + url + '" style="display:block;padding:9px 12px;border-bottom:1px solid #f0f0f1;text-decoration:none;color:#1d2327;">'
+                        + '<strong>' + escapeHtml(u.name) + '</strong>'
+                        + ' <span style="color:#2271b1;font-size:12px;">(' + (u.doc_count || 0) + ' doc)</span>'
+                        + '<br><small style="color:#646970;">' + meta.join(' · ') + '</small>'
+                        + '</a>';
+                });
+                box.innerHTML = html;
+                box.style.display = 'block';
+            }
+
+            function search(term) {
+                var url = ajaxUrl + '?action=wecoop_pratiche_search_users&nonce='
+                    + encodeURIComponent(nonce) + '&term=' + encodeURIComponent(term);
+                fetch(url, { credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (json) {
+                        if (json && json.success && json.data) {
+                            render(json.data.users || []);
+                        } else {
+                            hide();
+                        }
+                    })
+                    .catch(function () { hide(); });
+            }
+
+            input.addEventListener('input', function () {
+                var term = input.value.trim();
+                if (term === lastTerm) { return; }
+                lastTerm = term;
+                if (timer) { clearTimeout(timer); }
+                if (term.length < 2) { hide(); return; }
+                timer = setTimeout(function () { search(term); }, 250);
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!box.contains(e.target) && e.target !== input) { hide(); }
+            });
+            input.addEventListener('focus', function () {
+                if (input.value.trim().length >= 2 && box.innerHTML) { box.style.display = 'block'; }
+            });
+        })();
+        </script>
+        <?php
+    }
+
 
     /**
      * Sezione nella schermata edit-user.
