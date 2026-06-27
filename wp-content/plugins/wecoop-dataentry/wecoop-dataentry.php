@@ -21,8 +21,19 @@ if (!class_exists('WeCoop_User_Meta')) {
     require_once WP_PLUGIN_DIR . '/wecoop-core/includes/class-user-meta.php';
 }
 
+require_once __DIR__ . '/includes/class-xlsx-reader.php';
+
 class WeCoop_DataEntry {
     private const MENU_SLUG = 'wecoop-dataentry';
+
+    /** Nome del foglio Excel da importare. */
+    private const IMPORT_SHEET = 'Registro Giornaliero';
+
+    /** Riga (1-based) che contiene le intestazioni nel registro. */
+    private const IMPORT_HEADER_ROW = 8;
+
+    /** Dominio usato per generare email placeholder quando assente. */
+    private const IMPORT_PLACEHOLDER_DOMAIN = 'wecoop.org';
 
     public static function get_instance() {
         static $instance = null;
@@ -37,6 +48,9 @@ class WeCoop_DataEntry {
     private function __construct() {
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_post_wecoop_dataentry_create_user', [$this, 'handle_create_user']);
+        add_action('admin_post_wecoop_dataentry_update_user', [$this, 'handle_update_user']);
+        add_action('admin_post_wecoop_dataentry_delete_user', [$this, 'handle_delete_user']);
+        add_action('admin_post_wecoop_dataentry_import', [$this, 'handle_import']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('init', [$this, 'ensure_capability']);
     }
@@ -98,7 +112,7 @@ class WeCoop_DataEntry {
 
     private function get_view() {
         $view = sanitize_key($_GET['view'] ?? 'list');
-        return in_array($view, ['list', 'new', 'detail', 'edit'], true) ? $view : 'list';
+        return in_array($view, ['list', 'new', 'detail', 'edit', 'import'], true) ? $view : 'list';
     }
 
     private function get_inserted_users($per_page = 20, $paged = 1, $search = '') {
@@ -310,6 +324,15 @@ class WeCoop_DataEntry {
             .wecoop-dataentry-wrap .wecoop-status { display:inline-flex; align-items:center; padding:4px 8px; border-radius:999px; font-size:12px; font-weight:600; }
             .wecoop-dataentry-wrap .wecoop-status.is-complete { background:#e7f7ee; color:#137333; }
             .wecoop-dataentry-wrap .wecoop-status.is-incomplete { background:#fdecec; color:#b42318; }
+            .wecoop-dataentry-wrap .wecoop-progress { display:flex; flex-direction:column; gap:4px; min-width:140px; }
+            .wecoop-dataentry-wrap .wecoop-progress__track { position:relative; height:8px; border-radius:999px; background:#e9ebee; overflow:hidden; }
+            .wecoop-dataentry-wrap .wecoop-progress__bar { position:absolute; inset:0 auto 0 0; height:100%; border-radius:999px; transition:width .2s ease; }
+            .wecoop-dataentry-wrap .wecoop-progress__bar.is-low { background:#d63638; }
+            .wecoop-dataentry-wrap .wecoop-progress__bar.is-mid { background:#dba617; }
+            .wecoop-dataentry-wrap .wecoop-progress__bar.is-high { background:#68a020; }
+            .wecoop-dataentry-wrap .wecoop-progress__bar.is-full { background:#1a8a3e; }
+            .wecoop-dataentry-wrap .wecoop-progress__label { font-size:12px; font-weight:600; color:#50575e; }
+            .wecoop-dataentry-wrap .wecoop-progress__label.is-full { color:#137333; }
             .wecoop-dataentry-wrap .wecoop-modal { display:none; position:fixed; inset:0; z-index:100000; background:rgba(12,18,28,.55); padding:20px; }
             .wecoop-dataentry-wrap .wecoop-modal.is-open { display:flex; align-items:center; justify-content:center; }
             .wecoop-dataentry-wrap .wecoop-modal__panel { width:min(100%, 560px); background:#fff; border-radius:14px; padding:24px; box-shadow:0 20px 80px rgba(0,0,0,.25); }
@@ -563,7 +586,17 @@ class WeCoop_DataEntry {
         return in_array($role, $allowed_roles, true) ? $role : 'subscriber';
     }
 
-    private function redirect_with_error($code, $message) {
+    private function redirect_with_error($code, $message, $view = '') {
+        if ($view !== '') {
+            wp_redirect(add_query_arg([
+                'page' => self::MENU_SLUG,
+                'view' => $view,
+                'message' => $code,
+                'error_msg' => rawurlencode($message),
+            ], admin_url('admin.php')));
+            exit;
+        }
+
         wp_redirect(add_query_arg([
             'page' => self::MENU_SLUG,
             'message' => $code,
@@ -610,12 +643,14 @@ class WeCoop_DataEntry {
     private function render_page_navigation($current_view, $user_id = 0) {
         $list_url = $this->get_page_url(['view' => 'list']);
         $new_url = $this->get_page_url(['view' => 'new']);
+        $import_url = $this->get_page_url(['view' => 'import']);
         $detail_url = $user_id > 0 ? $this->get_page_url(['view' => 'detail', 'user_id' => $user_id]) : '';
         $edit_url = $user_id > 0 ? $this->get_page_url(['view' => 'edit', 'user_id' => $user_id]) : '';
 
         echo '<div class="nav-tab-wrapper" style="margin-top:16px;">';
         echo '<a href="' . esc_url($list_url) . '" class="nav-tab ' . esc_attr($current_view === 'list' ? 'nav-tab-active' : '') . '">Lista utenti</a>';
         echo '<a href="' . esc_url($new_url) . '" class="nav-tab ' . esc_attr($current_view === 'new' ? 'nav-tab-active' : '') . '">Nuovo utente</a>';
+        echo '<a href="' . esc_url($import_url) . '" class="nav-tab ' . esc_attr($current_view === 'import' ? 'nav-tab-active' : '') . '">Importa Excel</a>';
 
         if ($detail_url !== '') {
             echo '<a href="' . esc_url($detail_url) . '" class="nav-tab ' . esc_attr($current_view === 'detail' ? 'nav-tab-active' : '') . '">Dettagli</a>';
@@ -688,6 +723,7 @@ class WeCoop_DataEntry {
                             <tr>
                                 <th>Utente</th>
                                 <th>Contatti</th>
+                                <th>Completamento</th>
                                 <th>Stato</th>
                                 <th>Creato</th>
                                 <th>Azioni</th>
@@ -696,7 +732,7 @@ class WeCoop_DataEntry {
                         <tbody>
                             <?php if (empty($users)): ?>
                                 <tr>
-                                    <td colspan="5">Nessun utente inserito trovato.</td>
+                                    <td colspan="6">Nessun utente inserito trovato.</td>
                                 </tr>
                             <?php else: ?>
                                 <?php foreach ($users as $user): ?>
@@ -707,6 +743,7 @@ class WeCoop_DataEntry {
                                     $created_at = (string) get_user_meta($user->ID, 'wecoop_dataentry_created_at', true);
                                     $created_at_label = $created_at !== '' ? mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $created_at) : '-';
                                     $status_complete = get_user_meta($user->ID, 'profilo_completo', true);
+                                    $completion_percent = $this->get_completion_percent($user->ID, $profile);
                                     ?>
                                     <tr>
                                         <td>
@@ -718,6 +755,7 @@ class WeCoop_DataEntry {
                                             <?php echo esc_html(($profile['telefono_completo'] ?: $profile['telefono']) ?: '-'); ?><br>
                                             <?php echo esc_html(($profile['citta'] ?: '-') . ' ' . ($profile['provincia'] ? '(' . $profile['provincia'] . ')' : '')); ?>
                                         </td>
+                                        <td><?php $this->render_progress($completion_percent); ?></td>
                                         <td>
                                             <span class="wecoop-status <?php echo $status_complete ? 'is-complete' : 'is-incomplete'; ?>"><?php echo $status_complete ? 'Completo' : 'Incompleto'; ?></span>
                                         </td>
@@ -748,6 +786,7 @@ class WeCoop_DataEntry {
         $created_at = $detail['created_at'] !== '' ? mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $detail['created_at']) : '-';
         $updated_at = $detail['updated_at'] !== '' ? mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $detail['updated_at']) : '-';
         $complete = get_user_meta($user_id, 'profilo_completo', true);
+        $completion_percent = $this->get_completion_percent($user_id, $profile);
 
         $sections = [
             'Account' => [
@@ -819,6 +858,7 @@ class WeCoop_DataEntry {
                 <div class="wecoop-summary-card">
                     <div class="wecoop-summary-label">Profilo</div>
                     <div class="wecoop-summary-value" style="font-size:20px;"><?php echo esc_html($complete ? 'Completo' : 'Incompleto'); ?></div>
+                    <div style="margin-top:10px;"><?php $this->render_progress($completion_percent); ?></div>
                 </div>
                 <div class="wecoop-summary-card">
                     <div class="wecoop-summary-label">Email</div>
@@ -898,6 +938,498 @@ class WeCoop_DataEntry {
         return $value;
     }
 
+    /**
+     * Ritorna la percentuale di completamento del profilo (0-100).
+     * Usa il meta salvato; se assente, lo calcola al volo dal profilo.
+     */
+    private function get_completion_percent($user_id, $profile = null) {
+        $stored = get_user_meta($user_id, 'profilo_percentuale', true);
+        if ($stored !== '' && is_numeric($stored)) {
+            return (int) $stored;
+        }
+
+        if ($profile === null) {
+            $profile = WeCoop_User_Meta::get_user_profile_data($user_id);
+        }
+
+        $values = [];
+        foreach (WeCoop_User_Meta::get_completion_fields() as $field) {            if ($field === 'email') {
+                $values['email'] = $profile['user_email'] ?? '';
+                continue;
+            }
+            $values[$field] = $profile[$field] ?? '';
+        }
+
+        return WeCoop_User_Meta::calculate_completion_percent($values);
+    }
+
+    private function render_progress($percent) {
+        $percent = max(0, min(100, (int) $percent));
+
+        if ($percent >= 100) {
+            $bar_class = 'is-full';
+        } elseif ($percent >= 70) {
+            $bar_class = 'is-high';
+        } elseif ($percent >= 40) {
+            $bar_class = 'is-mid';
+        } else {
+            $bar_class = 'is-low';
+        }
+
+        $label_class = $percent >= 100 ? 'is-full' : '';
+
+        echo '<div class="wecoop-progress">';
+        echo '<div class="wecoop-progress__track">';
+        echo '<span class="wecoop-progress__bar ' . esc_attr($bar_class) . '" style="width:' . esc_attr((string) $percent) . '%"></span>';
+        echo '</div>';
+        echo '<span class="wecoop-progress__label ' . esc_attr($label_class) . '">' . esc_html($percent . '% completato') . '</span>';
+        echo '</div>';
+    }
+
+    /* ------------------------------------------------------------------ *
+     *  IMPORT EXCEL (Registro Giornaliero)
+     * ------------------------------------------------------------------ */
+
+    /**
+     * Indici colonna (0-based) nel foglio "Registro Giornaliero".
+     */
+    private function import_column_map() {
+        return [
+            'operatore'      => 1,   // B
+            'data'           => 2,   // C
+            'servizio1'      => 3,   // D
+            'imp_dovuto1'    => 4,   // E
+            'servizio2'      => 5,   // F
+            'imp_dovuto2'    => 6,   // G
+            'servizio3'      => 7,   // H
+            'imp_dovuto3'    => 8,   // I
+            'importo_pagato' => 9,   // J
+            'saldo'          => 10,  // K
+            'metodo'         => 11,  // L
+            'cognome'        => 12,  // M
+            'nome'           => 13,  // N
+            'cittadinanza'   => 14,  // O
+            'email'          => 15,  // P
+            'cellulare'      => 16,  // Q
+            'stato_pratica'  => 17,  // R
+            'osservazione'   => 18,  // S
+            'cod_pratica'    => 19,  // T
+            'cod_tessera'    => 20,  // U
+        ];
+    }
+
+    private function cell($row, $idx) {
+        return isset($row[$idx]) ? trim((string) $row[$idx]) : '';
+    }
+
+    /**
+     * Estrae i clienti aggregati (uno per cognome+nome) da un file XLSX.
+     * Ritorna ['clients' => [...], 'rows' => int, 'error' => string].
+     */
+    private function extract_clients_from_file($file_path) {
+        $result = WeCoop_Xlsx_Reader::read_sheet($file_path, self::IMPORT_SHEET);
+        if ($result['error'] !== '') {
+            return ['clients' => [], 'rows' => 0, 'error' => $result['error']];
+        }
+
+        $map = $this->import_column_map();
+        $clients = [];
+        $data_rows = 0;
+
+        foreach ($result['rows'] as $row_index => $row) {
+            if ($row_index <= self::IMPORT_HEADER_ROW) {
+                continue;
+            }
+
+            $cognome = $this->cell($row, $map['cognome']);
+            $nome = $this->cell($row, $map['nome']);
+
+            if ($cognome === '' && $nome === '') {
+                continue;
+            }
+
+            $data_rows++;
+
+            $key = strtoupper($cognome) . '|' . strtoupper($nome);
+
+            if (!isset($clients[$key])) {
+                $clients[$key] = [
+                    'cognome'      => $this->clean_name($cognome),
+                    'nome'         => $this->clean_name($nome),
+                    'email'        => '',
+                    'cellulare'    => '',
+                    'cittadinanza' => '',
+                    'operatore'    => '',
+                    'pratiche'     => [],
+                ];
+            }
+
+            $c =& $clients[$key];
+
+            $email = $this->clean_email($this->cell($row, $map['email']));
+            if ($email !== '' && $c['email'] === '') {
+                $c['email'] = $email;
+            }
+
+            $tel = $this->clean_phone($this->cell($row, $map['cellulare']));
+            if ($tel !== '' && $c['cellulare'] === '') {
+                $c['cellulare'] = $tel;
+            }
+
+            $cit = $this->cell($row, $map['cittadinanza']);
+            if ($cit !== '' && $c['cittadinanza'] === '') {
+                $c['cittadinanza'] = $cit;
+            }
+
+            $op = $this->cell($row, $map['operatore']);
+            if ($op !== '' && $c['operatore'] === '') {
+                $c['operatore'] = $op;
+            }
+
+            // Storico pratica per le note
+            $data = WeCoop_Xlsx_Reader::excel_serial_to_date($this->cell($row, $map['data']));
+            if ($data === '') {
+                $data = $this->cell($row, $map['data']);
+            }
+
+            $servizio = $this->cell($row, $map['servizio1']);
+            if ($servizio === '' || strpos($servizio, '---') === 0) {
+                $servizio = $this->cell($row, $map['servizio2']);
+            }
+            if ($servizio === '' || strpos($servizio, '---') === 0) {
+                $servizio = $this->cell($row, $map['servizio3']);
+            }
+
+            $pratica = [
+                'data'     => $data,
+                'servizio' => $servizio,
+                'pagato'   => $this->cell($row, $map['importo_pagato']),
+                'metodo'   => $this->cell($row, $map['metodo']),
+                'stato'    => $this->cell($row, $map['stato_pratica']),
+                'oss'      => $this->cell($row, $map['osservazione']),
+            ];
+
+            if ($pratica['data'] !== '' || $pratica['servizio'] !== '' || $pratica['stato'] !== '') {
+                $c['pratiche'][] = $pratica;
+            }
+
+            unset($c);
+        }
+
+        return ['clients' => $clients, 'rows' => $data_rows, 'error' => ''];
+    }
+
+    private function clean_name($value) {
+        $value = preg_replace('/\s+/', ' ', trim((string) $value));
+        return $value;
+    }
+
+    private function clean_email($value) {
+        $value = trim(str_replace(["\t", "\r", "\n", ' '], '', (string) $value));
+        $value = sanitize_email($value);
+        return is_email($value) ? $value : '';
+    }
+
+    private function clean_phone($value) {
+        $value = trim((string) $value);
+        // Mantiene cifre e + iniziale.
+        $value = preg_replace('/[^0-9+]/', '', $value);
+        return $value;
+    }
+
+    /**
+     * Costruisce una email placeholder univoca tipo nome.cognome@wecoop.org
+     */
+    private function build_placeholder_email($nome, $cognome) {
+        $slug = sanitize_title($nome . ' ' . $cognome);
+        $slug = str_replace('-', '.', $slug);
+        if ($slug === '') {
+            $slug = 'utente.' . wp_generate_password(6, false, false);
+        }
+
+        $domain = self::IMPORT_PLACEHOLDER_DOMAIN;
+        $base = $slug;
+        $email = $base . '@' . $domain;
+        $counter = 1;
+
+        while (email_exists($email)) {
+            $email = $base . $counter . '@' . $domain;
+            $counter++;
+        }
+
+        return $email;
+    }
+
+    /**
+     * Costruisce il testo note con lo storico pratiche del cliente.
+     */
+    private function build_notes_from_client(array $client) {
+        $lines = [];
+        $lines[] = 'Importato da Registro Giornaliero (Excel CONCAF).';
+
+        if ($client['operatore'] !== '') {
+            $lines[] = 'Operatore: ' . $client['operatore'];
+        }
+
+        if (!empty($client['pratiche'])) {
+            $lines[] = '';
+            $lines[] = 'Storico pratiche (' . count($client['pratiche']) . '):';
+            foreach ($client['pratiche'] as $p) {
+                $parts = [];
+                if ($p['data'] !== '') { $parts[] = $p['data']; }
+                if ($p['servizio'] !== '') { $parts[] = $p['servizio']; }
+                if ($p['pagato'] !== '') { $parts[] = 'pagato ' . $p['pagato']; }
+                if ($p['metodo'] !== '') { $parts[] = $p['metodo']; }
+                if ($p['stato'] !== '') { $parts[] = $p['stato']; }
+                if ($p['oss'] !== '') { $parts[] = $p['oss']; }
+                $lines[] = '- ' . implode(' | ', $parts);
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Mappa un cliente aggregato nel payload del modello WECOOP.
+     */
+    private function map_client_to_payload(array $client) {
+        $email = $client['email'] !== ''
+            ? $client['email']
+            : $this->build_placeholder_email($client['nome'], $client['cognome']);
+
+        $nazionalita = $client['cittadinanza'];
+
+        $payload = [
+            'first_name'   => $client['nome'],
+            'last_name'    => $client['cognome'],
+            'display_name' => trim($client['nome'] . ' ' . $client['cognome']),
+            'user_email'   => $email,
+            'user_pass'    => '',
+            'user_role'    => 'subscriber',
+            'send_notification' => false,
+            'nome'         => $client['nome'],
+            'cognome'      => $client['cognome'],
+            'telefono'     => $client['cellulare'],
+            'nazionalita'  => $nazionalita,
+            'paese_provenienza' => $nazionalita,
+            'note_dataentry' => $this->build_notes_from_client($client),
+            '_email_was_placeholder' => $client['email'] === '',
+        ];
+
+        return $payload;
+    }
+
+    public function handle_import() {
+        if (!$this->can_access()) {
+            wp_die('Accesso negato');
+        }
+
+        check_admin_referer('wecoop_dataentry_import');
+
+        if (empty($_FILES['import_files']) || empty($_FILES['import_files']['name'][0])) {
+            $this->redirect_with_error('import_failed', 'Nessun file selezionato.', 'import');
+        }
+
+        $update_existing = !empty($_POST['update_existing']);
+
+        // Aggrega i clienti di tutti i file caricati.
+        $all_clients = [];
+        $total_rows = 0;
+        $file_errors = [];
+        $files = $_FILES['import_files'];
+        $count = count($files['name']);
+
+        for ($i = 0; $i < $count; $i++) {
+            if ((int) $files['error'][$i] !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $tmp = $files['tmp_name'][$i];
+            $name = $files['name'][$i];
+
+            if (!is_uploaded_file($tmp)) {
+                $file_errors[] = $name . ': upload non valido.';
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if ($ext !== 'xlsx') {
+                $file_errors[] = $name . ': formato non supportato (serve .xlsx).';
+                continue;
+            }
+
+            $extracted = $this->extract_clients_from_file($tmp);
+            if ($extracted['error'] !== '') {
+                $file_errors[] = $name . ': ' . $extracted['error'];
+                continue;
+            }
+
+            $total_rows += $extracted['rows'];
+
+            foreach ($extracted['clients'] as $key => $client) {
+                if (!isset($all_clients[$key])) {
+                    $all_clients[$key] = $client;
+                    continue;
+                }
+
+                // Merge tra file diversi.
+                $existing =& $all_clients[$key];
+                if ($existing['email'] === '' && $client['email'] !== '') { $existing['email'] = $client['email']; }
+                if ($existing['cellulare'] === '' && $client['cellulare'] !== '') { $existing['cellulare'] = $client['cellulare']; }
+                if ($existing['cittadinanza'] === '' && $client['cittadinanza'] !== '') { $existing['cittadinanza'] = $client['cittadinanza']; }
+                if ($existing['operatore'] === '' && $client['operatore'] !== '') { $existing['operatore'] = $client['operatore']; }
+                $existing['pratiche'] = array_merge($existing['pratiche'], $client['pratiche']);
+                unset($existing);
+            }
+        }
+
+        if (empty($all_clients)) {
+            $msg = 'Nessun cliente valido trovato.';
+            if (!empty($file_errors)) {
+                $msg .= ' ' . implode(' ', $file_errors);
+            }
+            $this->redirect_with_error('import_failed', $msg, 'import');
+        }
+
+        $created = 0;
+        $updated = 0;
+        $skipped = 0;
+        $errors = 0;
+
+        foreach ($all_clients as $client) {
+            $payload = $this->map_client_to_payload($client);
+            $was_placeholder = !empty($payload['_email_was_placeholder']);
+            unset($payload['_email_was_placeholder']);
+
+            $existing_user_id = email_exists($payload['user_email']);
+
+            if ($existing_user_id) {
+                if (!$update_existing) {
+                    $skipped++;
+                    continue;
+                }
+
+                $result = WeCoop_User_Meta::save_user_profile((int) $existing_user_id, $payload);
+                if (is_wp_error($result)) {
+                    $errors++;
+                    continue;
+                }
+                update_user_meta((int) $existing_user_id, 'wecoop_dataentry_updated_at', current_time('mysql'));
+                if (get_user_meta((int) $existing_user_id, 'wecoop_dataentry_created_at', true) === '') {
+                    update_user_meta((int) $existing_user_id, 'wecoop_dataentry_created_at', current_time('mysql'));
+                    update_user_meta((int) $existing_user_id, 'wecoop_dataentry_created_by', get_current_user_id());
+                }
+                $updated++;
+                continue;
+            }
+
+            $user_login = $this->build_unique_login($payload);
+            $user_pass = wp_generate_password(20, true, true);
+
+            $user_id = wp_insert_user([
+                'user_login'   => $user_login,
+                'user_pass'    => $user_pass,
+                'user_email'   => $payload['user_email'],
+                'first_name'   => $payload['first_name'],
+                'last_name'    => $payload['last_name'],
+                'display_name' => $payload['display_name'],
+                'role'         => 'subscriber',
+            ]);
+
+            if (is_wp_error($user_id)) {
+                $errors++;
+                continue;
+            }
+
+            $result = WeCoop_User_Meta::save_user_profile($user_id, $payload);
+            if (is_wp_error($result)) {
+                wp_delete_user($user_id);
+                $errors++;
+                continue;
+            }
+
+            update_user_meta($user_id, 'wecoop_dataentry_created_at', current_time('mysql'));
+            update_user_meta($user_id, 'wecoop_dataentry_created_by', get_current_user_id());
+            update_user_meta($user_id, 'wecoop_dataentry_updated_at', current_time('mysql'));
+            update_user_meta($user_id, 'wecoop_dataentry_source', 'excel_registro_giornaliero');
+            if ($was_placeholder) {
+                update_user_meta($user_id, 'wecoop_email_placeholder', '1');
+            }
+
+            $created++;
+        }
+
+        $summary = sprintf(
+            'clienti=%d, creati=%d, aggiornati=%d, saltati=%d, errori=%d, righe=%d',
+            count($all_clients), $created, $updated, $skipped, $errors, $total_rows
+        );
+        if (!empty($file_errors)) {
+            $summary .= ' | avvisi: ' . implode(' ', $file_errors);
+        }
+
+        wp_redirect(add_query_arg([
+            'page'    => self::MENU_SLUG,
+            'view'    => 'import',
+            'message' => 'imported',
+            'summary' => rawurlencode($summary),
+        ], admin_url('admin.php')));
+        exit;
+    }
+
+    private function render_import_page($message, $error_msg) {
+        $summary = isset($_GET['summary']) ? rawurldecode((string) $_GET['summary']) : '';
+        ?>
+        <div class="wrap wecoop-dataentry-wrap">
+            <h1 class="wp-heading-inline">Importa Excel</h1>
+            <p class="wecoop-help">Carica uno o piu' file <code>.xlsx</code> del Registro Giornaliero (CONCAF). I clienti vengono creati come utenti WECOOP, deduplicati per Cognome + Nome. Lo storico delle pratiche viene salvato nelle Note.</p>
+            <?php $this->render_page_navigation('import'); ?>
+
+            <?php if ($message === 'imported'): ?>
+                <div class="notice notice-success is-dismissible wecoop-notice"><p><strong>Importazione completata.</strong> <?php echo esc_html($summary); ?></p></div>
+            <?php elseif ($message === 'import_failed'): ?>
+                <div class="notice notice-error is-dismissible wecoop-notice"><p><strong>Importazione non riuscita.</strong> <?php echo esc_html($error_msg); ?></p></div>
+            <?php endif; ?>
+
+            <div class="wecoop-card">
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data">
+                    <?php wp_nonce_field('wecoop_dataentry_import'); ?>
+                    <input type="hidden" name="action" value="wecoop_dataentry_import">
+
+                    <div class="wecoop-field">
+                        <label for="import_files">File Excel (.xlsx) &mdash; foglio "<?php echo esc_html(self::IMPORT_SHEET); ?>"</label>
+                        <input type="file" id="import_files" name="import_files[]" accept=".xlsx" multiple required>
+                    </div>
+
+                    <p style="margin-top:12px;">
+                        <label><input type="checkbox" name="update_existing" value="1"> Aggiorna gli utenti gia' esistenti (stessa email). Se non selezionato vengono saltati.</label>
+                    </p>
+
+                    <div class="wecoop-actions">
+                        <button type="submit" class="button button-primary button-large">Avvia importazione</button>
+                        <span class="wecoop-help">I clienti senza email ricevono una email segnaposto <code>nome.cognome@<?php echo esc_html(self::IMPORT_PLACEHOLDER_DOMAIN); ?></code> da completare manualmente.</span>
+                    </div>
+                </form>
+            </div>
+
+            <div class="wecoop-card">
+                <h2>Come vengono mappati i dati</h2>
+                <table class="widefat striped" style="margin-top:12px;">
+                    <thead><tr><th>Colonna Excel</th><th>Campo WECOOP</th></tr></thead>
+                    <tbody>
+                        <tr><td>COGNOME Cliente</td><td>Cognome / last_name</td></tr>
+                        <tr><td>NOME Cliente</td><td>Nome / first_name</td></tr>
+                        <tr><td>e-mail</td><td>Email (segnaposto se mancante)</td></tr>
+                        <tr><td>cellulare</td><td>Telefono</td></tr>
+                        <tr><td>Cittadinanza</td><td>Nazionalita + Paese di provenienza</td></tr>
+                        <tr><td>Operatore, Data, Servizio, Importo, Stato, Osservazione</td><td>Note (storico pratiche)</td></tr>
+                    </tbody>
+                </table>
+                <p class="wecoop-help" style="margin-top:12px;">Nota: codice fiscale, data di nascita, indirizzo e citta' non sono presenti nel registro, quindi il profilo importato risultera' incompleto finche' non verranno integrati manualmente.</p>
+            </div>
+        </div>
+        <?php
+    }
+
     public function render_page() {
         if (!$this->can_access()) {
             wp_die('Accesso negato');
@@ -910,6 +1442,11 @@ class WeCoop_DataEntry {
 
         if ($view === 'list') {
             $this->render_list_page($message, $error_msg);
+            return;
+        }
+
+        if ($view === 'import') {
+            $this->render_import_page($message, $error_msg);
             return;
         }
 

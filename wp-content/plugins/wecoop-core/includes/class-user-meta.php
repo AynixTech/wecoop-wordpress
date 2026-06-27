@@ -65,6 +65,7 @@ class WeCoop_User_Meta {
                 'wecoop_dataentry_created_by',
                 'wecoop_dataentry_updated_at',
                 'profilo_completo',
+                'profilo_percentuale',
                 'campi_mancanti',
                 'is_socio',
             ],
@@ -83,6 +84,59 @@ class WeCoop_User_Meta {
             'data_nascita',
             'nazionalita',
         ];
+    }
+
+    /**
+     * Campi che concorrono al calcolo della percentuale di completamento del profilo.
+     * Include i campi obbligatori piu' quelli anagrafici/contatto/lavoro rilevanti.
+     */
+    public static function get_completion_fields() {
+        return [
+            // Anagrafica
+            'nome',
+            'cognome',
+            'email',
+            'sesso',
+            'data_nascita',
+            'luogo_nascita',
+            'codice_fiscale',
+            'nazionalita',
+            'stato_civile',
+            // Contatti
+            'telefono',
+            'indirizzo',
+            'civico',
+            'citta',
+            'cap',
+            'provincia',
+            'nazione',
+            // Lavoro / reddito
+            'tipo_lavoro',
+            'professione',
+            'reddito_mensile',
+        ];
+    }
+
+    /**
+     * Calcola la percentuale di completamento (0-100) dato un array di valori indicizzati
+     * con le stesse chiavi di get_completion_fields().
+     */
+    public static function calculate_completion_percent(array $values) {
+        $fields = self::get_completion_fields();
+        $total = count($fields);
+
+        if ($total === 0) {
+            return 0;
+        }
+
+        $filled = 0;
+        foreach ($fields as $field) {
+            if (trim((string) ($values[$field] ?? '')) !== '') {
+                $filled++;
+            }
+        }
+
+        return (int) round(($filled / $total) * 100);
     }
 
     public static function normalize_boolean($value) {
@@ -292,6 +346,28 @@ class WeCoop_User_Meta {
         update_user_meta($user_id, 'profilo_completo', $profilo_completo);
         update_user_meta($user_id, 'campi_mancanti', $campi_mancanti);
 
+        // Percentuale di completamento sui campi rilevanti del profilo.
+        $completion_values = [];
+        foreach (self::get_completion_fields() as $cf) {
+            if ($cf === 'email') {
+                $completion_values['email'] = $required_values['email'] ?? get_user_meta($user_id, 'user_email', true);
+                continue;
+            }
+            $completion_values[$cf] = get_user_meta($user_id, $cf, true);
+        }
+        if (trim((string) ($completion_values['nome'] ?? '')) === '' && isset($update_data['first_name'])) {
+            $completion_values['nome'] = $update_data['first_name'];
+        }
+        if (trim((string) ($completion_values['cognome'] ?? '')) === '' && isset($update_data['last_name'])) {
+            $completion_values['cognome'] = $update_data['last_name'];
+        }
+        if (trim((string) ($completion_values['email'] ?? '')) === '') {
+            $completion_values['email'] = $update_data['user_email'] ?? $user->user_email;
+        }
+
+        $profilo_percentuale = self::calculate_completion_percent($completion_values);
+        update_user_meta($user_id, 'profilo_percentuale', $profilo_percentuale);
+
         if (get_user_meta($user_id, 'nome', true) === '' && isset($update_data['first_name']) && $update_data['first_name'] !== '') {
             update_user_meta($user_id, 'nome', $update_data['first_name']);
         }
@@ -302,6 +378,7 @@ class WeCoop_User_Meta {
         return [
             'user_id' => $user_id,
             'profilo_completo' => $profilo_completo,
+            'profilo_percentuale' => $profilo_percentuale,
             'campi_mancanti' => $campi_mancanti,
             'user_profile' => self::get_user_profile_data($user_id),
         ];
