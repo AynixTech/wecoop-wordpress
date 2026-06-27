@@ -37,6 +37,13 @@ class WeCoop_Fatture {
     }
 
     private function __construct() {
+        // I plugin vengono caricati in ordine alfabetico: 'wecoop-fatture' viene
+        // eseguito PRIMA di 'wecoop-servizi'. Verifichiamo la dipendenza e
+        // inizializziamo su 'plugins_loaded', quando tutti i plugin sono caricati.
+        add_action('plugins_loaded', [$this, 'bootstrap'], 20);
+    }
+
+    public function bootstrap() {
         if (!$this->check_dependencies()) {
             add_action('admin_notices', [$this, 'dependency_notice']);
             return;
