@@ -612,7 +612,8 @@ class WECOOP_Servizi_Endpoint {
             'payment_id' => $pagamento ? $pagamento->id : null,
             'payment_status' => $pagamento ? $pagamento->stato : null,
             'importo' => $pagamento ? floatval($pagamento->importo) : null,
-            'integrazione_documentale' => self::get_integrazione_documentale_data($richiesta->ID)
+            'integrazione_documentale' => self::get_integrazione_documentale_data($richiesta->ID),
+            'documenti_risultato' => self::get_documenti_risultato_data($richiesta->ID)
         ];
         
         return new WP_REST_Response([
@@ -658,6 +659,51 @@ class WECOOP_Servizi_Endpoint {
             'documenti' => $documenti_out,
             'tutti_caricati' => (count($documenti_out) > 0 && $tutti_caricati),
         ];
+    }
+
+    /**
+     * Helper: documenti risultato caricati dall'operatore (scaricabili dal cliente)
+     *
+     * @param int $richiesta_id
+     * @return array
+     */
+    public static function get_documenti_risultato_data($richiesta_id) {
+        if (class_exists('WECOOP_Servizi_Management')
+            && method_exists('WECOOP_Servizi_Management', 'get_documenti_risultato')) {
+            return WECOOP_Servizi_Management::get_documenti_risultato($richiesta_id);
+        }
+
+        // Fallback: leggi direttamente il meta
+        $documenti = get_post_meta($richiesta_id, 'documenti_risultato', true);
+        if (!is_array($documenti)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($documenti as $doc) {
+            if (!is_array($doc)) {
+                continue;
+            }
+            $attachment_id = isset($doc['attachment_id']) ? intval($doc['attachment_id']) : 0;
+            if ($attachment_id > 0 && get_post($attachment_id) === null) {
+                continue;
+            }
+            $url = isset($doc['url']) ? $doc['url'] : '';
+            if ($attachment_id > 0) {
+                $fresh_url = wp_get_attachment_url($attachment_id);
+                if ($fresh_url) {
+                    $url = $fresh_url;
+                }
+            }
+            $out[] = [
+                'attachment_id' => $attachment_id,
+                'file_name' => isset($doc['file_name']) ? $doc['file_name'] : '',
+                'url' => $url,
+                'descrizione' => isset($doc['descrizione']) ? $doc['descrizione'] : '',
+                'data_caricamento' => isset($doc['data_caricamento']) ? $doc['data_caricamento'] : '',
+            ];
+        }
+        return $out;
     }
 
     /**
@@ -940,6 +986,7 @@ class WECOOP_Servizi_Endpoint {
                     'payment_link' => get_post_meta($post_id, 'payment_link', true),
                     'puo_pagare' => in_array($stato, ['awaiting_payment', 'pending_payment']) && !$pagamento_ricevuto,
                     'integrazione_documentale' => ($stato === 'integrazione_documentale') ? self::get_integrazione_documentale_data($post_id) : null,
+                    'documenti_risultato' => self::get_documenti_risultato_data($post_id),
                     'dati' => $dati
                 ];
             }

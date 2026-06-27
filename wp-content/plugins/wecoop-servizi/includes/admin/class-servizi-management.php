@@ -111,6 +111,8 @@ class WECOOP_Servizi_Management {
         add_action('wp_ajax_generate_receipt', [__CLASS__, 'ajax_generate_receipt']);
         add_action('wp_ajax_send_documento_unico', [__CLASS__, 'ajax_send_documento_unico']);
         add_action('wp_ajax_delete_documento_unico', [__CLASS__, 'ajax_delete_documento_unico']);
+        add_action('wp_ajax_upload_documento_risultato', [__CLASS__, 'ajax_upload_documento_risultato']);
+        add_action('wp_ajax_delete_documento_risultato', [__CLASS__, 'ajax_delete_documento_risultato']);
         add_action('wp_ajax_save_debug_logs', [__CLASS__, 'ajax_save_debug_logs']);
         
         // Row actions
@@ -223,11 +225,11 @@ class WECOOP_Servizi_Management {
         wp_enqueue_script('chart-js', 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js', [], '4.4.0', true);
         
         wp_enqueue_style('wecoop-servizi-admin', plugin_dir_url(WECOOP_SERVIZI_FILE) . 'assets/css/admin.css', [], WECOOP_SERVIZI_VERSION);
+
+        // Media uploader nativo WordPress (per i documenti risultato caricati dall'operatore)
+        wp_enqueue_media();
     }
     
-    /**
-     * Dashboard
-     */
     /**
      * Dashboard Analytics Completa
      */
@@ -1751,6 +1753,18 @@ class WECOOP_Servizi_Management {
                         <h3>📎 Documenti Allegati</h3>
                         <div id="documenti-allegati" style="margin-bottom: 20px;"></div>
                         
+                        <h3>📤 Documenti Risultato (visibili al cliente nell'app)</h3>
+                        <p style="margin: 0 0 10px; color: #666; font-size: 13px;">
+                            Carica qui i documenti finali / esito del lavoro. Il cliente potrà scaricarli dalla card della sua richiesta nell'app.
+                        </p>
+                        <div id="documenti-risultato" style="margin-bottom: 12px;"></div>
+                        <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 20px;">
+                            <button type="button" class="button" id="upload-documento-risultato-btn">
+                                ⬆️ Carica Documento Risultato
+                            </button>
+                            <span id="upload-documento-risultato-status" style="color: #666; font-size: 13px;"></span>
+                        </div>
+                        
                         <div class="wecoop-modal-footer">
                             <button type="button" class="button wecoop-modal-close">Annulla</button>
                             <button type="submit" class="button button-primary">Salva Modifiche</button>
@@ -2364,6 +2378,11 @@ class WECOOP_Servizi_Management {
                             }
                             
                             $('#documenti-allegati').html(documentiHtml);
+
+                            // ⭐ Popola documenti risultato (caricati dall'operatore per il cliente)
+                            window.wecoopCurrentRichiestaId = data.id || $('#richiesta_id').val();
+                            renderDocumentiRisultato(data.documenti_risultato || []);
+
                             $('#edit-richiesta-modal').fadeIn();
                         }
                     }
@@ -2392,6 +2411,138 @@ class WECOOP_Servizi_Management {
                         } else {
                             alert('Errore: ' + response.data);
                         }
+                    }
+                });
+            });
+
+            // ===== DOCUMENTI RISULTATO (operatore -> cliente) =====
+            const wecoopRisultatoNonce = '<?php echo wp_create_nonce('wecoop_servizi_nonce'); ?>';
+
+            function renderDocumentiRisultato(documenti) {
+                let html = '';
+                if (documenti && documenti.length > 0) {
+                    html = '<div class="documenti-list" style="display: flex; flex-wrap: wrap; gap: 10px;">';
+                    documenti.forEach(function(doc) {
+                        const isPdf = (doc.file_name || '').toLowerCase().endsWith('.pdf');
+                        const icon = isPdf ? '📄' : '🖼️';
+                        const descr = doc.descrizione
+                            ? '<div style="font-size: 11px; color: #555;">' + doc.descrizione + '</div>'
+                            : '';
+                        html += `
+                            <div class="documento-item" style="
+                                border: 1px solid #c8e6c9;
+                                border-radius: 8px;
+                                padding: 12px;
+                                background: #f1f8f2;
+                                min-width: 200px;
+                                display: flex;
+                                flex-direction: column;
+                                gap: 5px;
+                            ">
+                                <div style="font-size: 24px;">${icon}</div>
+                                <div style="font-size: 11px; color: #333; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">
+                                    ${doc.file_name || ''}
+                                </div>
+                                ${descr}
+                                <div style="display: flex; gap: 6px; margin-top: 5px;">
+                                    <a href="${doc.url}" target="_blank" class="button button-small">👁️ Apri</a>
+                                    <button type="button" class="button button-small delete-documento-risultato"
+                                        data-attachment="${doc.attachment_id}"
+                                        style="color: #b32d2e;">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                } else {
+                    html = '<p style="color: #999; font-style: italic;">Nessun documento risultato caricato</p>';
+                }
+                $('#documenti-risultato').html(html);
+            }
+
+            // Apri il media uploader WP per caricare un documento risultato
+            let wecoopRisultatoFrame = null;
+            $(document).on('click', '#upload-documento-risultato-btn', function(e) {
+                e.preventDefault();
+                const richiestaId = window.wecoopCurrentRichiestaId || $('#richiesta_id').val();
+                if (!richiestaId) {
+                    alert('Apri prima una richiesta.');
+                    return;
+                }
+
+                if (wecoopRisultatoFrame) {
+                    wecoopRisultatoFrame.open();
+                    return;
+                }
+
+                wecoopRisultatoFrame = wp.media({
+                    title: 'Seleziona o carica il documento risultato',
+                    button: { text: 'Usa questo documento' },
+                    library: { type: ['application/pdf', 'image'] },
+                    multiple: false
+                });
+
+                wecoopRisultatoFrame.on('select', function() {
+                    const attachment = wecoopRisultatoFrame.state().get('selection').first().toJSON();
+                    const descrizione = window.prompt('Descrizione (opzionale) visibile al cliente:', '') || '';
+
+                    $('#upload-documento-risultato-status').text('Salvataggio in corso...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'upload_documento_risultato',
+                            richiesta_id: richiestaId,
+                            attachment_id: attachment.id,
+                            descrizione: descrizione,
+                            nonce: wecoopRisultatoNonce
+                        },
+                        success: function(response) {
+                            $('#upload-documento-risultato-status').text('');
+                            if (response.success) {
+                                renderDocumentiRisultato(response.data.documenti_risultato || []);
+                            } else {
+                                alert('Errore: ' + (response.data || 'impossibile salvare il documento'));
+                            }
+                        },
+                        error: function() {
+                            $('#upload-documento-risultato-status').text('');
+                            alert('Errore di rete durante il salvataggio del documento.');
+                        }
+                    });
+                });
+
+                wecoopRisultatoFrame.open();
+            });
+
+            // Elimina documento risultato
+            $(document).on('click', '.delete-documento-risultato', function(e) {
+                e.preventDefault();
+                if (!confirm('Eliminare questo documento risultato? Il cliente non potrà più scaricarlo.')) {
+                    return;
+                }
+                const attachmentId = $(this).data('attachment');
+                const richiestaId = window.wecoopCurrentRichiestaId || $('#richiesta_id').val();
+
+                $.ajax({
+                    url: ajaxurl,
+                    method: 'POST',
+                    data: {
+                        action: 'delete_documento_risultato',
+                        richiesta_id: richiestaId,
+                        attachment_id: attachmentId,
+                        nonce: wecoopRisultatoNonce
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            renderDocumentiRisultato(response.data.documenti_risultato || []);
+                        } else {
+                            alert('Errore: ' + (response.data || 'impossibile eliminare il documento'));
+                        }
+                    },
+                    error: function() {
+                        alert('Errore di rete durante l\'eliminazione del documento.');
                     }
                 });
             });
@@ -2867,7 +3018,8 @@ class WECOOP_Servizi_Management {
             'categoria' => $categoria,
             'stato' => $stato,
             'dati' => $dati,
-            'user_id' => $user_id
+            'user_id' => $user_id,
+            'id' => $richiesta_id
         ];
         
         // Aggiungi link all'utente se esiste
@@ -2897,7 +3049,158 @@ class WECOOP_Servizi_Management {
             }
         }
         
+        // ⭐ Aggiungi documenti risultato (caricati dall'operatore, scaricabili dal cliente)
+        $response['documenti_risultato'] = self::get_documenti_risultato($richiesta_id);
+        
         wp_send_json_success($response);
+    }
+
+    /**
+     * Restituisce l'elenco normalizzato dei documenti risultato di una richiesta.
+     *
+     * @param int $richiesta_id
+     * @return array
+     */
+    public static function get_documenti_risultato($richiesta_id) {
+        $documenti = get_post_meta($richiesta_id, 'documenti_risultato', true);
+        if (!is_array($documenti)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($documenti as $doc) {
+            if (!is_array($doc)) {
+                continue;
+            }
+            $attachment_id = isset($doc['attachment_id']) ? intval($doc['attachment_id']) : 0;
+            // Salta documenti il cui attachment è stato eliminato dalla Media Library
+            if ($attachment_id > 0 && get_post($attachment_id) === null) {
+                continue;
+            }
+            $url = isset($doc['url']) ? $doc['url'] : '';
+            if ($attachment_id > 0) {
+                $fresh_url = wp_get_attachment_url($attachment_id);
+                if ($fresh_url) {
+                    $url = $fresh_url;
+                }
+            }
+            $out[] = [
+                'attachment_id' => $attachment_id,
+                'file_name' => isset($doc['file_name']) ? $doc['file_name'] : '',
+                'url' => $url,
+                'descrizione' => isset($doc['descrizione']) ? $doc['descrizione'] : '',
+                'data_caricamento' => isset($doc['data_caricamento']) ? $doc['data_caricamento'] : '',
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * AJAX: l'operatore carica un documento risultato (esito del lavoro) per il cliente.
+     */
+    public static function ajax_upload_documento_risultato() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+
+        $richiesta_id = absint($_POST['richiesta_id'] ?? 0);
+        $attachment_id = absint($_POST['attachment_id'] ?? 0);
+        $descrizione = isset($_POST['descrizione'])
+            ? sanitize_text_field(wp_unslash($_POST['descrizione']))
+            : '';
+
+        if (!$richiesta_id || !$attachment_id) {
+            wp_send_json_error('Parametri mancanti');
+        }
+
+        $richiesta = get_post($richiesta_id);
+        if (!$richiesta || $richiesta->post_type !== 'richiesta_servizio') {
+            wp_send_json_error('Richiesta non trovata');
+        }
+
+        $attachment = get_post($attachment_id);
+        if (!$attachment || $attachment->post_type !== 'attachment') {
+            wp_send_json_error('File non valido');
+        }
+
+        // Collega l'attachment alla richiesta (utile per filtri/cleanup)
+        update_post_meta($attachment_id, 'richiesta_id', $richiesta_id);
+        update_post_meta($attachment_id, 'documento_risultato', 'yes');
+
+        $documenti = get_post_meta($richiesta_id, 'documenti_risultato', true);
+        if (!is_array($documenti)) {
+            $documenti = [];
+        }
+
+        // Evita duplicati dello stesso attachment
+        $found = false;
+        foreach ($documenti as $i => $doc) {
+            if (isset($doc['attachment_id']) && intval($doc['attachment_id']) === $attachment_id) {
+                $documenti[$i]['descrizione'] = $descrizione;
+                $documenti[$i]['file_name'] = basename(get_attached_file($attachment_id));
+                $documenti[$i]['url'] = wp_get_attachment_url($attachment_id);
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found) {
+            $documenti[] = [
+                'attachment_id' => $attachment_id,
+                'file_name' => basename(get_attached_file($attachment_id)),
+                'url' => wp_get_attachment_url($attachment_id),
+                'descrizione' => $descrizione,
+                'data_caricamento' => current_time('mysql'),
+            ];
+        }
+
+        update_post_meta($richiesta_id, 'documenti_risultato', $documenti);
+
+        do_action('wecoop_documento_risultato_caricato', $richiesta_id, $attachment_id);
+
+        wp_send_json_success([
+            'message' => 'Documento risultato salvato',
+            'documenti_risultato' => self::get_documenti_risultato($richiesta_id),
+        ]);
+    }
+
+    /**
+     * AJAX: l'operatore elimina un documento risultato.
+     */
+    public static function ajax_delete_documento_risultato() {
+        check_ajax_referer('wecoop_servizi_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Permessi insufficienti');
+        }
+
+        $richiesta_id = absint($_POST['richiesta_id'] ?? 0);
+        $attachment_id = absint($_POST['attachment_id'] ?? 0);
+
+        if (!$richiesta_id || !$attachment_id) {
+            wp_send_json_error('Parametri mancanti');
+        }
+
+        $documenti = get_post_meta($richiesta_id, 'documenti_risultato', true);
+        if (!is_array($documenti)) {
+            $documenti = [];
+        }
+
+        $documenti = array_values(array_filter($documenti, function ($doc) use ($attachment_id) {
+            return !(isset($doc['attachment_id']) && intval($doc['attachment_id']) === $attachment_id);
+        }));
+
+        update_post_meta($richiesta_id, 'documenti_risultato', $documenti);
+
+        // Rimuove definitivamente il file dalla Media Library
+        wp_delete_attachment($attachment_id, true);
+
+        wp_send_json_success([
+            'message' => 'Documento risultato eliminato',
+            'documenti_risultato' => self::get_documenti_risultato($richiesta_id),
+        ]);
     }
     
     /**
