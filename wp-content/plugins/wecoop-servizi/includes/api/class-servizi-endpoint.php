@@ -1126,19 +1126,23 @@ class WECOOP_Servizi_Endpoint {
             return new WP_Error('file_not_found', 'File fattura non trovato sul server', ['status' => 404]);
         }
         
-        // Leggi il file
-        $file_content = file_get_contents($file_path);
         $filename = basename($file_path);
-        
-        // Ritorna il PDF come response binaria
-        $response = new WP_REST_Response($file_content);
-        $response->set_status(200);
-        $response->header('Content-Type', 'application/pdf');
-        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-        $response->header('Content-Length', filesize($file_path));
-        $response->header('Cache-Control', 'private, max-age=3600');
-        
-        return $response;
+
+        // IMPORTANTE: non usare WP_REST_Response per i file binari, perché WordPress
+        // serializza il body in JSON corrompendo i byte del PDF (il client riceve
+        // "File not in PDF format or corrupted"). Emettiamo i byte raw e usciamo.
+        if (ob_get_level()) {
+            @ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Content-Length: ' . filesize($file_path));
+        header('Content-Transfer-Encoding: binary');
+        header('Cache-Control: private, max-age=3600');
+
+        readfile($file_path);
+        exit;
     }
     
     /**
@@ -1284,21 +1288,22 @@ class WECOOP_Servizi_Endpoint {
                 return new WP_Error('file_not_found', 'File PDF non trovato sul server', ['status' => 404]);
             }
 
-            $file_content = file_get_contents($file_path);
-            if ($file_content === false) {
-                return new WP_Error('read_failed', 'Impossibile leggere il file PDF', ['status' => 500]);
-            }
-
             $filename = 'Documento_Unico_' . $richiesta_id . ($is_firmato ? '_Firmato' : '') . '.pdf';
 
-            $response = new WP_REST_Response($file_content);
-            $response->set_status(200);
-            $response->header('Content-Type', 'application/pdf');
-            $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-            $response->header('Content-Length', filesize($file_path));
-            $response->header('Cache-Control', 'private, max-age=300');
+            // IMPORTANTE: emettiamo i byte raw. WP_REST_Response serializza il body
+            // in JSON e corrompe il PDF ("File not in PDF format or corrupted").
+            if (ob_get_level()) {
+                @ob_end_clean();
+            }
 
-            return $response;
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . filesize($file_path));
+            header('Content-Transfer-Encoding: binary');
+            header('Cache-Control: private, max-age=300');
+
+            readfile($file_path);
+            exit;
         } catch (\Throwable $e) {
             error_log('[WECOOP API] ❌ download-merged fatal richiesta #' . intval($request['id']) . ' -> ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
             return new WP_Error('download_merged_fatal', 'Errore interno durante la preparazione del PDF unito', ['status' => 500]);
