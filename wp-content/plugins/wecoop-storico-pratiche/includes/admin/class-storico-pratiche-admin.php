@@ -23,8 +23,29 @@ class WeCoop_Storico_Pratiche_Admin {
         add_action('wp_ajax_wecoop_pratiche_search_users', [__CLASS__, 'ajax_search_users']);
 
         // Sezione nella scheda utente.
-        add_action('show_user_profile', [__CLASS__, 'render_user_section']);
-        add_action('edit_user_profile', [__CLASS__, 'render_user_section']);
+        // NB: gli hook show_user_profile / edit_user_profile vengono eseguiti
+        // DENTRO il <form id="your-profile"> di WordPress. Poiche' la nostra
+        // sezione contiene dei <form> (upload/elimina) e i form HTML non possono
+        // essere annidati, stampare qui romperebbe il form del profilo (il pulsante
+        // "Aggiorna utente" finirebbe fuori dal form e il salvataggio non
+        // funzionerebbe). Per questo NON stampiamo nulla dentro questi hook:
+        // segnaliamo solo che siamo nella pagina utente e renderizziamo la sezione
+        // in 'admin_footer' (fuori dal form), spostandola poi via JS nel punto
+        // giusto della pagina.
+        add_action('show_user_profile', [__CLASS__, 'flag_user_screen']);
+        add_action('edit_user_profile', [__CLASS__, 'flag_user_screen']);
+        add_action('admin_footer', [__CLASS__, 'render_user_section_footer']);
+    }
+
+    /** @var int|null ID utente della schermata di modifica corrente. */
+    private static $current_profile_user_id = null;
+
+    /**
+     * Registra l'utente della schermata profilo corrente (chiamato dentro il form,
+     * ma senza stampare nulla per non rompere il form di WordPress).
+     */
+    public static function flag_user_screen($user) {
+        self::$current_profile_user_id = (int) $user->ID;
     }
 
     private static function can_manage() {
@@ -464,16 +485,22 @@ class WeCoop_Storico_Pratiche_Admin {
 
 
     /**
-     * Sezione nella schermata edit-user.
+     * Sezione nella schermata edit-user, stampata in 'admin_footer' (quindi FUORI
+     * dal <form id="your-profile">), poi spostata via JS subito dopo il form.
+     * Questo evita form annidati e mantiene funzionante il pulsante "Aggiorna utente".
      */
-    public static function render_user_section($user) {
+    public static function render_user_section_footer() {
+        $user_id = self::$current_profile_user_id;
+        if (!$user_id) {
+            return; // Non siamo nella schermata di modifica utente.
+        }
         if (!self::can_manage()) {
             return;
         }
 
-        $user_id = (int) $user->ID;
         $redirect_to = get_edit_user_link($user_id);
 
+        echo '<div id="wecoop-storico-pratiche-wrap" class="wecoop-storico-pratiche-section" style="max-width:960px;">';
         echo '<h2 id="wecoop-storico-pratiche">Storico Pratiche (WeCoop)</h2>';
 
         $status = isset($_GET['wecoop_pratiche_status']) ? sanitize_key($_GET['wecoop_pratiche_status']) : '';
@@ -486,6 +513,19 @@ class WeCoop_Storico_Pratiche_Admin {
 
         self::render_upload_form($user_id, $redirect_to);
         self::render_documents_table($user_id, $redirect_to);
+        echo '</div>';
+        ?>
+        <script>
+        (function () {
+            var wrap = document.getElementById('wecoop-storico-pratiche-wrap');
+            var form = document.getElementById('your-profile');
+            if (wrap && form && form.parentNode) {
+                // Posiziona la sezione subito dopo il form del profilo utente.
+                form.parentNode.insertBefore(wrap, form.nextSibling);
+            }
+        })();
+        </script>
+        <?php
     }
 
     private static function render_upload_form($user_id, $redirect_to) {
