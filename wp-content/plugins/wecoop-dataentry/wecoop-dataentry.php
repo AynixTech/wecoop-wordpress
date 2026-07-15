@@ -420,46 +420,123 @@ class WeCoop_DataEntry {
         return '
             document.addEventListener("DOMContentLoaded", function () {
                 const modal = document.getElementById("wecoop-dataentry-delete-modal");
-                if (!modal) {
+                if (modal) {
+                    const form = modal.querySelector("form");
+                    const userIdInput = modal.querySelector("input[name=\"user_id\"]");
+                    const userNameNode = modal.querySelector("[data-role=\"user-name\"]");
+                    const openButtons = document.querySelectorAll("[data-wecoop-delete-user]");
+                    const closeModal = function () {
+                        modal.classList.remove("is-open");
+                    };
+
+                    openButtons.forEach(function (button) {
+                        button.addEventListener("click", function (event) {
+                            event.preventDefault();
+                            userIdInput.value = button.getAttribute("data-user-id") || "";
+                            userNameNode.textContent = button.getAttribute("data-user-name") || "questo utente";
+                            form.action = button.getAttribute("data-delete-action") || form.action;
+                            modal.classList.add("is-open");
+                        });
+                    });
+
+                    modal.querySelectorAll("[data-wecoop-close]").forEach(function (button) {
+                        button.addEventListener("click", function (event) {
+                            event.preventDefault();
+                            closeModal();
+                        });
+                    });
+
+                    modal.addEventListener("click", function (event) {
+                        if (event.target === modal) {
+                            closeModal();
+                        }
+                    });
+
+                    document.addEventListener("keydown", function (event) {
+                        if (event.key === "Escape") {
+                            closeModal();
+                        }
+                    });
+                }
+
+                // --- Bozza automatica del form "Nuovo utente" ---------------------
+                // Salva quanto digitato nel browser cosi\' un ricaricamento della
+                // pagina non fa perdere i dati. Attivo solo in creazione.
+                const deForm = document.getElementById("wecoop-dataentry-form");
+                if (!deForm || deForm.getAttribute("data-form-mode") === "edit") {
                     return;
                 }
 
-                const form = modal.querySelector("form");
-                const userIdInput = modal.querySelector("input[name=\"user_id\"]");
-                const userNameNode = modal.querySelector("[data-role=\"user-name\"]");
-                const openButtons = document.querySelectorAll("[data-wecoop-delete-user]");
-                const closeModal = function () {
-                    modal.classList.remove("is-open");
+                const STORAGE_KEY = "wecoopDataentryDraft";
+                const isPersistable = function (el) {
+                    if (!el.name) { return false; }
+                    if (el.type === "hidden" || el.type === "password" || el.type === "file" || el.type === "submit" || el.type === "button") { return false; }
+                    if (el.name === "_wpnonce" || el.name === "_wp_http_referer" || el.name === "action" || el.name === "user_id") { return false; }
+                    return true;
                 };
 
-                openButtons.forEach(function (button) {
-                    button.addEventListener("click", function (event) {
-                        event.preventDefault();
-                        userIdInput.value = button.getAttribute("data-user-id") || "";
-                        userNameNode.textContent = button.getAttribute("data-user-name") || "questo utente";
-                        form.action = button.getAttribute("data-delete-action") || form.action;
-                        modal.classList.add("is-open");
+                const saveDraft = function () {
+                    const data = {};
+                    deForm.querySelectorAll("input, select, textarea").forEach(function (el) {
+                        if (!isPersistable(el)) { return; }
+                        if (el.type === "checkbox") {
+                            data[el.name] = el.checked ? "1" : "";
+                        } else if (el.type === "radio") {
+                            if (el.checked) { data[el.name] = el.value; }
+                        } else {
+                            data[el.name] = el.value;
+                        }
                     });
-                });
+                    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+                };
 
-                modal.querySelectorAll("[data-wecoop-close]").forEach(function (button) {
-                    button.addEventListener("click", function (event) {
-                        event.preventDefault();
-                        closeModal();
+                const clearDraft = function () {
+                    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                };
+
+                const restoreDraft = function () {
+                    let raw = null;
+                    try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
+                    if (!raw) { return; }
+                    let data;
+                    try { data = JSON.parse(raw); } catch (e) { return; }
+                    if (!data || typeof data !== "object") { return; }
+
+                    deForm.querySelectorAll("input, select, textarea").forEach(function (el) {
+                        if (!isPersistable(el)) { return; }
+                        if (!(el.name in data)) { return; }
+                        const value = data[el.name];
+                        if (el.type === "checkbox") {
+                            el.checked = value === "1";
+                        } else if (el.type === "radio") {
+                            el.checked = (el.value === value);
+                        } else {
+                            el.value = value;
+                        }
                     });
-                });
+                };
 
-                modal.addEventListener("click", function (event) {
-                    if (event.target === modal) {
-                        closeModal();
-                    }
-                });
+                restoreDraft();
+                saveDraft();
 
-                document.addEventListener("keydown", function (event) {
-                    if (event.key === "Escape") {
-                        closeModal();
-                    }
-                });
+                deForm.addEventListener("input", saveDraft);
+                deForm.addEventListener("change", saveDraft);
+
+                // Alla creazione riuscita si lascia la pagina: pulisci la bozza.
+                deForm.addEventListener("submit", clearDraft);
+
+                const resetBtn = document.getElementById("wecoop-dataentry-reset");
+                if (resetBtn) {
+                    resetBtn.addEventListener("click", function () {
+                        if (!window.confirm("Svuotare il modulo? I dati non salvati andranno persi.")) {
+                            return;
+                        }
+                        deForm.reset();
+                        clearDraft();
+                        const firstField = deForm.querySelector("input[name=\"first_name\"]");
+                        if (firstField) { firstField.focus(); }
+                    });
+                }
             });
         ';
     }
@@ -559,9 +636,20 @@ class WeCoop_DataEntry {
         check_admin_referer('wecoop_dataentry_create_user');
 
         $payload = $this->collect_payload();
-        $validation_errors = $this->validate_payload($payload);
+        $validation_errors = $this->validate_payload($payload, 0, false);
         if (!empty($validation_errors)) {
-            $this->redirect_with_error('validation_error', implode(' ', $validation_errors));
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('validation_error', implode(' ', $validation_errors), 'new');
+        }
+
+        // Piu' utenti (es. coniugi) possono condividere la stessa email/telefono.
+        // WordPress richiede pero' un'email unica per ogni account: se l'email
+        // inserita esiste gia', generiamo un segnaposto univoco cosi' l'utente
+        // viene comunque creato senza perdere i dati inseriti.
+        $email_shared = false;
+        if (email_exists($payload['user_email'])) {
+            $payload['user_email'] = $this->build_placeholder_email($payload['first_name'], $payload['last_name']);
+            $email_shared = true;
         }
 
         $user_login = $this->build_unique_login($payload);
@@ -579,13 +667,15 @@ class WeCoop_DataEntry {
         ]);
 
         if (is_wp_error($user_id)) {
-            $this->redirect_with_error('create_failed', $user_id->get_error_message());
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('create_failed', $user_id->get_error_message(), 'new');
         }
 
         $result = WeCoop_User_Meta::save_user_profile($user_id, $payload);
         if (is_wp_error($result)) {
             wp_delete_user($user_id);
-            $this->redirect_with_error('save_failed', $result->get_error_message());
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('save_failed', $result->get_error_message(), 'new');
         }
 
         update_user_meta($user_id, 'wecoop_dataentry_created_at', current_time('mysql'));
@@ -599,7 +689,7 @@ class WeCoop_DataEntry {
         wp_redirect(add_query_arg([
             'page' => self::MENU_SLUG,
             'view' => 'detail',
-            'message' => 'created',
+            'message' => $email_shared ? 'created_shared_email' : 'created',
             'user_id' => $user_id,
         ], admin_url('users.php')));
         exit;
@@ -620,7 +710,8 @@ class WeCoop_DataEntry {
         $payload = $this->collect_payload();
         $validation_errors = $this->validate_payload($payload, $user_id);
         if (!empty($validation_errors)) {
-            $this->redirect_with_error('validation_error', implode(' ', $validation_errors));
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('validation_error', implode(' ', $validation_errors), 'edit', ['user_id' => $user_id]);
         }
 
         $payload['user_id'] = $user_id;
@@ -645,12 +736,14 @@ class WeCoop_DataEntry {
 
         $result = wp_update_user($update_data);
         if (is_wp_error($result)) {
-            $this->redirect_with_error('save_failed', $result->get_error_message());
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('save_failed', $result->get_error_message(), 'edit', ['user_id' => $user_id]);
         }
 
         $save_result = WeCoop_User_Meta::save_user_profile($user_id, $payload);
         if (is_wp_error($save_result)) {
-            $this->redirect_with_error('save_failed', $save_result->get_error_message());
+            $this->stash_form_payload($payload);
+            $this->redirect_with_error('save_failed', $save_result->get_error_message(), 'edit', ['user_id' => $user_id]);
         }
 
         update_user_meta($user_id, 'wecoop_dataentry_updated_at', current_time('mysql'));
@@ -729,7 +822,7 @@ class WeCoop_DataEntry {
         return $payload;
     }
 
-    private function validate_payload(array $payload, $user_id = 0) {
+    private function validate_payload(array $payload, $user_id = 0, $check_email_unique = true) {
         $errors = [];
 
         if (!is_email($payload['user_email'])) {
@@ -742,9 +835,11 @@ class WeCoop_DataEntry {
             }
         }
 
-        $existing_user_id = email_exists($payload['user_email']);
-        if ($existing_user_id && (int) $existing_user_id !== (int) $user_id) {
-            $errors[] = 'Esiste gia\' un utente con questa email.';
+        if ($check_email_unique) {
+            $existing_user_id = email_exists($payload['user_email']);
+            if ($existing_user_id && (int) $existing_user_id !== (int) $user_id) {
+                $errors[] = 'Esiste gia\' un utente con questa email.';
+            }
         }
 
         return $errors;
@@ -774,23 +869,49 @@ class WeCoop_DataEntry {
         return in_array($role, $allowed_roles, true) ? $role : 'subscriber';
     }
 
-    private function redirect_with_error($code, $message, $view = '') {
+    private function redirect_with_error($code, $message, $view = '', array $extra_args = []) {
         if ($view !== '') {
-            wp_redirect(add_query_arg([
+            wp_redirect(add_query_arg(array_merge([
                 'page' => self::MENU_SLUG,
                 'view' => $view,
                 'message' => $code,
                 'error_msg' => rawurlencode($message),
-            ], admin_url('admin.php')));
+            ], $extra_args), admin_url('admin.php')));
             exit;
         }
 
-        wp_redirect(add_query_arg([
+        wp_redirect(add_query_arg(array_merge([
             'page' => self::MENU_SLUG,
             'message' => $code,
             'error_msg' => rawurlencode($message),
-        ], admin_url('users.php')));
+        ], $extra_args), admin_url('users.php')));
         exit;
+    }
+
+    /**
+     * Memorizza temporaneamente i dati inseriti nel form per ripopolarlo dopo
+     * un redirect di errore (evita di perdere quanto digitato dall'operatore).
+     */
+    private function stash_form_payload(array $payload) {
+        set_transient($this->get_form_stash_key(), $payload, 5 * MINUTE_IN_SECONDS);
+    }
+
+    /**
+     * Recupera e cancella i dati del form memorizzati temporaneamente.
+     */
+    private function pull_form_payload() {
+        $key = $this->get_form_stash_key();
+        $payload = get_transient($key);
+        if ($payload === false || !is_array($payload)) {
+            return null;
+        }
+
+        delete_transient($key);
+        return $payload;
+    }
+
+    private function get_form_stash_key() {
+        return 'wecoop_de_form_' . get_current_user_id();
     }
 
     private function render_input($name, $label, $value = '', $type = 'text', $extra = '') {
@@ -1251,6 +1372,8 @@ class WeCoop_DataEntry {
 
             <?php if ($message === 'created'): ?>
                 <div class="notice notice-success is-dismissible wecoop-notice"><p>Utente creato con successo.</p></div>
+            <?php elseif ($message === 'created_shared_email'): ?>
+                <div class="notice notice-success is-dismissible wecoop-notice"><p><strong>Utente creato con successo.</strong> L'email indicata risultava gia' associata a un altro utente (es. coniugi che condividono lo stesso recapito): e' stata assegnata un'email segnaposto univoca <code><?php echo esc_html($user->user_email); ?></code>, modificabile in qualsiasi momento.</p></div>
             <?php elseif ($message === 'updated'): ?>
                 <div class="notice notice-success is-dismissible wecoop-notice"><p>Utente aggiornato con successo.</p></div>
             <?php elseif ($message === 'validation_error' || $message === 'save_failed' || $message === 'delete_failed' || $message === 'create_failed'): ?>
@@ -1861,6 +1984,19 @@ class WeCoop_DataEntry {
         $form_mode = $view === 'edit' ? 'edit' : 'new';
         $editing_user_id = $form_mode === 'edit' ? $user_id : 0;
         $defaults = $this->get_user_defaults($editing_user_id);
+
+        // Se un salvataggio precedente e' fallito, ripristina i dati digitati
+        // dall'operatore cosi' la scheda resta compilata e modificabile.
+        if (in_array($message, ['validation_error', 'create_failed', 'save_failed'], true)) {
+            $stashed = $this->pull_form_payload();
+            if (is_array($stashed)) {
+                foreach ($defaults as $key => $default_value) {
+                    if (array_key_exists($key, $stashed)) {
+                        $defaults[$key] = $stashed[$key];
+                    }
+                }
+            }
+        }
         $form_title = $form_mode === 'edit' ? 'Modifica utente' : 'Nuovo utente';
         $form_help = $form_mode === 'edit'
             ? 'Aggiorna i dati gia\' inseriti e salva le modifiche nel modello WECOOP.'
@@ -1890,7 +2026,7 @@ class WeCoop_DataEntry {
             <?php endif; ?>
 
             <div class="wecoop-card">
-                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <form id="wecoop-dataentry-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" data-form-mode="<?php echo esc_attr($form_mode); ?>">
                     <?php wp_nonce_field($form_mode === 'edit' ? 'wecoop_dataentry_update_user' : 'wecoop_dataentry_create_user'); ?>
                     <input type="hidden" name="action" value="<?php echo esc_attr($form_action); ?>">
                     <?php if ($form_mode === 'edit' && $editing_user_id > 0): ?>
@@ -2044,6 +2180,9 @@ class WeCoop_DataEntry {
 
                     <div class="wecoop-actions">
                         <button type="submit" class="button button-primary button-large"><?php echo esc_html($submit_label); ?></button>
+                        <?php if ($form_mode !== 'edit'): ?>
+                            <button type="button" id="wecoop-dataentry-reset" class="button button-large">Reset form</button>
+                        <?php endif; ?>
                         <span class="wecoop-help">I campi con * sono quelli minimi compatibili con i moduli WECOOP gia\' esistenti.</span>
                     </div>
                 </form>
