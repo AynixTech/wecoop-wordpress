@@ -11,6 +11,7 @@ class WeCoop_User_Meta {
         add_action('edit_user_profile', [__CLASS__, 'render_login_contact_fields']);
         add_action('personal_options_update', [__CLASS__, 'save_login_contact_fields']);
         add_action('edit_user_profile_update', [__CLASS__, 'save_login_contact_fields']);
+        add_filter('authenticate', [__CLASS__, 'authenticate_phone_number'], 15, 3);
     }
 
     /**
@@ -29,7 +30,10 @@ class WeCoop_User_Meta {
             'telefono' => $telefono,
         ]);
         $username_from_phone = ltrim($telefono_completo, '+');
-        $is_phone_login = $username_from_phone !== '' && $profile_user->user_login === $username_from_phone;
+        $is_phone_login = $username_from_phone !== '' && (
+            $profile_user->user_login === $username_from_phone ||
+            get_user_meta($profile_user->ID, 'wecoop_phone_login_enabled', true) === '1'
+        );
         $notice_key = 'wecoop_profile_notice_' . get_current_user_id();
         $notice = get_transient($notice_key);
         delete_transient($notice_key);
@@ -63,7 +67,7 @@ class WeCoop_User_Meta {
                         <?php esc_html_e('Usa prefisso e telefono come username di accesso.', 'wecoop-core'); ?>
                     </label>
                     <p class="description">
-                        <?php esc_html_e('Lo username sarà il numero completo senza il simbolo +. La password si modifica nella sezione “Password” di questa stessa pagina.', 'wecoop-core'); ?>
+                        <?php esc_html_e('Lo username sarà il numero completo senza il simbolo +. Il numero completo può essere usato per accedere anche se l’account ha uno username storico. La password si modifica nella sezione “Password” di questa stessa pagina.', 'wecoop-core'); ?>
                     </p>
                 </td>
             </tr>
@@ -101,6 +105,7 @@ class WeCoop_User_Meta {
             delete_user_meta($user_id, 'prefix');
             delete_user_meta($user_id, 'telefono');
             delete_user_meta($user_id, 'telefono_completo');
+            delete_user_meta($user_id, 'wecoop_phone_login_enabled');
             return;
         }
 
@@ -114,6 +119,7 @@ class WeCoop_User_Meta {
         update_user_meta($user_id, 'telefono_completo', $telefono_completo);
 
         if (empty($_POST['wecoop_sync_login'])) {
+            delete_user_meta($user_id, 'wecoop_phone_login_enabled');
             return;
         }
 
@@ -121,7 +127,12 @@ class WeCoop_User_Meta {
         $user = get_userdata($user_id);
         $existing_user_id = username_exists($username);
 
-        if (!$user || $user->user_login === $username) {
+        if (!$user) {
+            return;
+        }
+
+        if ($user->user_login === $username) {
+            update_user_meta($user_id, 'wecoop_phone_login_enabled', '1');
             return;
         }
 
@@ -137,7 +148,51 @@ class WeCoop_User_Meta {
 
         if (is_wp_error($result)) {
             self::set_profile_notice('error', __('Non è stato possibile aggiornare lo username di accesso.', 'wecoop-core'));
+            return;
         }
+
+        update_user_meta($user_id, 'wecoop_phone_login_enabled', '1');
+    }
+
+    /**
+     * Consente il login con il numero completo, senza esporre o modificare la password.
+     * Gli utenti creati prima dell'adozione dello username telefonico mantengono così l'accesso.
+     */
+    public static function authenticate_phone_number($user, $username, $password) {
+        if ($user instanceof WP_User || is_wp_error($user) || $username === '' || $password === '') {
+            return $user;
+        }
+
+        $phone_digits = preg_replace('/[^0-9]/', '', (string) $username);
+        if ($phone_digits === '' || strlen($phone_digits) > 19) {
+            return $user;
+        }
+
+        $users = get_users([
+            'number' => 2,
+            'fields' => 'all',
+            'meta_query' => [
+                [
+                    'key' => 'telefono_completo',
+                    'value' => ['+' . $phone_digits, $phone_digits],
+                    'compare' => 'IN',
+                ],
+            ],
+        ]);
+
+        if (count($users) !== 1) {
+            return $user;
+        }
+
+        $phone_user = $users[0];
+        if (wp_check_password($password, $phone_user->user_pass, $phone_user->ID)) {
+            return $phone_user;
+        }
+
+        return new WP_Error(
+            'incorrect_password',
+            __('Errore: la password inserita non è corretta.', 'wecoop-core')
+        );
     }
 
     private static function set_profile_notice($type, $message) {
