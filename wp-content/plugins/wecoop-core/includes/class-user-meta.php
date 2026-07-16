@@ -7,7 +7,148 @@ if (!defined('ABSPATH')) exit;
 
 class WeCoop_User_Meta {
     public static function init() {
-        // Shared helpers only; no runtime hooks needed yet.
+        add_action('show_user_profile', [__CLASS__, 'render_login_contact_fields']);
+        add_action('edit_user_profile', [__CLASS__, 'render_login_contact_fields']);
+        add_action('personal_options_update', [__CLASS__, 'save_login_contact_fields']);
+        add_action('edit_user_profile_update', [__CLASS__, 'save_login_contact_fields']);
+    }
+
+    /**
+     * Aggiunge i dati telefonici necessari all'accesso nella pagina utente nativa di WordPress.
+     * La password rimane nel relativo pannello nativo di WordPress e non viene mai salvata in meta.
+     */
+    public static function render_login_contact_fields($profile_user) {
+        if (!$profile_user instanceof WP_User || !current_user_can('edit_user', $profile_user->ID)) {
+            return;
+        }
+
+        $prefix = (string) get_user_meta($profile_user->ID, 'prefix', true);
+        $telefono = (string) get_user_meta($profile_user->ID, 'telefono', true);
+        $telefono_completo = self::build_phone_complete([
+            'prefix' => $prefix,
+            'telefono' => $telefono,
+        ]);
+        $username_from_phone = ltrim($telefono_completo, '+');
+        $is_phone_login = $username_from_phone !== '' && $profile_user->user_login === $username_from_phone;
+        $notice_key = 'wecoop_profile_notice_' . get_current_user_id();
+        $notice = get_transient($notice_key);
+        delete_transient($notice_key);
+
+        wp_nonce_field('wecoop_save_login_contact_fields', 'wecoop_login_contact_nonce');
+        ?>
+        <h2><?php esc_html_e('Accesso WeCoop', 'wecoop-core'); ?></h2>
+        <?php if (is_array($notice) && !empty($notice['message'])) : ?>
+            <div class="notice notice-<?php echo esc_attr($notice['type'] ?? 'error'); ?> inline"><p><?php echo esc_html($notice['message']); ?></p></div>
+        <?php endif; ?>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th><label for="wecoop_prefix"><?php esc_html_e('Prefisso internazionale', 'wecoop-core'); ?></label></th>
+                <td>
+                    <input name="wecoop_prefix" type="text" id="wecoop_prefix" value="<?php echo esc_attr($prefix); ?>" class="regular-text" inputmode="numeric" pattern="\+?[0-9]{1,4}" placeholder="+39" />
+                    <p class="description"><?php esc_html_e('Esempio: +39.', 'wecoop-core'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th><label for="wecoop_telefono"><?php esc_html_e('Numero di telefono', 'wecoop-core'); ?></label></th>
+                <td>
+                    <input name="wecoop_telefono" type="tel" id="wecoop_telefono" value="<?php echo esc_attr($telefono); ?>" class="regular-text" inputmode="tel" placeholder="3331234567" />
+                    <p class="description"><?php esc_html_e('Inserire il numero senza prefisso internazionale.', 'wecoop-core'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th><?php esc_html_e('Username di accesso', 'wecoop-core'); ?></th>
+                <td>
+                    <label for="wecoop_sync_login">
+                        <input name="wecoop_sync_login" type="checkbox" id="wecoop_sync_login" value="1" <?php checked($is_phone_login); ?> />
+                        <?php esc_html_e('Usa prefisso e telefono come username di accesso.', 'wecoop-core'); ?>
+                    </label>
+                    <p class="description">
+                        <?php esc_html_e('Lo username sarà il numero completo senza il simbolo +. La password si modifica nella sezione “Password” di questa stessa pagina.', 'wecoop-core'); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /** Salva i campi aggiunti alla pagina profilo di WordPress. */
+    public static function save_login_contact_fields($user_id) {
+        if (!current_user_can('edit_user', $user_id)) {
+            return;
+        }
+
+        if (
+            !isset($_POST['wecoop_login_contact_nonce']) ||
+            !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['wecoop_login_contact_nonce'])), 'wecoop_save_login_contact_fields')
+        ) {
+            return;
+        }
+
+        if (!isset($_POST['wecoop_prefix'], $_POST['wecoop_telefono'])) {
+            return;
+        }
+
+        $prefix = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['wecoop_prefix']));
+        $telefono = preg_replace('/[^0-9]/', '', (string) wp_unslash($_POST['wecoop_telefono']));
+
+        // I due valori sono opzionali solo se entrambi vuoti; non salviamo un contatto incompleto.
+        if (($prefix === '') !== ($telefono === '') || strlen($prefix) > 4 || strlen($telefono) > 15) {
+            self::set_profile_notice('error', __('Inserire sia il prefisso sia il numero di telefono in un formato valido.', 'wecoop-core'));
+            return;
+        }
+
+        if ($prefix === '' && $telefono === '') {
+            delete_user_meta($user_id, 'prefix');
+            delete_user_meta($user_id, 'telefono');
+            delete_user_meta($user_id, 'telefono_completo');
+            return;
+        }
+
+        $telefono_completo = self::build_phone_complete([
+            'prefix' => $prefix,
+            'telefono' => $telefono,
+        ]);
+
+        update_user_meta($user_id, 'prefix', $prefix);
+        update_user_meta($user_id, 'telefono', $telefono);
+        update_user_meta($user_id, 'telefono_completo', $telefono_completo);
+
+        if (empty($_POST['wecoop_sync_login'])) {
+            return;
+        }
+
+        $username = ltrim($telefono_completo, '+');
+        $user = get_userdata($user_id);
+        $existing_user_id = username_exists($username);
+
+        if (!$user || $user->user_login === $username) {
+            return;
+        }
+
+        if ($existing_user_id && (int) $existing_user_id !== (int) $user_id) {
+            self::set_profile_notice('error', __('Il numero indicato è già usato come username di accesso da un altro account.', 'wecoop-core'));
+            return;
+        }
+
+        $result = wp_update_user([
+            'ID' => $user_id,
+            'user_login' => $username,
+        ]);
+
+        if (is_wp_error($result)) {
+            self::set_profile_notice('error', __('Non è stato possibile aggiornare lo username di accesso.', 'wecoop-core'));
+        }
+    }
+
+    private static function set_profile_notice($type, $message) {
+        set_transient(
+            'wecoop_profile_notice_' . get_current_user_id(),
+            [
+                'type' => $type,
+                'message' => $message,
+            ],
+            MINUTE_IN_SECONDS
+        );
     }
 
     public static function get_schema() {
