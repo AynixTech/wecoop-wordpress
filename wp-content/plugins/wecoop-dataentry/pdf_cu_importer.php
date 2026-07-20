@@ -19,13 +19,18 @@ function estrai_dati_cu_pdf($pdf_path) {
         'sesso' => '',
     ];
 
-    $cmd = escapeshellcmd("python3 -m wecoop_cu_parser '".$pdf_path."'");
-    $riga = shell_exec($cmd);
-    if ($riga) {
-        $estratti = json_decode($riga, true);
-        if (is_array($estratti)) {
-            $output = array_merge($output, $estratti);
-        }
+    $parser_py = __DIR__ . '/wecoop_cu_parser.py';
+    $cmd = escapeshellcmd("python3 '" . $parser_py . "' '" . $pdf_path . "'");
+    $output_str = shell_exec($cmd . " 2>&1");
+    if (empty($output_str)) {
+        error_log('[CU_IMPORT] Nessun output dal parser: ' . $cmd);
+        return $output;
     }
+    $estratti = json_decode($output_str, true);
+    if (!is_array($estratti)) {
+        error_log('[CU_IMPORT] Output parser non JSON: ' . $output_str);
+        return $output;
+    }
+    $output = array_merge($output, $estratti);
     return $output;
 }
