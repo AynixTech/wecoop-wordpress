@@ -3,7 +3,7 @@
  * Plugin Name: WeCoop Data Entry
  * Plugin URI: https://www.wecoop.org
  * Description: Inserimento utenti con modello dati WECOOP compatibile con i moduli CRM esistenti.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: WeCoop Team
  * Author URI: https://www.wecoop.org
  * Text Domain: wecoop-dataentry
