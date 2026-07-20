@@ -24,6 +24,73 @@ if (!class_exists('WeCoop_User_Meta')) {
 require_once __DIR__ . '/includes/class-xlsx-reader.php';
 
 class WeCoop_DataEntry {
+
+    // Handler AJAX per importazione automatica dati anagrafici CU (PDF)
+    public function ajax_importa_cu_pdf() {
+        if (empty($_FILES['cu_pdf_file']) || $_FILES['cu_pdf_file']['error'] !== UPLOAD_ERR_OK) {
+            wp_send_json_error(['error' => 'Nessun file PDF valido.']);
+        }
+        $file = $_FILES['cu_pdf_file']['tmp_name'];
+        require_once __DIR__ . '/pdf_cu_importer.php';
+        $estratti = estrai_dati_cu_pdf($file);
+        if (empty($estratti['nome']) || empty($estratti['cognome']) || empty($estratti['codice_fiscale'])) {
+            wp_send_json_error(['error' => 'PDF non riconosciuto come Certificazione Unica valida']);
+        }
+        wp_send_json_success($estratti);
+    }
+
+        /**
+         * Restituisce l'elenco dei prefissi nazionali principali per la select del contatto.
+         * Puoi estendere o aggiornare questa lista secondo necessità.
+         */
+        private function get_intl_prefixes() {
+            return [
+                '' => 'Seleziona',
+                '39' => '+39 Italia',
+                '34' => '+34 Spagna',
+                '33' => '+33 Francia',
+                '49' => '+49 Germania',
+                '1'  => '+1 USA/Canada',
+                '44' => '+44 UK',
+                '351' => '+351 Portogallo',
+                '41' => '+41 Svizzera',
+                '373' => '+373 Moldova',
+                '380' => '+380 Ucraina',
+                '55' => '+55 Brasile',
+                '7'  => '+7 Russia',
+                '91' => '+91 India',
+                '81' => '+81 Giappone',
+                '86' => '+86 Cina',
+                '90' => '+90 Turchia',
+                '212' => '+212 Marocco',
+                '20'  => '+20 Egitto',
+                '213' => '+213 Algeria',
+                '216' => '+216 Tunisia',
+                '998' => '+998 Uzbekistan',
+                // ... aggiungi altri prefissi se necessario
+            ];
+        }
+
+        /**
+         * Restituisce una lista base di settori CCNL per la select "Settore" (sarà popolata da Excel in futuro).
+         */
+        private function get_settori_ccnl() {
+            return [
+                '' => 'Seleziona',
+                'commercio' => 'Commercio',
+                'metalmeccanico' => 'Metalmeccanico',
+                'edilizia' => 'Edilizia',
+                'agricoltura' => 'Agricoltura',
+                'pubblico' => 'Pubblico impiego',
+                'sanita' => 'Sanità',
+                'cooperative' => 'Cooperative',
+                'credito' => 'Credito',
+                'turismo' => 'Turismo',
+                'logistica' => 'Logistica',
+                'scuola' => 'Scuola',
+                'altro' => 'Altro',
+            ];
+        }
     private const MENU_SLUG = 'wecoop-dataentry';
 
     /** Nome del foglio Excel da importare. */
@@ -46,6 +113,7 @@ class WeCoop_DataEntry {
     }
 
     private function __construct() {
+            add_action('wp_ajax_wecoop_importa_cu_pdf', [$this, 'ajax_importa_cu_pdf']);
         add_action('admin_menu', [$this, 'register_menu']);
         add_action('admin_post_wecoop_dataentry_create_user', [$this, 'handle_create_user']);
         add_action('admin_post_wecoop_dataentry_update_user', [$this, 'handle_update_user']);
@@ -101,7 +169,86 @@ class WeCoop_DataEntry {
 
         wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
         wp_enqueue_script('wecoop-dataentry-admin');
-        wp_add_inline_script('wecoop-dataentry-admin', $this->get_inline_js());
+        // JavaScript per controllo permesso soggiorno (utente straniero)
+        $conditional_js = <<<'JS'
+        document.addEventListener('DOMContentLoaded', function () {
+            // Permesso soggiorno campo visibile solo se straniero
+            function updatePermessoVisibility() {
+                var nazionalita = document.querySelector('[name="nazionalita"]');
+                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
+                if(!nazionalita || !permessoRow) return;
+                var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
+                if (val && val !== 'italiana' && val !== 'italia') {
+                    permessoRow.style.display = '';
+                } else {
+                    permessoRow.style.display = 'none';
+                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
+                }
+            }
+            var nazioFld = document.querySelector('[name="nazionalita"]');
+            if(nazioFld){
+                nazioFld.addEventListener('input', updatePermessoVisibility);
+                updatePermessoVisibility();
+            }
+
+            // --- Importazione CU PDF ---
+            var importBtn = document.getElementById('importa-cu-pdf-btn');
+            if(importBtn){
+                importBtn.addEventListener('click', function() {
+                    var fileInput = document.getElementById('cu_pdf_file');
+                    var resEl = document.getElementById('importa-cu-result');
+                    if(!fileInput || !fileInput.files[0]){resEl.textContent='Seleziona un file PDF'; return;}
+                    var fd = new FormData();
+                    fd.append('cu_pdf_file', fileInput.files[0]);
+                    fd.append('action', 'wecoop_importa_cu_pdf');
+                    resEl.textContent = 'Analisi in corso...';
+                    fetch(ajaxurl, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        body: fd
+                    }).then(resp => resp.json()).then(function(data){
+                        if(data && data.success && data.data){
+                            // Setta i campi form!
+                            for(var k in data.data){
+                                var fld = document.querySelector('[name="'+k+'"]');
+                                if(fld) fld.value = data.data[k];
+                            }
+                            resEl.textContent = "Dati importati!";
+                        }else{
+                            resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
+                        }
+                    }).catch(function(e){ resEl.textContent = 'Errore server: '+e; });
+                });
+            }
+        });
+        JS;
+        wp_add_inline_script('wecoop-dataentry-admin', $this->get_inline_js() . "\n" . $conditional_js);
+
+        wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
+        wp_enqueue_script('wecoop-dataentry-admin');
+        // JavaScript per controllo permesso soggiorno (utente straniero)
+        $conditional_js = <<<'JS'
+        document.addEventListener('DOMContentLoaded', function () {
+            function updatePermessoVisibility() {
+                var nazionalita = document.querySelector('[name="nazionalita"]');
+                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
+                if(!nazionalita || !permessoRow) return;
+                var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
+                if (val && val !== 'italiana' && val !== 'italia') {
+                    permessoRow.style.display = '';
+                } else {
+                    permessoRow.style.display = 'none';
+                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
+                }
+            }
+            var nazioFld = document.querySelector('[name="nazionalita"]');
+            if(nazioFld){
+                nazioFld.addEventListener('input', updatePermessoVisibility);
+                updatePermessoVisibility();
+            }
+        });
+        JS;
+        wp_add_inline_script('wecoop-dataentry-admin', $this->get_inline_js() . "\n" . $conditional_js);
     }
 
     private function get_page_url(array $args = []) {
@@ -368,6 +515,20 @@ class WeCoop_DataEntry {
             'professione' => '',
             'paese_provenienza' => '',
             'note_dataentry' => '',
+            // Nuovi campi custom
+            'altro_contatto' => '',
+            'categoria_persona_carico' => '',
+            'percentuale_carico' => '',
+            'fabbricati_possiede' => '',
+            'fabbricati_percentuale' => '',
+            'fabbricati_mutuo' => '',
+            'doc_carta_identita_rilascio' => '',
+            'doc_carta_identita_scadenza' => '',
+            'doc_codice_fiscale_rilascio' => '',
+            'doc_codice_fiscale_scadenza' => '',
+            'doc_cu_rilascio' => '',
+            'doc_cu_scadenza' => '',
+            'tipologia_permesso_soggiorno' => '',
         ];
 
         if ($user_id <= 0) {
@@ -2062,7 +2223,19 @@ class WeCoop_DataEntry {
                             <?php $this->render_input('data_nascita', 'Data nascita', $defaults['data_nascita'], 'date'); ?>
                             <?php $this->render_input('codice_fiscale', 'Codice fiscale *', $defaults['codice_fiscale'], 'text', 'style="text-transform:uppercase" maxlength="16"'); ?>
                             <?php $this->render_input('nazionalita', 'Nazionalita *', $defaults['nazionalita']); ?>
-                            <?php $this->render_input('stato_civile', 'Stato civile', $defaults['stato_civile']); ?>
+                            <?php $this->render_select('stato_civile', 'Stato civile', [
+                                '' => 'Seleziona',
+                                'celibe' => 'Celibe',
+                                'nubile' => 'Nubile',
+                                'coniugato' => 'Coniugato/a',
+                                'separato' => 'Separato/a',
+                                'divorziato' => 'Divorziato/a',
+                                'vedovo' => 'Vedovo/a',
+                                'unito_civile' => 'Unito/a civilmente',
+                                'separato_unione' => 'Separato/a unione civile',
+                                'divorziato_unione' => 'Divorziato/a unione civile',
+                                'vedovo_unione' => 'Vedovo/a unione civile'
+                            ], $defaults['stato_civile']); ?>
                             <?php $this->render_input('luogo_nascita', 'Luogo di nascita', $defaults['luogo_nascita']); ?>
                         </div>
                     </div>
@@ -2071,8 +2244,9 @@ class WeCoop_DataEntry {
                         <h2>2. Contatti</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_input('telefono', 'Telefono *', $defaults['telefono']); ?>
-                            <?php $this->render_input('prefix', 'Prefisso', $defaults['prefix'], 'text', 'placeholder="39"'); ?>
-                            <?php $this->render_input('citta', 'Citta *', $defaults['citta']); ?>
+                            <?php $this->render_select('prefix', 'Prefisso', $this->get_intl_prefixes(), $defaults['prefix']); ?>
+                            <?php $this->render_input('altro_contatto', 'Altro contatto (facoltativo)', $defaults['altro_contatto'] ?? ''); ?>
+                            <?php $this->render_input('citta', 'Città *', $defaults['citta']); ?>
                             <?php $this->render_input('indirizzo', 'Indirizzo *', $defaults['indirizzo']); ?>
                             <?php $this->render_input('civico', 'Civico', $defaults['civico']); ?>
                             <?php $this->render_input('cap', 'CAP', $defaults['cap']); ?>
@@ -2089,6 +2263,16 @@ class WeCoop_DataEntry {
                             <?php $this->render_yes_no_select('figli_minori', 'Figli minori', $defaults['figli_minori']); ?>
                             <?php $this->render_input('figli_minori_numero', 'Numero figli minori', $defaults['figli_minori_numero'], 'number', 'min="0" step="1"'); ?>
                             <?php $this->render_input('persone_a_carico', 'Persone a carico', $defaults['persone_a_carico'], 'number', 'min="0" step="1"'); ?>
+                            <?php $this->render_input('categoria_persona_carico', 'Categoria persona a carico', $defaults['categoria_persona_carico'] ?? ''); ?>
+                            <?php $this->render_input('percentuale_carico', 'Percentuale a carico (%)', $defaults['percentuale_carico'] ?? '', 'number', 'min="0" max="100" step="0.01"'); ?>
+                        </div>
+                        <div class="wecoop-section" style="margin-top: 8px; padding: 10px; border: 1px solid #eee; background: #f9f9f9;">
+                            <h3>FABBRICATI</h3>
+                            <div class="wecoop-grid wecoop-grid--3">
+                                <?php $this->render_yes_no_select('fabbricati_possiede', 'Possiede fabbricati?', $defaults['fabbricati_possiede'] ?? ''); ?>
+                                <?php $this->render_input('fabbricati_percentuale', 'Percentuale possesso (%)', $defaults['fabbricati_percentuale'] ?? '', 'number', 'min="0" max="100" step="0.01"'); ?>
+                                <?php $this->render_yes_no_select('fabbricati_mutuo', 'Fabbricato con mutuo?', $defaults['fabbricati_mutuo'] ?? ''); ?>
+                            </div>
                         </div>
                     </div>
 
@@ -2108,7 +2292,7 @@ class WeCoop_DataEntry {
                                 'determinato' => 'Determinato',
                                 'altro' => 'Altro',
                             ], $defaults['contratto']); ?>
-                            <?php $this->render_input('settore', 'Settore', $defaults['settore']); ?>
+                            <?php $this->render_select('settore', 'Settore CCNL', $this->get_settori_ccnl(), $defaults['settore']); ?>
                             <?php $this->render_input('anni_lavoro', 'Anni lavoro', $defaults['anni_lavoro'], 'number', 'min="0" step="1"'); ?>
                             <?php $this->render_input('professione', 'Professione attuale', $defaults['professione']); ?>
                         </div>
@@ -2140,10 +2324,25 @@ class WeCoop_DataEntry {
                     <div class="wecoop-section">
                         <h2>7. Documenti</h2>
                         <div class="wecoop-grid wecoop-grid--3">
-                            <?php $this->render_select('doc_carta_identita', 'Carta identita', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
+                            <div style="grid-column: 1/-1; margin-bottom: 18px; background: #eaf5ea; padding: 10px; border-radius:6px;">
+                                <label for="cu_pdf_file"><strong>Importa dati anagrafici da Certificazione Unica (PDF italiana)</strong></label><br>
+                                <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
+                                <button type="button" class="button" id="importa-cu-pdf-btn">Importa dal PDF</button>
+                                <span id="importa-cu-result" style="margin-left:12px;font-weight:bold;color:#288941"></span>
+                            </div>
+                            <?php $this->render_select('doc_carta_identita', 'Carta identità', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
+                            <?php $this->render_input('doc_carta_identita_rilascio', 'Data rilascio CI', $defaults['doc_carta_identita_rilascio'] ?? '', 'date'); ?>
+                            <?php $this->render_input('doc_carta_identita_scadenza', 'Data scadenza CI', $defaults['doc_carta_identita_scadenza'] ?? '', 'date'); ?>
                             <?php $this->render_select('doc_codice_fiscale', 'Codice fiscale', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_codice_fiscale']); ?>
+                            <?php $this->render_input('doc_codice_fiscale_rilascio', 'Data rilascio CF', $defaults['doc_codice_fiscale_rilascio'] ?? '', 'date'); ?>
+                            <?php $this->render_input('doc_codice_fiscale_scadenza', 'Data scadenza CF', $defaults['doc_codice_fiscale_scadenza'] ?? '', 'date'); ?>
                             <?php $this->render_select('doc_cu', 'CU', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_cu']); ?>
+                            <?php $this->render_input('doc_cu_rilascio', 'Data rilascio CU', $defaults['doc_cu_rilascio'] ?? '', 'date'); ?>
+                            <?php $this->render_input('doc_cu_scadenza', 'Data scadenza CU', $defaults['doc_cu_scadenza'] ?? '', 'date'); ?>
                             <?php $this->render_select('doc_dichiarazione_redditi', 'Dichiarazione redditi', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_dichiarazione_redditi']); ?>
+                        </div>
+                        <div class="wecoop-grid">
+                            <?php $this->render_input('tipologia_permesso_soggiorno', 'Tipologia permesso di soggiorno', $defaults['tipologia_permesso_soggiorno'] ?? ''); ?>
                         </div>
                     </div>
 
