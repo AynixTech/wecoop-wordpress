@@ -1230,7 +1230,7 @@ class WeCoop_DataEntry {
                 $number_value = str_replace('.', '', $number_value);
             }
             $value = str_replace(',', '.', $number_value);
-            $extra = trim($extra . ' min="0" step="0.01" inputmode="decimal"');
+            $extra = trim($extra . ' min="0" step="0.01" inputmode="decimal" placeholder="Es. 1250.00"');
         }
         echo '<div class="wecoop-field">';
         echo '<label for="' . esc_attr($name) . '">' . esc_html($label) . '</label>';
