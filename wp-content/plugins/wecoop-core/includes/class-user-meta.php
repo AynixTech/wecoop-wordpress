@@ -537,9 +537,9 @@ class WeCoop_User_Meta {
                 $value = strtoupper(self::normalize_text($value));
             } elseif (in_array($field, ['provincia', 'cu_azienda_provincia'], true)) {
                 $value = strtoupper(self::normalize_text($value));
-            } elseif (in_array($field, ['numero_figli', 'figli_minori_numero', 'persone_a_carico', 'anni_lavoro', 'rate_mensili', 'numero_conviventi', 'anno_riferimento_reddito'], true)) {
+            } elseif (in_array($field, ['numero_figli', 'figli_minori_numero', 'persone_a_carico', 'anni_lavoro', 'numero_conviventi', 'anno_riferimento_reddito'], true)) {
                 $value = self::normalize_text($value);
-            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile', 'canone_affitto_mensile', 'spese_condominiali_mensili', 'reddito_netto_mensile_dichiarato', 'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili', 'disponibilita_mensile_dichiarata', 'assegno_mantenimento_mensile', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo'], true)) {
+            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile', 'rate_mensili', 'canone_affitto_mensile', 'spese_condominiali_mensili', 'reddito_netto_mensile_dichiarato', 'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili', 'disponibilita_mensile_dichiarata', 'assegno_mantenimento_mensile', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo'], true)) {
                 $value = self::normalize_money($value);
             } elseif ($field === 'note_dataentry') {
                 $value = self::normalize_textarea($value);

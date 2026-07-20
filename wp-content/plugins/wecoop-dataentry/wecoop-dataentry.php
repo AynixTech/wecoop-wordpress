@@ -242,6 +242,14 @@ class WeCoop_DataEntry {
                 summary.hidden = false;
             }
 
+            function normalizeAmountForInput(value) {
+                var normalized = String(value || '').trim().replace(/\s/g, '');
+                if (normalized.indexOf(',') !== -1 && normalized.indexOf('.') !== -1) {
+                    normalized = normalized.replace(/\./g, '');
+                }
+                return normalized.replace(',', '.');
+            }
+
             var importBtn = document.getElementById('importa-cu-pdf-btn');
             if(importBtn){
                 importBtn.addEventListener('click', function() {
@@ -288,7 +296,11 @@ class WeCoop_DataEntry {
                             // Setta i campi form!
                             for(var k in data.data){
                                 var fld = document.querySelector('[name="'+k+'"]');
-                                if(fld) fld.value = data.data[k];
+                                if(fld) {
+                                    fld.value = fld.type === 'number'
+                                        ? normalizeAmountForInput(data.data[k])
+                                        : data.data[k];
+                                }
                             }
                             if (resEl) resEl.textContent = "Dati importati!";
                             renderImportSummary(data.data);
@@ -1202,6 +1214,24 @@ class WeCoop_DataEntry {
     }
 
     private function render_input($name, $label, $value = '', $type = 'text', $extra = '') {
+        $money_fields = [
+            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'cu_redditi_lavoro_dipendente',
+            'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef',
+            'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali',
+            'cu_trattamento_integrativo', 'assegno_mantenimento_mensile', 'canone_affitto_mensile',
+            'spese_condominiali_mensili', 'reddito_netto_mensile_dichiarato',
+            'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili',
+            'disponibilita_mensile_dichiarata',
+        ];
+        if (in_array($name, $money_fields, true)) {
+            $type = 'number';
+            $number_value = trim((string) $value);
+            if (strpos($number_value, ',') !== false && strpos($number_value, '.') !== false) {
+                $number_value = str_replace('.', '', $number_value);
+            }
+            $value = str_replace(',', '.', $number_value);
+            $extra = trim($extra . ' min="0" step="0.01" inputmode="decimal"');
+        }
         echo '<div class="wecoop-field">';
         echo '<label for="' . esc_attr($name) . '">' . esc_html($label) . '</label>';
         echo '<input type="' . esc_attr($type) . '" id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" ' . $extra . '>';
