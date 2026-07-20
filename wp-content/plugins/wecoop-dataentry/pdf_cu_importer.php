@@ -167,10 +167,24 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         'sesso' => '',
     ];
 
+    // L'analisi AI è il percorso principale: può leggere direttamente il PDF e
+    // non dipende da Python o dalla presenza di una text layer nel documento.
+    $ai_data = wecoop_cu_extract_with_ai($pdf_path);
+    foreach ($ai_data as $key => $value) {
+        if (isset($output[$key]) && $value !== '') {
+            $output[$key] = $value;
+        }
+    }
+    if (!empty($output['nome']) && !empty($output['cognome']) && !empty($output['codice_fiscale'])) {
+        return $output;
+    }
+
+    // Se l'AI non è configurata o non ha estratto tutti i campi, prova il
+    // parser locale come fallback per i PDF con text layer leggibile.
     $python = wecoop_cu_python_executable();
     if ($python === '') {
-        error_log('[CU_IMPORT] Python 3 non trovato. Percorsi controllati: /usr/bin/python3, /usr/local/bin/python3, /opt/homebrew/bin/python3');
-        $output['__error'] = 'Python 3 non disponibile sul server. Configura WECOOP_CU_PYTHON con il percorso assoluto dell\'eseguibile.';
+        error_log('[CU_IMPORT] Python 3 non trovato dopo analisi AI incompleta.');
+        $output['__error'] = 'L\'analisi AI non ha recuperato tutti i dati richiesti e il parser locale Python non è disponibile.';
         return $output;
     }
 
@@ -204,7 +218,6 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
     unset($estratti['__filename_cognome'], $estratti['__filename_nome']);
     $output = array_merge($output, $estratti);
     if (empty($output['nome']) || empty($output['cognome']) || empty($output['codice_fiscale'])) {
-        $ai_data = wecoop_cu_extract_with_ai($pdf_path);
         foreach ($ai_data as $key => $value) {
             if (isset($output[$key]) && $value !== '') {
                 $output[$key] = $value;
