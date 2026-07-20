@@ -80,9 +80,6 @@ def main():
         with pdfplumber.open(pdf_path) as pdf:
             text = '\n'.join(page.extract_text() or '' for page in pdf.pages)
         text = normalizza_spazi(text)
-        # Il testo è destinato esclusivamente al fallback AI lato server e non
-        # viene restituito al browser né scritto nei log PHP.
-        result["__extracted_text"] = text[:16000]
 
         # I layout delle CU cambiano fra anni e software di generazione: i campi
         # sono quindi cercati per etichetta, tollerando spazi, maiuscole e ritorni a capo.
