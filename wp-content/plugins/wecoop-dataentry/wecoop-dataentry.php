@@ -2234,6 +2234,15 @@ class WeCoop_DataEntry {
                     <?php endif; ?>
 
                     <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
+                        <div style="margin-bottom: 18px; background: #eaf5ea; padding: 10px; border-radius:6px;">
+                            <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
+                            <label for="cu_pdf_file"><strong>Importa dati anagrafici da Certificazione Unica (PDF italiana)</strong></label>
+                            <button type="button" class="button" id="importa-cu-pdf-btn">Importa dal PDF</button>
+                            <span id="importa-cu-result" style="margin-left:12px;font-weight:bold;color:#288941"></span>
+                        </div>
+                    </div>
+
+                    <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
                         <h2>Dati account</h2>
                         <p class="wecoop-help">Il username viene generato automaticamente se non presente.</p>
                         <div class="wecoop-grid wecoop-grid--3">
@@ -2363,12 +2372,6 @@ class WeCoop_DataEntry {
                     <div class="wecoop-section">
                         <h2>7. Documenti</h2>
                         <div class="wecoop-grid wecoop-grid--3">
-                            <div style="grid-column: 1/-1; margin-bottom: 18px; background: #eaf5ea; padding: 10px; border-radius:6px;">
-                                <label for="cu_pdf_file"><strong>Importa dati anagrafici da Certificazione Unica (PDF italiana)</strong></label><br>
-                                <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
-                                <button type="button" class="button" id="importa-cu-pdf-btn">Importa dal PDF</button>
-                                <span id="importa-cu-result" style="margin-left:12px;font-weight:bold;color:#288941"></span>
-                            </div>
                             <?php $this->render_select('doc_carta_identita', 'Carta identità', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
                             <?php $this->render_input('doc_carta_identita_rilascio', 'Data rilascio CI', $defaults['doc_carta_identita_rilascio'] ?? '', 'date'); ?>
                             <?php $this->render_input('doc_carta_identita_scadenza', 'Data scadenza CI', $defaults['doc_carta_identita_scadenza'] ?? '', 'date'); ?>
