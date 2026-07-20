@@ -104,8 +104,24 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'luogo_nascita' => ['type' => 'string'],
             'provincia_nascita' => ['type' => 'string'],
             'sesso' => ['type' => 'string'],
+            'indirizzo' => ['type' => 'string'],
+            'civico' => ['type' => 'string'],
+            'cap' => ['type' => 'string'],
+            'citta' => ['type' => 'string'],
+            'provincia' => ['type' => 'string'],
+            'nazione' => ['type' => 'string'],
+            'numero_figli' => ['type' => 'string'],
+            'figli_minori' => ['type' => 'string'],
+            'figli_minori_numero' => ['type' => 'string'],
+            'persone_a_carico' => ['type' => 'string'],
+            'categoria_persona_carico' => ['type' => 'string'],
+            'percentuale_carico' => ['type' => 'string'],
+            'tipo_lavoro' => ['type' => 'string'],
+            'professione' => ['type' => 'string'],
+            'reddito_annuo' => ['type' => 'string'],
+            'altri_redditi' => ['type' => 'string'],
         ],
-        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso'],
+        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
         'additionalProperties' => false,
     ];
     $response = wp_remote_post('https://api.openai.com/v1/responses', [
@@ -119,7 +135,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'input' => [
                 [
                     'role' => 'system',
-                    'content' => 'Sei un estrattore di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo i dati del percettore/contribuente, non quelli del sostituto d\'imposta. Non inventare dati: restituisci una stringa vuota per ogni campo non leggibile.',
+                    'content' => 'Sei un estrattore di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta.',
                 ],
                 [
                     'role' => 'user',
@@ -132,7 +148,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
                         ],
                         [
                             'type' => 'input_text',
-                            'text' => 'Mappa i dati anagrafici del percettore nei campi richiesti. Il codice fiscale deve avere 16 caratteri alfanumerici e il sesso deve essere M o F.',
+                            'text' => 'Mappa tutti i dati disponibili della CU nei campi richiesti. Cerca anche domicilio fiscale/residenza, familiari a carico e redditi certificati, quando esplicitamente indicati. Il codice fiscale deve avere 16 caratteri alfanumerici e il sesso deve essere M o F.',
                         ],
                     ],
                 ],
@@ -174,7 +190,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
         return [];
     }
 
-    $allowed_keys = ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso'];
+    $allowed_keys = array_keys($schema['properties']);
     $result = [];
     foreach ($allowed_keys as $key) {
         $result[$key] = isset($data[$key]) && is_scalar($data[$key]) ? trim((string) $data[$key]) : '';
@@ -186,6 +202,17 @@ function wecoop_cu_extract_with_ai($pdf_path) {
     $result['sesso'] = strtoupper($result['sesso']);
     if (!in_array($result['sesso'], ['M', 'F'], true)) {
         $result['sesso'] = '';
+    }
+    if (!in_array($result['tipo_lavoro'], ['dipendente', 'autonomo', 'disoccupato', 'studente'], true)) {
+        $result['tipo_lavoro'] = '';
+    }
+    foreach (['figli_minori', 'altri_redditi'] as $key) {
+        if (!in_array($result[$key], ['1', '0'], true)) {
+            $result[$key] = '';
+        }
+    }
+    if ($result['data_nascita'] !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $result['data_nascita'])) {
+        $result['data_nascita'] = '';
     }
 
     error_log('[CU_IMPORT] Analisi diretta PDF con OpenAI completata per: ' . implode(', ', array_keys(array_filter($result))));
@@ -201,6 +228,22 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         'luogo_nascita' => '',
         'provincia_nascita' => '',
         'sesso' => '',
+        'indirizzo' => '',
+        'civico' => '',
+        'cap' => '',
+        'citta' => '',
+        'provincia' => '',
+        'nazione' => '',
+        'numero_figli' => '',
+        'figli_minori' => '',
+        'figli_minori_numero' => '',
+        'persone_a_carico' => '',
+        'categoria_persona_carico' => '',
+        'percentuale_carico' => '',
+        'tipo_lavoro' => '',
+        'professione' => '',
+        'reddito_annuo' => '',
+        'altri_redditi' => '',
     ];
 
     // L'analisi AI è il percorso principale: può leggere direttamente il PDF e
@@ -218,6 +261,10 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         }
     }
     if (!empty($output['nome']) && !empty($output['cognome']) && !empty($output['codice_fiscale'])) {
+        $output['first_name'] = $output['nome'];
+        $output['last_name'] = $output['cognome'];
+        $output['display_name'] = trim($output['nome'] . ' ' . $output['cognome']);
+        $output['doc_cu'] = '1';
         error_log('[CU_IMPORT] Importazione completata senza parser Python.');
         return $output;
     }
