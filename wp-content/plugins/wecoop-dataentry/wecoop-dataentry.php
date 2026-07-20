@@ -27,15 +27,25 @@ class WeCoop_DataEntry {
 
     // Handler AJAX per importazione automatica dati anagrafici CU (PDF)
     public function ajax_importa_cu_pdf() {
+        error_log('[CU_IMPORT_HANDLER] Azione AJAX ricevuta: '.date('c'));
         if (empty($_FILES['cu_pdf_file']) || $_FILES['cu_pdf_file']['error'] !== UPLOAD_ERR_OK) {
+            error_log('[CU_IMPORT_HANDLER] Nessun file PDF valido o errore upload!');
             wp_send_json_error(['error' => 'Nessun file PDF valido.']);
         }
         $file = $_FILES['cu_pdf_file']['tmp_name'];
+        error_log('[CU_IMPORT_HANDLER] File PDF caricato: '.$file);
         require_once __DIR__ . '/pdf_cu_importer.php';
-        $estratti = estrai_dati_cu_pdf($file);
+        $estratti = estrai_dati_cu_pdf($file, sanitize_file_name($_FILES['cu_pdf_file']['name']));
+        error_log('[CU_IMPORT_HANDLER] Estratti: '.print_r($estratti, true));
+        if (!empty($estratti['__error'])) {
+            error_log('[CU_IMPORT_HANDLER] ERRORE parser: ' . $estratti['__error']);
+            wp_send_json_error(['error' => $estratti['__error']]);
+        }
         if (empty($estratti['nome']) || empty($estratti['cognome']) || empty($estratti['codice_fiscale'])) {
+            error_log('[CU_IMPORT_HANDLER] PDF non riconosciuto come Certificazione Unica valida!');
             wp_send_json_error(['error' => 'PDF non riconosciuto come Certificazione Unica valida']);
         }
+        error_log('[CU_IMPORT_HANDLER] PDF ok, estratti: '.print_r($estratti, true));
         wp_send_json_success($estratti);
     }
 
@@ -197,27 +207,56 @@ class WeCoop_DataEntry {
                 importBtn.addEventListener('click', function() {
                     var fileInput = document.getElementById('cu_pdf_file');
                     var resEl = document.getElementById('importa-cu-result');
-                    if(!fileInput || !fileInput.files[0]){resEl.textContent='Seleziona un file PDF'; return;}
+                    if(!fileInput || !fileInput.files[0]){
+                        console.warn('[CU_IMPORT] Nessun PDF selezionato');
+                        if (resEl) resEl.textContent='Seleziona un file PDF';
+                        return;
+                    }
+                    var selectedFile = fileInput.files[0];
+                    console.info('[CU_IMPORT] Avvio importazione', {
+                        name: selectedFile.name,
+                        size: selectedFile.size,
+                        type: selectedFile.type
+                    });
                     var fd = new FormData();
-                    fd.append('cu_pdf_file', fileInput.files[0]);
+                    fd.append('cu_pdf_file', selectedFile);
                     fd.append('action', 'wecoop_importa_cu_pdf');
-                    resEl.textContent = 'Analisi in corso...';
+                    if (resEl) resEl.textContent = 'Analisi in corso...';
                     fetch(ajaxurl, {
                         method: 'POST',
                         credentials: 'same-origin',
                         body: fd
-                    }).then(resp => resp.json()).then(function(data){
+                    }).then(function(resp) {
+                        console.info('[CU_IMPORT] Risposta HTTP', {
+                            status: resp.status,
+                            statusText: resp.statusText,
+                            ok: resp.ok
+                        });
+                        return resp.text().then(function(body) {
+                            console.info('[CU_IMPORT] Corpo risposta AJAX', body);
+                            try {
+                                return JSON.parse(body);
+                            } catch (error) {
+                                throw new Error('Risposta server non JSON (HTTP ' + resp.status + '): ' + body.substring(0, 500));
+                            }
+                        });
+                    }).then(function(data){
+                        console.info('[CU_IMPORT] Risposta elaborata', data);
                         if(data && data.success && data.data){
                             // Setta i campi form!
                             for(var k in data.data){
                                 var fld = document.querySelector('[name="'+k+'"]');
                                 if(fld) fld.value = data.data[k];
                             }
-                            resEl.textContent = "Dati importati!";
+                            if (resEl) resEl.textContent = "Dati importati!";
                         }else{
-                            resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
+                            console.error('[CU_IMPORT] Importazione rifiutata dal server', data);
+                            if (resEl) resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
                         }
-                    }).catch(function(e){ resEl.textContent = 'Errore server: '+e; });
+                    }).catch(function(e){
+                        console.error('[CU_IMPORT] Errore richiesta AJAX', e);
+                        if (resEl) resEl.textContent = 'Errore server: '+e.message;
+                    });
                 });
             }
         });
