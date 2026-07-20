@@ -45,6 +45,31 @@ function wecoop_cu_openai_api_key() {
     return (string) get_option('wecoop_openai_api_key', '');
 }
 
+function wecoop_cu_extract_from_filename($original_filename) {
+    $filename = preg_replace('/\.pdf$/i', '', wp_basename((string) $original_filename));
+    $filename = trim((string) $filename);
+    $result = ['codice_fiscale' => '', 'cognome' => '', 'nome' => ''];
+
+    // Supporta sia il nome originale del gestore documentale sia la variante
+    // normalizzata da WordPress, che trasforma spazi e parentesi in trattini.
+    $pattern = '/^([A-Z0-9]{16})[-\s]+\d{4}[-\s]+(.+?)(?:\s*\([A-Z0-9]{16}-\d+\)(?:\s*\(\d+\))?|[-\s]+[A-Z0-9]{16}[-\s]+\d+(?:[-\s]+\d+)?)$/i';
+    if (!preg_match($pattern, $filename, $matches)) {
+        return $result;
+    }
+
+    $words = preg_split('/[-\s]+/', trim($matches[2]));
+    $words = array_values(array_filter($words));
+    if (count($words) < 2 || count($words) % 2 !== 0) {
+        return $result;
+    }
+
+    $separator = count($words) / 2;
+    $result['codice_fiscale'] = strtoupper($matches[1]);
+    $result['cognome'] = strtoupper(implode(' ', array_slice($words, 0, $separator)));
+    $result['nome'] = strtoupper(implode(' ', array_slice($words, $separator)));
+    return $result;
+}
+
 function wecoop_cu_extract_with_ai($pdf_path) {
     $api_key = wecoop_cu_openai_api_key();
     if ($api_key === '') {
@@ -186,7 +211,14 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
             $output[$key] = $value;
         }
     }
+    $filename_data = wecoop_cu_extract_from_filename($original_filename);
+    foreach ($filename_data as $key => $value) {
+        if (isset($output[$key]) && $output[$key] === '' && $value !== '') {
+            $output[$key] = $value;
+        }
+    }
     if (!empty($output['nome']) && !empty($output['cognome']) && !empty($output['codice_fiscale'])) {
+        error_log('[CU_IMPORT] Importazione completata senza parser Python.');
         return $output;
     }
 

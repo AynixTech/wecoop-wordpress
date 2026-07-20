@@ -35,7 +35,7 @@ class WeCoop_DataEntry {
         $file = $_FILES['cu_pdf_file']['tmp_name'];
         error_log('[CU_IMPORT_HANDLER] File PDF caricato: '.$file);
         require_once __DIR__ . '/pdf_cu_importer.php';
-        $estratti = estrai_dati_cu_pdf($file, sanitize_file_name($_FILES['cu_pdf_file']['name']));
+        $estratti = estrai_dati_cu_pdf($file, wp_basename((string) $_FILES['cu_pdf_file']['name']));
         error_log('[CU_IMPORT_HANDLER] Estratti: '.print_r($estratti, true));
         if (!empty($estratti['__error'])) {
             error_log('[CU_IMPORT_HANDLER] ERRORE parser: ' . $estratti['__error']);
