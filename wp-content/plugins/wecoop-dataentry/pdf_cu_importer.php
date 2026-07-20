@@ -36,12 +36,23 @@ function wecoop_cu_openai_api_key() {
         }
     }
 
-    return (string) getenv('OPENAI_API_KEY');
+    $environment_key = (string) getenv('OPENAI_API_KEY');
+    if ($environment_key !== '') {
+        return $environment_key;
+    }
+
+    // Compatibilità con la configurazione OpenAI già usata dagli altri plugin WECOOP.
+    return (string) get_option('wecoop_openai_api_key', '');
 }
 
 function wecoop_cu_extract_with_ai($pdf_path) {
     $api_key = wecoop_cu_openai_api_key();
-    if ($api_key === '' || !is_readable($pdf_path)) {
+    if ($api_key === '') {
+        error_log('[CU_IMPORT] OPENAI_API_KEY non configurata: analisi AI non eseguita.');
+        return [];
+    }
+    if (!is_readable($pdf_path)) {
+        error_log('[CU_IMPORT] PDF non leggibile: analisi AI non eseguita.');
         return [];
     }
 
@@ -184,7 +195,9 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
     $python = wecoop_cu_python_executable();
     if ($python === '') {
         error_log('[CU_IMPORT] Python 3 non trovato dopo analisi AI incompleta.');
-        $output['__error'] = 'L\'analisi AI non ha recuperato tutti i dati richiesti e il parser locale Python non è disponibile.';
+        $output['__error'] = wecoop_cu_openai_api_key() === ''
+            ? 'OPENAI_API_KEY non configurata: configura la chiave OpenAI per analizzare il PDF.'
+            : 'L\'analisi AI non ha recuperato tutti i dati richiesti e il parser locale Python non è disponibile.';
         return $output;
     }
 
