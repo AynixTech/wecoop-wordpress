@@ -110,6 +110,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'citta' => ['type' => 'string'],
             'provincia' => ['type' => 'string'],
             'nazione' => ['type' => 'string'],
+            'paese_provenienza' => ['type' => 'string'],
             'numero_figli' => ['type' => 'string'],
             'figli_minori' => ['type' => 'string'],
             'figli_minori_numero' => ['type' => 'string'],
@@ -121,7 +122,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'reddito_annuo' => ['type' => 'string'],
             'altri_redditi' => ['type' => 'string'],
         ],
-        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
+        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'paese_provenienza', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
         'additionalProperties' => false,
     ];
     $response = wp_remote_post('https://api.openai.com/v1/responses', [
@@ -135,7 +136,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'input' => [
                 [
                     'role' => 'system',
-                    'content' => 'Sei un estrattore di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta.',
+                    'content' => 'Sei un estrattore di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta. indirizzo contiene solo la strada, civico solo il numero civico effettivamente stampato. nazione indica esclusivamente il Paese dell\'indirizzo di residenza/domicilio; paese_provenienza indica il Paese di nascita/origine. Non scambiare i due campi.',
                 ],
                 [
                     'role' => 'user',
@@ -143,7 +144,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
                         [
                             'type' => 'input_file',
                             'filename' => 'certificazione-unica.pdf',
-                            'file_data' => base64_encode($pdf_contents),
+                            'file_data' => 'data:application/pdf;base64,' . base64_encode($pdf_contents),
                             'detail' => 'high',
                         ],
                         [
@@ -170,7 +171,9 @@ function wecoop_cu_extract_with_ai($pdf_path) {
     }
 
     if (wp_remote_retrieve_response_code($response) !== 200) {
-        error_log('[CU_IMPORT] OpenAI ha risposto HTTP ' . wp_remote_retrieve_response_code($response));
+        $error_body = json_decode(wp_remote_retrieve_body($response), true);
+        $error_message = isset($error_body['error']['message']) ? sanitize_text_field((string) $error_body['error']['message']) : 'Risposta senza dettaglio errore';
+        error_log('[CU_IMPORT] OpenAI ha risposto HTTP ' . wp_remote_retrieve_response_code($response) . ': ' . $error_message);
         return [];
     }
 
@@ -234,6 +237,7 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         'citta' => '',
         'provincia' => '',
         'nazione' => '',
+        'paese_provenienza' => '',
         'numero_figli' => '',
         'figli_minori' => '',
         'figli_minori_numero' => '',
@@ -259,6 +263,10 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         if (isset($output[$key]) && $output[$key] === '' && $value !== '') {
             $output[$key] = $value;
         }
+    }
+    if ($output['numero_figli'] === '0' && $output['figli_minori'] === '') {
+        $output['figli_minori'] = '0';
+        $output['figli_minori_numero'] = '0';
     }
     if (!empty($output['nome']) && !empty($output['cognome']) && !empty($output['codice_fiscale'])) {
         $output['first_name'] = $output['nome'];
