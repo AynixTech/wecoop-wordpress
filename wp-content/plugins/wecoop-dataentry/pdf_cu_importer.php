@@ -111,6 +111,26 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'provincia' => ['type' => 'string'],
             'nazione' => ['type' => 'string'],
             'paese_provenienza' => ['type' => 'string'],
+            // Dati del sostituto: sono utili come evidenza lavorativa, ma non
+            // devono mai essere copiati nei contatti personali del percettore.
+            'cu_azienda_codice_fiscale' => ['type' => 'string'],
+            'cu_azienda_denominazione' => ['type' => 'string'],
+            'cu_azienda_indirizzo' => ['type' => 'string'],
+            'cu_azienda_cap' => ['type' => 'string'],
+            'cu_azienda_citta' => ['type' => 'string'],
+            'cu_azienda_provincia' => ['type' => 'string'],
+            'cu_azienda_codice_attivita' => ['type' => 'string'],
+            'cu_data_inizio_rapporto' => ['type' => 'string'],
+            'cu_data_fine_rapporto' => ['type' => 'string'],
+            // Importi documentali, non indicatori o decisioni di affidabilità.
+            'cu_redditi_lavoro_dipendente' => ['type' => 'string'],
+            'cu_redditi_assimilati' => ['type' => 'string'],
+            'cu_redditi_pensione' => ['type' => 'string'],
+            'cu_ritenute_irpef' => ['type' => 'string'],
+            'cu_addizionale_regionale' => ['type' => 'string'],
+            'cu_addizionale_comunale' => ['type' => 'string'],
+            'cu_contributi_previdenziali' => ['type' => 'string'],
+            'cu_trattamento_integrativo' => ['type' => 'string'],
             // Dati tecnici per la verifica della tabella "Familiari a carico".
             // Non vengono restituiti al browser: da essi sono derivati i campi
             // del profilo, evitando di contare la legenda stampata nel modello.
@@ -140,7 +160,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'reddito_annuo' => ['type' => 'string'],
             'altri_redditi' => ['type' => 'string'],
         ],
-        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'paese_provenienza', 'familiari_sezione', 'familiari_righe', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
+        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'paese_provenienza', 'cu_azienda_codice_fiscale', 'cu_azienda_denominazione', 'cu_azienda_indirizzo', 'cu_azienda_cap', 'cu_azienda_citta', 'cu_azienda_provincia', 'cu_azienda_codice_attivita', 'cu_data_inizio_rapporto', 'cu_data_fine_rapporto', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'familiari_sezione', 'familiari_righe', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
         'additionalProperties' => false,
     ];
     $response = wp_remote_post('https://api.openai.com/v1/responses', [
@@ -157,7 +177,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'input' => [
                 [
                     'role' => 'system',
-                    'content' => 'Sei un estrattore rigoroso di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. REGOLA CRITICA INDIRIZZO: i recapiti, sede, indirizzo, CAP, Comune o Provincia presenti nelle sezioni "Dati relativi al sostituto", "Sostituto d\'imposta", "Datore di lavoro" o "Contatti" sono dell\'azienda e NON devono mai compilare indirizzo, civico, cap, citta, provincia o nazione del percettore. Compila quei campi soltanto se il PDF identifica esplicitamente l\'indirizzo come residenza, domicilio fiscale o recapito del percettore; altrimenti lasciali tutti vuoti. indirizzo contiene solo la strada, civico solo il numero civico effettivamente stampato. REGOLA CRITICA FAMILIARI: secondo le istruzioni CU dell\'Agenzia delle Entrate e la Risoluzione 55/E del 2023, la sezione "Dati relativi al coniuge e ai familiari a carico" riporta i familiari fiscalmente a carico anche se non sono state applicate detrazioni. Non copiare MAI la legenda delle colonne C, F1, F, G, D, P né i numeri dei punti 571-676. Ogni voce in familiari_righe deve corrispondere a una riga di familiare realmente compilata e deve includere il codice fiscale di 16 caratteri del familiare visibile in quella stessa riga. Non aggiungere righe senza codice fiscale: se il codice fiscale non è leggibile o non puoi distinguerla dalla legenda, imposta familiari_sezione a non_leggibile e restituisci un array vuoto. C è coniuge; F1, F e D sono figli; G e P sono altri familiari. Per ogni riga indica soltanto mesi e percentuale effettivamente visibili. I campi numero_figli, persone_a_carico, categoria_persona_carico e percentuale_carico devono essere coerenti con familiari_righe. figli_minori e figli_minori_numero si compilano solo quando la minore età è esplicita, mai deducendola da F1/F/D. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta. nazione indica esclusivamente il Paese dell\'indirizzo del percettore; paese_provenienza indica il Paese di nascita/origine. Non scambiare i due campi.',
+                    'content' => 'Sei un estrattore rigoroso di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. Distingui sempre percettore e sostituto d\'imposta. I recapiti, sede, indirizzo, CAP, Comune o Provincia nelle sezioni "Dati relativi al sostituto", "Sostituto d\'imposta", "Datore di lavoro" o "Contatti" sono dell\'azienda: compilano esclusivamente i campi cu_azienda_* e NON indirizzo, civico, cap, citta, provincia o nazione del percettore. Compila i contatti personali solo se il PDF identifica esplicitamente residenza, domicilio fiscale o recapito del percettore. indirizzo contiene solo la strada, civico solo il numero civico. Per cu_azienda_* estrai il sostituto che ha emesso questa CU; non estrarre dati di altri soggetti. REGOLA FAMILIARI: secondo le istruzioni CU dell\'Agenzia delle Entrate e la Risoluzione 55/E del 2023, la sezione "Dati relativi al coniuge e ai familiari a carico" riporta i familiari fiscalmente a carico anche se non sono state applicate detrazioni. Non copiare MAI la legenda delle colonne C, F1, F, G, D, P né i numeri dei punti 571-676. Ogni voce in familiari_righe deve corrispondere a una riga di familiare realmente compilata e deve includere il codice fiscale di 16 caratteri del familiare visibile in quella stessa riga. Non aggiungere righe senza codice fiscale: se il codice fiscale non è leggibile o non puoi distinguerla dalla legenda, imposta familiari_sezione a non_leggibile e restituisci un array vuoto. C è coniuge; F1, F e D sono figli; G e P sono altri familiari. Per ogni riga indica soltanto mesi e percentuale effettivamente visibili. figli_minori e figli_minori_numero si compilano solo quando la minore età è esplicita, mai deducendola da F1/F/D. Importi CU: riporta esattamente gli importi imponibili/redditi, ritenute, addizionali, contributi e trattamento integrativo nei rispettivi campi cu_*. Non calcolare reddito netto, capacità di rimborso, merito creditizio, ammissibilità o raccomandazioni finanziarie. Usa date YYYY-MM-DD e importi senza simbolo valuta. Per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta. nazione indica esclusivamente il Paese dell\'indirizzo del percettore; paese_provenienza indica il Paese di nascita/origine. Non scambiare i due campi.',
                 ],
                 [
                     'role' => 'user',
@@ -264,6 +284,23 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
         'provincia' => '',
         'nazione' => '',
         'paese_provenienza' => '',
+        'cu_azienda_codice_fiscale' => '',
+        'cu_azienda_denominazione' => '',
+        'cu_azienda_indirizzo' => '',
+        'cu_azienda_cap' => '',
+        'cu_azienda_citta' => '',
+        'cu_azienda_provincia' => '',
+        'cu_azienda_codice_attivita' => '',
+        'cu_data_inizio_rapporto' => '',
+        'cu_data_fine_rapporto' => '',
+        'cu_redditi_lavoro_dipendente' => '',
+        'cu_redditi_assimilati' => '',
+        'cu_redditi_pensione' => '',
+        'cu_ritenute_irpef' => '',
+        'cu_addizionale_regionale' => '',
+        'cu_addizionale_comunale' => '',
+        'cu_contributi_previdenziali' => '',
+        'cu_trattamento_integrativo' => '',
         'numero_figli' => '',
         'figli_minori' => '',
         'figli_minori_numero' => '',

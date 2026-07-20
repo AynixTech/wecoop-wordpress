@@ -530,6 +530,23 @@ class WeCoop_DataEntry {
             'cap' => '',
             'provincia' => '',
             'nazione' => '',
+            'cu_azienda_codice_fiscale' => '',
+            'cu_azienda_denominazione' => '',
+            'cu_azienda_indirizzo' => '',
+            'cu_azienda_cap' => '',
+            'cu_azienda_citta' => '',
+            'cu_azienda_provincia' => '',
+            'cu_azienda_codice_attivita' => '',
+            'cu_data_inizio_rapporto' => '',
+            'cu_data_fine_rapporto' => '',
+            'cu_redditi_lavoro_dipendente' => '',
+            'cu_redditi_assimilati' => '',
+            'cu_redditi_pensione' => '',
+            'cu_ritenute_irpef' => '',
+            'cu_addizionale_regionale' => '',
+            'cu_addizionale_comunale' => '',
+            'cu_contributi_previdenziali' => '',
+            'cu_trattamento_integrativo' => '',
             'numero_figli' => '',
             'figli_minori' => '',
             'figli_minori_numero' => '',
@@ -995,7 +1012,12 @@ class WeCoop_DataEntry {
         $text_fields = [
             'nome', 'cognome', 'sesso', 'data_nascita', 'luogo_nascita', 'codice_fiscale',
             'nazionalita', 'stato_civile', 'telefono', 'prefix', 'indirizzo', 'civico',
-            'citta', 'cap', 'provincia', 'nazione', 'numero_figli', 'figli_minori_numero',
+            'citta', 'cap', 'provincia', 'nazione', 'cu_azienda_codice_fiscale', 'cu_azienda_denominazione',
+            'cu_azienda_indirizzo', 'cu_azienda_cap', 'cu_azienda_citta', 'cu_azienda_provincia',
+            'cu_azienda_codice_attivita', 'cu_data_inizio_rapporto', 'cu_data_fine_rapporto',
+            'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione',
+            'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale',
+            'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'numero_figli', 'figli_minori_numero',
             'persone_a_carico', 'tipo_lavoro', 'contratto', 'settore', 'anni_lavoro',
             'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'categoria_profilazione',
             'capacita_economica', 'interesse', 'professione', 'paese_provenienza',
@@ -1540,6 +1562,14 @@ class WeCoop_DataEntry {
                 'Nazione' => $profile['nazione'] ?? '',
                 'Paese di provenienza' => $profile['paese_provenienza'] ?? '',
             ],
+            'Nucleo familiare' => [
+                'Numero figli' => $profile['numero_figli'] ?? '',
+                'Figli minori' => $profile['figli_minori'] ?? '',
+                'Numero figli minori' => $profile['figli_minori_numero'] ?? '',
+                'Persone a carico' => $profile['persone_a_carico'] ?? '',
+                'Categorie fiscali a carico' => $profile['categoria_persona_carico'] ?? '',
+                'Percentuale a carico' => $profile['percentuale_carico'] ?? '',
+            ],
             'Lavoro e reddito' => [
                 'Tipo lavoro' => $profile['tipo_lavoro'] ?? '',
                 'Contratto' => $profile['contratto'] ?? '',
@@ -1552,6 +1582,25 @@ class WeCoop_DataEntry {
                 'Prestiti attivi' => $profile['prestiti_attivi'] ?? '',
                 'Rate mensili' => $profile['rate_mensili'] ?? '',
                 'Ritardi pagamenti' => $profile['ritardi_pagamenti'] ?? '',
+            ],
+            'Dati certificati CU' => [
+                'Azienda / sostituto' => $profile['cu_azienda_denominazione'] ?? '',
+                'CF / P. IVA azienda' => $profile['cu_azienda_codice_fiscale'] ?? '',
+                'Indirizzo azienda' => $profile['cu_azienda_indirizzo'] ?? '',
+                'Città azienda' => $profile['cu_azienda_citta'] ?? '',
+                'CAP azienda' => $profile['cu_azienda_cap'] ?? '',
+                'Provincia azienda' => $profile['cu_azienda_provincia'] ?? '',
+                'Codice attività ATECO' => $profile['cu_azienda_codice_attivita'] ?? '',
+                'Inizio rapporto CU' => $profile['cu_data_inizio_rapporto'] ?? '',
+                'Fine rapporto CU' => $profile['cu_data_fine_rapporto'] ?? '',
+                'Redditi lavoro dipendente' => $profile['cu_redditi_lavoro_dipendente'] ?? '',
+                'Redditi assimilati' => $profile['cu_redditi_assimilati'] ?? '',
+                'Redditi pensione' => $profile['cu_redditi_pensione'] ?? '',
+                'Ritenute IRPEF' => $profile['cu_ritenute_irpef'] ?? '',
+                'Addizionale regionale' => $profile['cu_addizionale_regionale'] ?? '',
+                'Addizionale comunale' => $profile['cu_addizionale_comunale'] ?? '',
+                'Contributi previdenziali' => $profile['cu_contributi_previdenziali'] ?? '',
+                'Trattamento integrativo' => $profile['cu_trattamento_integrativo'] ?? '',
             ],
             'Documenti e profiling' => [
                 'Carta identita' => $profile['doc_carta_identita'] ?? '',
@@ -2356,7 +2405,35 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>6. Situazione finanziaria</h2>
+                        <h2>6. Dati certificati CU</h2>
+                        <p class="wecoop-help">Valori documentali estratti dalla Certificazione Unica. Verificare i dati prima dell'uso; non costituiscono una valutazione automatica per prestiti, mutui o altri prodotti finanziari.</p>
+                        <h3>Sostituto d'imposta / azienda</h3>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_input('cu_azienda_denominazione', 'Denominazione azienda', $defaults['cu_azienda_denominazione']); ?>
+                            <?php $this->render_input('cu_azienda_codice_fiscale', 'CF / P. IVA azienda', $defaults['cu_azienda_codice_fiscale']); ?>
+                            <?php $this->render_input('cu_azienda_codice_attivita', 'Codice attività ATECO', $defaults['cu_azienda_codice_attivita']); ?>
+                            <?php $this->render_input('cu_azienda_indirizzo', 'Indirizzo azienda', $defaults['cu_azienda_indirizzo']); ?>
+                            <?php $this->render_input('cu_azienda_cap', 'CAP azienda', $defaults['cu_azienda_cap']); ?>
+                            <?php $this->render_input('cu_azienda_citta', 'Città azienda', $defaults['cu_azienda_citta']); ?>
+                            <?php $this->render_input('cu_azienda_provincia', 'Provincia azienda', $defaults['cu_azienda_provincia'], 'text', 'maxlength="2" style="text-transform:uppercase"'); ?>
+                            <?php $this->render_input('cu_data_inizio_rapporto', 'Data inizio rapporto CU', $defaults['cu_data_inizio_rapporto'], 'date'); ?>
+                            <?php $this->render_input('cu_data_fine_rapporto', 'Data fine rapporto CU', $defaults['cu_data_fine_rapporto'], 'date'); ?>
+                        </div>
+                        <h3>Valori fiscali certificati</h3>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_input('cu_redditi_lavoro_dipendente', 'Redditi lavoro dipendente', $defaults['cu_redditi_lavoro_dipendente']); ?>
+                            <?php $this->render_input('cu_redditi_assimilati', 'Redditi assimilati', $defaults['cu_redditi_assimilati']); ?>
+                            <?php $this->render_input('cu_redditi_pensione', 'Redditi pensione', $defaults['cu_redditi_pensione']); ?>
+                            <?php $this->render_input('cu_ritenute_irpef', 'Ritenute IRPEF', $defaults['cu_ritenute_irpef']); ?>
+                            <?php $this->render_input('cu_addizionale_regionale', 'Addizionale regionale', $defaults['cu_addizionale_regionale']); ?>
+                            <?php $this->render_input('cu_addizionale_comunale', 'Addizionale comunale', $defaults['cu_addizionale_comunale']); ?>
+                            <?php $this->render_input('cu_contributi_previdenziali', 'Contributi previdenziali', $defaults['cu_contributi_previdenziali']); ?>
+                            <?php $this->render_input('cu_trattamento_integrativo', 'Trattamento integrativo', $defaults['cu_trattamento_integrativo']); ?>
+                        </div>
+                    </div>
+
+                    <div class="wecoop-section">
+                        <h2>7. Situazione finanziaria</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_yes_no_select('prestiti_attivi', 'Prestiti attivi', $defaults['prestiti_attivi']); ?>
                             <?php $this->render_input('rate_mensili', 'Rate mensili', $defaults['rate_mensili']); ?>
@@ -2370,7 +2447,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>7. Documenti</h2>
+                        <h2>8. Documenti</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('doc_carta_identita', 'Carta identità', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
                             <?php $this->render_input('doc_carta_identita_rilascio', 'Data rilascio CI', $defaults['doc_carta_identita_rilascio'] ?? '', 'date'); ?>
@@ -2389,7 +2466,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>8. Profilazione (operatore)</h2>
+                        <h2>9. Profilazione (operatore)</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('categoria_profilazione', 'Categoria', [
                                 '' => 'Seleziona',
@@ -2413,7 +2490,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>9. Note</h2>
+                        <h2>10. Note</h2>
                         <div class="wecoop-grid">
                             <?php $this->render_textarea('note_dataentry', 'Note', $defaults['note_dataentry']); ?>
                         </div>

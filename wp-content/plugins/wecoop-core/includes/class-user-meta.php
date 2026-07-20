@@ -233,6 +233,23 @@ class WeCoop_User_Meta {
                 'cap',
                 'provincia',
                 'nazione',
+                'cu_azienda_codice_fiscale',
+                'cu_azienda_denominazione',
+                'cu_azienda_indirizzo',
+                'cu_azienda_cap',
+                'cu_azienda_citta',
+                'cu_azienda_provincia',
+                'cu_azienda_codice_attivita',
+                'cu_data_inizio_rapporto',
+                'cu_data_fine_rapporto',
+                'cu_redditi_lavoro_dipendente',
+                'cu_redditi_assimilati',
+                'cu_redditi_pensione',
+                'cu_ritenute_irpef',
+                'cu_addizionale_regionale',
+                'cu_addizionale_comunale',
+                'cu_contributi_previdenziali',
+                'cu_trattamento_integrativo',
                 'numero_figli',
                 'figli_minori',
                 'figli_minori_numero',
@@ -453,7 +470,12 @@ class WeCoop_User_Meta {
         $text_fields = [
             'nome', 'cognome', 'sesso', 'data_nascita', 'luogo_nascita', 'codice_fiscale',
             'nazionalita', 'stato_civile', 'telefono', 'prefix', 'telefono_completo',
-            'indirizzo', 'civico', 'citta', 'cap', 'provincia', 'nazione', 'numero_figli',
+            'indirizzo', 'civico', 'citta', 'cap', 'provincia', 'nazione', 'cu_azienda_codice_fiscale',
+            'cu_azienda_denominazione', 'cu_azienda_indirizzo', 'cu_azienda_cap', 'cu_azienda_citta',
+            'cu_azienda_provincia', 'cu_azienda_codice_attivita', 'cu_data_inizio_rapporto',
+            'cu_data_fine_rapporto', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati',
+            'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale',
+            'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'numero_figli',
             'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'tipo_lavoro',
             'contratto', 'settore', 'anni_lavoro', 'reddito_annuo', 'reddito_mensile',
             'rate_mensili', 'categoria_profilazione', 'capacita_economica', 'interesse',
@@ -482,11 +504,11 @@ class WeCoop_User_Meta {
 
             if ($field === 'codice_fiscale') {
                 $value = strtoupper(self::normalize_text($value));
-            } elseif (in_array($field, ['provincia'], true)) {
+            } elseif (in_array($field, ['provincia', 'cu_azienda_provincia'], true)) {
                 $value = strtoupper(self::normalize_text($value));
             } elseif (in_array($field, ['numero_figli', 'figli_minori_numero', 'persone_a_carico', 'anni_lavoro', 'rate_mensili'], true)) {
                 $value = self::normalize_text($value);
-            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile'], true)) {
+            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo'], true)) {
                 $value = self::normalize_money($value);
             } elseif ($field === 'note_dataentry') {
                 $value = self::normalize_textarea($value);
