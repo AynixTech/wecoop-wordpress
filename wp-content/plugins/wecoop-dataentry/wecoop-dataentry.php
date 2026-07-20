@@ -582,6 +582,28 @@ class WeCoop_DataEntry {
             'prestiti_attivi' => '',
             'rate_mensili' => '',
             'ritardi_pagamenti' => '',
+            'tipo_abitazione' => '',
+            'canone_affitto_mensile' => '',
+            'spese_condominiali_mensili' => '',
+            'numero_conviventi' => '',
+            'reddito_netto_mensile_dichiarato' => '',
+            'entrate_ricorrenti_mensili' => '',
+            'spese_abitative_mensili' => '',
+            'altre_spese_ricorrenti_mensili' => '',
+            'disponibilita_mensile_dichiarata' => '',
+            'fonte_reddito' => '',
+            'anno_riferimento_reddito' => '',
+            'tipologie_impegni_finanziari' => '',
+            'data_fine_impegni_finanziari' => '',
+            'cessione_quinto' => '',
+            'assegno_mantenimento' => '',
+            'assegno_mantenimento_mensile' => '',
+            'fascia_risparmi' => '',
+            'garanzie_disponibili' => '',
+            'stato_verifica_finanziaria' => 'da_verificare',
+            'data_verifica_finanziaria' => '',
+            'note_verifica_finanziaria' => '',
+            'consenso_dati_finanziari' => '',
             'doc_carta_identita' => '',
             'doc_codice_fiscale' => '',
             'doc_cu' => '',
@@ -1054,12 +1076,19 @@ class WeCoop_DataEntry {
             'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale',
             'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'numero_figli', 'figli_minori_numero',
             'persone_a_carico', 'tipo_lavoro', 'contratto', 'settore', 'anni_lavoro',
-            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'categoria_profilazione',
+            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'tipo_abitazione', 'canone_affitto_mensile',
+            'spese_condominiali_mensili', 'numero_conviventi', 'reddito_netto_mensile_dichiarato',
+            'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili',
+            'disponibilita_mensile_dichiarata', 'fonte_reddito', 'anno_riferimento_reddito',
+            'tipologie_impegni_finanziari', 'data_fine_impegni_finanziari', 'assegno_mantenimento_mensile',
+            'fascia_risparmi', 'garanzie_disponibili', 'stato_verifica_finanziaria',
+            'data_verifica_finanziaria', 'categoria_profilazione',
             'capacita_economica', 'interesse', 'professione', 'paese_provenienza',
         ];
 
         $boolean_fields = [
-            'figli_minori', 'altri_redditi', 'prestiti_attivi', 'doc_carta_identita',
+            'figli_minori', 'altri_redditi', 'prestiti_attivi', 'cessione_quinto', 'assegno_mantenimento',
+            'consenso_dati_finanziari', 'doc_carta_identita',
             'doc_codice_fiscale', 'doc_cu', 'doc_dichiarazione_redditi',
         ];
 
@@ -1073,6 +1102,7 @@ class WeCoop_DataEntry {
 
         $payload['ritardi_pagamenti'] = sanitize_text_field($_POST['ritardi_pagamenti'] ?? '');
         $payload['note_dataentry'] = isset($_POST['note_dataentry']) ? sanitize_textarea_field(wp_unslash($_POST['note_dataentry'])) : '';
+        $payload['note_verifica_finanziaria'] = isset($_POST['note_verifica_finanziaria']) ? sanitize_textarea_field(wp_unslash($_POST['note_verifica_finanziaria'])) : '';
 
         $payload['telefono_completo'] = WeCoop_User_Meta::build_phone_complete($payload);
 
@@ -1617,6 +1647,30 @@ class WeCoop_DataEntry {
                 'Prestiti attivi' => $profile['prestiti_attivi'] ?? '',
                 'Rate mensili' => $profile['rate_mensili'] ?? '',
                 'Ritardi pagamenti' => $profile['ritardi_pagamenti'] ?? '',
+            ],
+            'Quadro economico dichiarato' => [
+                'Tipo abitazione' => $profile['tipo_abitazione'] ?? '',
+                'Canone affitto / rata mutuo' => $profile['canone_affitto_mensile'] ?? '',
+                'Spese condominiali' => $profile['spese_condominiali_mensili'] ?? '',
+                'Conviventi' => $profile['numero_conviventi'] ?? '',
+                'Reddito netto mensile dichiarato' => $profile['reddito_netto_mensile_dichiarato'] ?? '',
+                'Entrate ricorrenti aggiuntive' => $profile['entrate_ricorrenti_mensili'] ?? '',
+                'Spese abitative mensili' => $profile['spese_abitative_mensili'] ?? '',
+                'Altre spese ricorrenti' => $profile['altre_spese_ricorrenti_mensili'] ?? '',
+                'Disponibilità mensile dichiarata' => $profile['disponibilita_mensile_dichiarata'] ?? '',
+                'Impegni finanziari' => $profile['tipologie_impegni_finanziari'] ?? '',
+                'Fine impegni' => $profile['data_fine_impegni_finanziari'] ?? '',
+                'Cessione del quinto' => $profile['cessione_quinto'] ?? '',
+                'Assegno di mantenimento' => $profile['assegno_mantenimento'] ?? '',
+                'Importo mantenimento' => $profile['assegno_mantenimento_mensile'] ?? '',
+                'Fascia risparmi dichiarata' => $profile['fascia_risparmi'] ?? '',
+                'Garanzie dichiarate' => $profile['garanzie_disponibili'] ?? '',
+                'Fonte reddito' => $profile['fonte_reddito'] ?? '',
+                'Anno riferimento reddito' => $profile['anno_riferimento_reddito'] ?? '',
+                'Stato verifica' => $profile['stato_verifica_finanziaria'] ?? '',
+                'Data verifica' => $profile['data_verifica_finanziaria'] ?? '',
+                'Note verifica' => $profile['note_verifica_finanziaria'] ?? '',
+                'Informativa/base giuridica registrata' => $profile['consenso_dati_finanziari'] ?? '',
             ],
             'Dati certificati CU' => [
                 'Azienda / sostituto' => $profile['cu_azienda_denominazione'] ?? '',
@@ -2476,20 +2530,83 @@ class WeCoop_DataEntry {
 
                     <div class="wecoop-section">
                         <h2>7. Situazione finanziaria</h2>
+                        <p class="wecoop-help">Dati dichiarativi da verificare separatamente dalla CU. Non vengono usati per decisioni automatiche su prodotti finanziari.</p>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_yes_no_select('prestiti_attivi', 'Prestiti attivi', $defaults['prestiti_attivi']); ?>
-                            <?php $this->render_input('rate_mensili', 'Rate mensili', $defaults['rate_mensili']); ?>
+                            <?php $this->render_input('rate_mensili', 'Rate mensili complessive', $defaults['rate_mensili']); ?>
                             <?php $this->render_select('ritardi_pagamenti', 'Ritardi pagamenti', [
                                 '' => 'Seleziona',
                                 'si' => 'SI',
                                 'no' => 'NO',
                                 'non_noto' => 'NON NOTO',
                             ], $defaults['ritardi_pagamenti']); ?>
+                            <?php $this->render_input('tipologie_impegni_finanziari', 'Tipologia impegni finanziari', $defaults['tipologie_impegni_finanziari'], 'text', 'placeholder="Es. prestito, leasing"'); ?>
+                            <?php $this->render_input('data_fine_impegni_finanziari', 'Fine impegni finanziari', $defaults['data_fine_impegni_finanziari'], 'date'); ?>
+                            <?php $this->render_yes_no_select('cessione_quinto', 'Cessione del quinto', $defaults['cessione_quinto']); ?>
+                            <?php $this->render_yes_no_select('assegno_mantenimento', 'Assegno di mantenimento', $defaults['assegno_mantenimento']); ?>
+                            <?php $this->render_input('assegno_mantenimento_mensile', 'Importo mantenimento mensile', $defaults['assegno_mantenimento_mensile']); ?>
                         </div>
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>8. Documenti</h2>
+                        <h2>8. Abitazione e budget mensile dichiarato</h2>
+                        <p class="wecoop-help">Importi dichiarati dall'interessato. Compilare solo con informativa e base giuridica adeguate.</p>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_select('tipo_abitazione', 'Tipo abitazione', [
+                                '' => 'Seleziona',
+                                'proprieta' => 'Proprietà',
+                                'affitto' => 'Affitto',
+                                'comodato' => 'Comodato',
+                                'ospitalita' => 'Ospitalità',
+                                'altro' => 'Altro',
+                            ], $defaults['tipo_abitazione']); ?>
+                            <?php $this->render_input('canone_affitto_mensile', 'Canone affitto / rata mutuo', $defaults['canone_affitto_mensile']); ?>
+                            <?php $this->render_input('spese_condominiali_mensili', 'Spese condominiali mensili', $defaults['spese_condominiali_mensili']); ?>
+                            <?php $this->render_input('numero_conviventi', 'Numero conviventi', $defaults['numero_conviventi'], 'number', 'min="0" step="1"'); ?>
+                            <?php $this->render_input('reddito_netto_mensile_dichiarato', 'Reddito netto mensile dichiarato', $defaults['reddito_netto_mensile_dichiarato']); ?>
+                            <?php $this->render_input('entrate_ricorrenti_mensili', 'Entrate ricorrenti aggiuntive', $defaults['entrate_ricorrenti_mensili']); ?>
+                            <?php $this->render_input('spese_abitative_mensili', 'Spese abitative mensili totali', $defaults['spese_abitative_mensili']); ?>
+                            <?php $this->render_input('altre_spese_ricorrenti_mensili', 'Altre spese ricorrenti', $defaults['altre_spese_ricorrenti_mensili']); ?>
+                            <?php $this->render_input('disponibilita_mensile_dichiarata', 'Disponibilità mensile dichiarata', $defaults['disponibilita_mensile_dichiarata']); ?>
+                        </div>
+                    </div>
+
+                    <div class="wecoop-section">
+                        <h2>9. Fonti, patrimonio e verifica</h2>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_select('fonte_reddito', 'Fonte principale del reddito', [
+                                '' => 'Seleziona',
+                                'cu' => 'Certificazione Unica',
+                                'busta_paga' => 'Busta paga',
+                                'dichiarazione_redditi' => 'Dichiarazione redditi',
+                                'dichiarazione_interessato' => 'Dichiarazione dell’interessato',
+                            ], $defaults['fonte_reddito']); ?>
+                            <?php $this->render_input('anno_riferimento_reddito', 'Anno di riferimento reddito', $defaults['anno_riferimento_reddito'], 'number', 'min="2000" max="2100" step="1"'); ?>
+                            <?php $this->render_select('fascia_risparmi', 'Fascia risparmi dichiarata', [
+                                '' => 'Non dichiarata',
+                                'nessuna' => 'Nessuna',
+                                'fino_5000' => 'Fino a 5.000 €',
+                                'da_5001_20000' => 'Da 5.001 a 20.000 €',
+                                'oltre_20000' => 'Oltre 20.000 €',
+                            ], $defaults['fascia_risparmi']); ?>
+                            <?php $this->render_input('garanzie_disponibili', 'Garanzie dichiarate disponibili', $defaults['garanzie_disponibili']); ?>
+                            <?php $this->render_select('stato_verifica_finanziaria', 'Stato verifica dati', [
+                                'da_verificare' => 'Da verificare',
+                                'verificato' => 'Verificato',
+                                'incompleto' => 'Incompleto',
+                            ], $defaults['stato_verifica_finanziaria']); ?>
+                            <?php $this->render_input('data_verifica_finanziaria', 'Data verifica', $defaults['data_verifica_finanziaria'], 'date'); ?>
+                        </div>
+                        <div class="wecoop-grid" style="margin-top:16px;">
+                            <?php $this->render_textarea('note_verifica_finanziaria', 'Note di verifica', $defaults['note_verifica_finanziaria']); ?>
+                        </div>
+                        <p style="margin-top:12px;">
+                            <label><input type="checkbox" name="consenso_dati_finanziari" value="1" <?php checked($defaults['consenso_dati_finanziari'], '1'); ?>> Ho registrato l'informativa e la base giuridica applicabile per questi dati.</label>
+                        </p>
+                    </div>
+
+                    <div class="wecoop-section">
+                        <h2>10. Documenti</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('doc_carta_identita', 'Carta identità', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
                             <?php $this->render_input('doc_carta_identita_rilascio', 'Data rilascio CI', $defaults['doc_carta_identita_rilascio'] ?? '', 'date'); ?>
@@ -2508,7 +2625,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>9. Profilazione (operatore)</h2>
+                        <h2>11. Profilazione (operatore)</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('categoria_profilazione', 'Categoria', [
                                 '' => 'Seleziona',
@@ -2532,7 +2649,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>10. Note</h2>
+                        <h2>12. Note</h2>
                         <div class="wecoop-grid">
                             <?php $this->render_textarea('note_dataentry', 'Note', $defaults['note_dataentry']); ?>
                         </div>
