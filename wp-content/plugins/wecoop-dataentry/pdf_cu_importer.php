@@ -111,6 +111,24 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'provincia' => ['type' => 'string'],
             'nazione' => ['type' => 'string'],
             'paese_provenienza' => ['type' => 'string'],
+            // Dati tecnici per la verifica della tabella "Familiari a carico".
+            // Non vengono restituiti al browser: da essi sono derivati i campi
+            // del profilo, evitando di contare la legenda stampata nel modello.
+            'familiari_sezione' => ['type' => 'string', 'enum' => ['presente', 'assente', 'non_leggibile']],
+            'familiari_righe' => [
+                'type' => 'array',
+                'items' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'codice_fiscale' => ['type' => 'string'],
+                        'tipo' => ['type' => 'string', 'enum' => ['C', 'F1', 'F', 'D', 'G', 'P']],
+                        'mesi_a_carico' => ['type' => 'string'],
+                        'percentuale' => ['type' => 'string'],
+                    ],
+                    'required' => ['codice_fiscale', 'tipo', 'mesi_a_carico', 'percentuale'],
+                    'additionalProperties' => false,
+                ],
+            ],
             'numero_figli' => ['type' => 'string'],
             'figli_minori' => ['type' => 'string'],
             'figli_minori_numero' => ['type' => 'string'],
@@ -122,7 +140,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'reddito_annuo' => ['type' => 'string'],
             'altri_redditi' => ['type' => 'string'],
         ],
-        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'paese_provenienza', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
+        'required' => ['codice_fiscale', 'cognome', 'nome', 'data_nascita', 'luogo_nascita', 'provincia_nascita', 'sesso', 'indirizzo', 'civico', 'cap', 'citta', 'provincia', 'nazione', 'paese_provenienza', 'familiari_sezione', 'familiari_righe', 'numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico', 'tipo_lavoro', 'professione', 'reddito_annuo', 'altri_redditi'],
         'additionalProperties' => false,
     ];
     $response = wp_remote_post('https://api.openai.com/v1/responses', [
@@ -132,11 +150,14 @@ function wecoop_cu_extract_with_ai($pdf_path) {
             'Content-Type' => 'application/json',
         ],
         'body' => wp_json_encode([
-            'model' => apply_filters('wecoop_cu_openai_model', 'gpt-4o-mini'),
+            // Le CU sono moduli densi con tabelle e caselle: privilegiamo
+            // l'accuratezza del modello completo. Il filtro consente comunque
+            // alle installazioni con vincoli di costo di scegliere un modello diverso.
+            'model' => apply_filters('wecoop_cu_openai_model', 'gpt-4.1'),
             'input' => [
                 [
                     'role' => 'system',
-                    'content' => 'Sei un estrattore di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta. indirizzo contiene solo la strada, civico solo il numero civico effettivamente stampato. nazione indica esclusivamente il Paese dell\'indirizzo di residenza/domicilio; paese_provenienza indica il Paese di nascita/origine. Non scambiare i due campi.',
+                    'content' => 'Sei un estrattore rigoroso di dati da Certificazioni Uniche italiane. Leggi direttamente il PDF, incluse le immagini delle pagine. Estrai solo dati esplicitamente presenti e riferiti al percettore/contribuente, mai al sostituto d\'imposta. I PDF possono avere layout diversi. Non dedurre né inventare: restituisci stringa vuota per ogni dato non leggibile. REGOLA CRITICA INDIRIZZO: i recapiti, sede, indirizzo, CAP, Comune o Provincia presenti nelle sezioni "Dati relativi al sostituto", "Sostituto d\'imposta", "Datore di lavoro" o "Contatti" sono dell\'azienda e NON devono mai compilare indirizzo, civico, cap, citta, provincia o nazione del percettore. Compila quei campi soltanto se il PDF identifica esplicitamente l\'indirizzo come residenza, domicilio fiscale o recapito del percettore; altrimenti lasciali tutti vuoti. indirizzo contiene solo la strada, civico solo il numero civico effettivamente stampato. REGOLA CRITICA FAMILIARI: secondo le istruzioni CU dell\'Agenzia delle Entrate e la Risoluzione 55/E del 2023, la sezione "Dati relativi al coniuge e ai familiari a carico" riporta i familiari fiscalmente a carico anche se non sono state applicate detrazioni. Non copiare MAI la legenda delle colonne C, F1, F, G, D, P né i numeri dei punti 571-676. Ogni voce in familiari_righe deve corrispondere a una riga di familiare realmente compilata e deve includere il codice fiscale di 16 caratteri del familiare visibile in quella stessa riga. Non aggiungere righe senza codice fiscale: se il codice fiscale non è leggibile o non puoi distinguerla dalla legenda, imposta familiari_sezione a non_leggibile e restituisci un array vuoto. C è coniuge; F1, F e D sono figli; G e P sono altri familiari. Per ogni riga indica soltanto mesi e percentuale effettivamente visibili. I campi numero_figli, persone_a_carico, categoria_persona_carico e percentuale_carico devono essere coerenti con familiari_righe. figli_minori e figli_minori_numero si compilano solo quando la minore età è esplicita, mai deducendola da F1/F/D. Usa data_nascita nel formato YYYY-MM-DD; per figli_minori e altri_redditi usa esclusivamente 1, 0 o stringa vuota; tipo_lavoro può essere solo dipendente, autonomo, disoccupato, studente oppure stringa vuota. reddito_annuo è l\'importo annuo certificato senza simbolo valuta. nazione indica esclusivamente il Paese dell\'indirizzo del percettore; paese_provenienza indica il Paese di nascita/origine. Non scambiare i due campi.',
                 ],
                 [
                     'role' => 'user',
@@ -149,7 +170,7 @@ function wecoop_cu_extract_with_ai($pdf_path) {
                         ],
                         [
                             'type' => 'input_text',
-                            'text' => 'Mappa tutti i dati disponibili della CU nei campi richiesti. Cerca anche domicilio fiscale/residenza, familiari a carico e redditi certificati, quando esplicitamente indicati. Il codice fiscale deve avere 16 caratteri alfanumerici e il sesso deve essere M o F.',
+                            'text' => 'Mappa tutti i dati disponibili della CU nei campi richiesti. Verifica con particolare attenzione le intestazioni delle sezioni: i dati del sostituto non sono mai dati del percettore. Cerca e conta le righe selezionate nella tabella dei familiari a carico, senza contare la legenda o le righe vuote. Il codice fiscale deve avere 16 caratteri alfanumerici e il sesso deve essere M o F.',
                         ],
                     ],
                 ],
@@ -198,6 +219,11 @@ function wecoop_cu_extract_with_ai($pdf_path) {
     foreach ($allowed_keys as $key) {
         $result[$key] = isset($data[$key]) && is_scalar($data[$key]) ? trim((string) $data[$key]) : '';
     }
+    $result['__familiari_sezione'] = in_array($data['familiari_sezione'] ?? '', ['presente', 'assente', 'non_leggibile'], true)
+        ? $data['familiari_sezione']
+        : 'non_leggibile';
+    $result['__familiari_righe'] = is_array($data['familiari_righe'] ?? null) ? $data['familiari_righe'] : [];
+    unset($result['familiari_sezione'], $result['familiari_righe']);
     $result['codice_fiscale'] = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $result['codice_fiscale']));
     if (strlen($result['codice_fiscale']) !== 16) {
         $result['codice_fiscale'] = '';
@@ -264,9 +290,47 @@ function estrai_dati_cu_pdf($pdf_path, $original_filename = '') {
             $output[$key] = $value;
         }
     }
+    $familiari_sezione = $ai_data['__familiari_sezione'] ?? 'non_leggibile';
+    $familiari_righe = $ai_data['__familiari_righe'] ?? [];
+    // Non usiamo mai i contatori liberi forniti dal modello: la tabella è
+    // presente anche nei modelli senza familiari e può essere confusa con la
+    // legenda. I valori sono compilati solo da righe validate qui sotto.
+    foreach (['numero_figli', 'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'categoria_persona_carico', 'percentuale_carico'] as $campo) {
+        $output[$campo] = '';
+    }
+    if ($familiari_sezione === 'presente') {
+        $familiari = array_values(array_filter($familiari_righe, static function ($riga) {
+            if (!is_array($riga)) {
+                return false;
+            }
+            $codice_fiscale = strtoupper(preg_replace('/[^A-Z0-9]/i', '', (string) ($riga['codice_fiscale'] ?? '')));
+            return strlen($codice_fiscale) === 16
+                && in_array($riga['tipo'] ?? '', ['C', 'F1', 'F', 'D', 'G', 'P'], true);
+        }));
+        if ($familiari) {
+            $tipi = array_column($familiari, 'tipo');
+            $figli = array_filter($tipi, static function ($tipo) {
+                return in_array($tipo, ['F1', 'F', 'D'], true);
+            });
+            $percentuali = array_values(array_unique(array_filter(array_map(static function ($riga) {
+                return trim((string) ($riga['percentuale'] ?? ''));
+            }, $familiari))));
+            $output['numero_figli'] = (string) count($figli);
+            $output['persone_a_carico'] = (string) count($familiari);
+            $output['categoria_persona_carico'] = implode(',', $tipi);
+            $output['percentuale_carico'] = implode(',', $percentuali);
+        }
+    }
     if ($output['numero_figli'] === '0' && $output['figli_minori'] === '') {
         $output['figli_minori'] = '0';
         $output['figli_minori_numero'] = '0';
+    }
+    $numero_figli = filter_var($output['numero_figli'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    $persone_a_carico = filter_var($output['persone_a_carico'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
+    if ($numero_figli !== false && ($persone_a_carico === false || $persone_a_carico < $numero_figli)) {
+        // Ogni figlio dichiarato nella sezione dei familiari è, per definizione,
+        // anche una persona fiscalmente a carico.
+        $output['persone_a_carico'] = (string) $numero_figli;
     }
     if (!empty($output['nome']) && !empty($output['cognome']) && !empty($output['codice_fiscale'])) {
         $output['first_name'] = $output['nome'];
