@@ -177,22 +177,21 @@ class WeCoop_DataEntry {
         wp_enqueue_style('wecoop-dataentry-admin');
         wp_add_inline_style('wecoop-dataentry-admin', $this->get_inline_css());
 
-        wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
+        wp_register_script('wecoop-dataentry-admin', false, [], '1.1.0', true);
         wp_enqueue_script('wecoop-dataentry-admin');
-        // JavaScript per controllo permesso soggiorno (utente straniero)
         $conditional_js = <<<'JS'
         document.addEventListener('DOMContentLoaded', function () {
-            // Permesso soggiorno campo visibile solo se straniero
             function updatePermessoVisibility() {
                 var nazionalita = document.querySelector('[name="nazionalita"]');
-                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
-                if(!nazionalita || !permessoRow) return;
+                var permesso = document.querySelector('[name="tipologia_permesso_soggiorno"]');
+                var permessoRow = permesso ? permesso.closest('.wecoop-grid,div') : null;
+                if(!nazionalita || !permesso || !permessoRow) return;
                 var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
                 if (val && val !== 'italiana' && val !== 'italia') {
                     permessoRow.style.display = '';
                 } else {
                     permessoRow.style.display = 'none';
-                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
+                    permesso.value = '';
                 }
             }
             var nazioFld = document.querySelector('[name="nazionalita"]');
@@ -201,12 +200,54 @@ class WeCoop_DataEntry {
                 updatePermessoVisibility();
             }
 
-            // --- Importazione CU PDF ---
+            function setImportLoading(panel, button, result, isLoading) {
+                if (panel) panel.classList.toggle('is-loading', isLoading);
+                if (button) {
+                    button.disabled = isLoading;
+                    button.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+                }
+                if (result) result.setAttribute('aria-live', 'polite');
+            }
+
+            function renderImportSummary(data) {
+                var summary = document.getElementById('cu-import-summary');
+                if (!summary) return;
+
+                var labels = {
+                    cu_azienda_denominazione: 'Azienda rilevata',
+                    reddito_annuo: 'Reddito annuo CU',
+                    cu_redditi_lavoro_dipendente: 'Reddito da lavoro dipendente',
+                    cu_redditi_assimilati: 'Reddito assimilato',
+                    cu_redditi_pensione: 'Reddito da pensione',
+                    numero_figli: 'Numero figli verificato'
+                };
+                var list = document.createElement('ul');
+                var found = 0;
+                Object.keys(labels).forEach(function (key) {
+                    if (!data[key]) return;
+                    var item = document.createElement('li');
+                    item.textContent = labels[key] + ': ' + data[key];
+                    list.appendChild(item);
+                    found++;
+                });
+
+                summary.replaceChildren();
+                var title = document.createElement('strong');
+                title.textContent = 'Importazione CU completata';
+                var text = document.createElement('p');
+                text.textContent = Object.keys(data).filter(function (key) { return data[key] !== ''; }).length + ' campi compilati. Verifica i dati prima del salvataggio.';
+                summary.appendChild(title);
+                summary.appendChild(text);
+                if (found) summary.appendChild(list);
+                summary.hidden = false;
+            }
+
             var importBtn = document.getElementById('importa-cu-pdf-btn');
             if(importBtn){
                 importBtn.addEventListener('click', function() {
                     var fileInput = document.getElementById('cu_pdf_file');
                     var resEl = document.getElementById('importa-cu-result');
+                    var panel = document.getElementById('cu-import-panel');
                     if(!fileInput || !fileInput.files[0]){
                         console.warn('[CU_IMPORT] Nessun PDF selezionato');
                         if (resEl) resEl.textContent='Seleziona un file PDF';
@@ -222,6 +263,7 @@ class WeCoop_DataEntry {
                     fd.append('cu_pdf_file', selectedFile);
                     fd.append('action', 'wecoop_importa_cu_pdf');
                     if (resEl) resEl.textContent = 'Analisi in corso...';
+                    setImportLoading(panel, importBtn, resEl, true);
                     fetch(ajaxurl, {
                         method: 'POST',
                         credentials: 'same-origin',
@@ -249,6 +291,9 @@ class WeCoop_DataEntry {
                                 if(fld) fld.value = data.data[k];
                             }
                             if (resEl) resEl.textContent = "Dati importati!";
+                            renderImportSummary(data.data);
+                            var cuDetails = document.getElementById('cu-certified-details');
+                            if (cuDetails) cuDetails.open = true;
                         }else{
                             console.error('[CU_IMPORT] Importazione rifiutata dal server', data);
                             if (resEl) resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
@@ -256,34 +301,10 @@ class WeCoop_DataEntry {
                     }).catch(function(e){
                         console.error('[CU_IMPORT] Errore richiesta AJAX', e);
                         if (resEl) resEl.textContent = 'Errore server: '+e.message;
+                    }).finally(function() {
+                        setImportLoading(panel, importBtn, resEl, false);
                     });
                 });
-            }
-        });
-        JS;
-        wp_add_inline_script('wecoop-dataentry-admin', $this->get_inline_js() . "\n" . $conditional_js);
-
-        wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
-        wp_enqueue_script('wecoop-dataentry-admin');
-        // JavaScript per controllo permesso soggiorno (utente straniero)
-        $conditional_js = <<<'JS'
-        document.addEventListener('DOMContentLoaded', function () {
-            function updatePermessoVisibility() {
-                var nazionalita = document.querySelector('[name="nazionalita"]');
-                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
-                if(!nazionalita || !permessoRow) return;
-                var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
-                if (val && val !== 'italiana' && val !== 'italia') {
-                    permessoRow.style.display = '';
-                } else {
-                    permessoRow.style.display = 'none';
-                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
-                }
-            }
-            var nazioFld = document.querySelector('[name="nazionalita"]');
-            if(nazioFld){
-                nazioFld.addEventListener('input', updatePermessoVisibility);
-                updatePermessoVisibility();
             }
         });
         JS;
@@ -803,6 +824,20 @@ class WeCoop_DataEntry {
             .wecoop-dataentry-wrap .wecoop-section { margin-top:24px; padding-top:24px; border-top:1px solid #eef0f2; }
             .wecoop-dataentry-wrap .wecoop-section h2 { margin:0 0 8px; }
             .wecoop-dataentry-wrap .wecoop-help { color:#646970; margin:0; }
+            .wecoop-dataentry-wrap .wecoop-cu-import { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:18px; border:1px solid #b8dfc5; border-radius:10px; background:#edf8f0; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__file { display:flex; flex:1 1 280px; flex-direction:column; gap:6px; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__loader { display:none; width:18px; height:18px; border:3px solid #c3c4c7; border-top-color:#2271b1; border-radius:50%; animation:wecoop-spin .8s linear infinite; }
+            .wecoop-dataentry-wrap .wecoop-cu-import.is-loading .wecoop-cu-import__loader { display:inline-block; }
+            .wecoop-dataentry-wrap .wecoop-cu-import.is-loading .button { cursor:wait; opacity:.7; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary { margin-top:14px; padding:14px 16px; border-left:4px solid #1a8a3e; background:#f0f9f2; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary p { margin:5px 0; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary ul { margin:8px 0 0 18px; }
+            .wecoop-dataentry-wrap .wecoop-cu-details { margin-top:24px; padding:18px; border:1px solid #dcdcde; border-radius:10px; background:#fff; }
+            .wecoop-dataentry-wrap .wecoop-cu-details > summary { cursor:pointer; font-size:18px; font-weight:600; }
+            .wecoop-dataentry-wrap .wecoop-cu-details[open] > summary { margin-bottom:14px; }
+            .wecoop-dataentry-wrap .wecoop-cu-details h3 { margin:20px 0 10px; }
+            @keyframes wecoop-spin { to { transform:rotate(360deg); } }
             .wecoop-dataentry-wrap .wecoop-actions { display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap; }
             .wecoop-dataentry-wrap .wecoop-notice { margin:16px 0 0; }
             .wecoop-dataentry-wrap .wecoop-badge-link { font-weight:600; }
@@ -2283,12 +2318,19 @@ class WeCoop_DataEntry {
                     <?php endif; ?>
 
                     <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
-                        <div style="margin-bottom: 18px; background: #eaf5ea; padding: 10px; border-radius:6px;">
-                            <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
-                            <label for="cu_pdf_file"><strong>Importa dati anagrafici da Certificazione Unica (PDF italiana)</strong></label>
-                            <button type="button" class="button" id="importa-cu-pdf-btn">Importa dal PDF</button>
-                            <span id="importa-cu-result" style="margin-left:12px;font-weight:bold;color:#288941"></span>
+                        <div class="wecoop-cu-import" id="cu-import-panel">
+                            <div class="wecoop-cu-import__file">
+                                <label for="cu_pdf_file"><strong>Importa da Certificazione Unica (PDF italiana)</strong></label>
+                                <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
+                                <span class="wecoop-help">Carica una CU leggibile. I dati importati devono essere verificati prima del salvataggio.</span>
+                            </div>
+                            <div class="wecoop-cu-import__actions">
+                                <span class="wecoop-cu-import__loader" aria-hidden="true"></span>
+                                <button type="button" class="button button-primary" id="importa-cu-pdf-btn">Importa dal PDF</button>
+                                <span id="importa-cu-result" style="font-weight:bold;color:#288941" aria-live="polite"></span>
+                            </div>
                         </div>
+                        <div class="wecoop-cu-summary" id="cu-import-summary" hidden></div>
                     </div>
 
                     <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
@@ -2404,8 +2446,8 @@ class WeCoop_DataEntry {
                         </div>
                     </div>
 
-                    <div class="wecoop-section">
-                        <h2>6. Dati certificati CU</h2>
+                    <details class="wecoop-cu-details" id="cu-certified-details">
+                        <summary>6. Dati certificati CU <span class="wecoop-help">(opzionali)</span></summary>
                         <p class="wecoop-help">Valori documentali estratti dalla Certificazione Unica. Verificare i dati prima dell'uso; non costituiscono una valutazione automatica per prestiti, mutui o altri prodotti finanziari.</p>
                         <h3>Sostituto d'imposta / azienda</h3>
                         <div class="wecoop-grid wecoop-grid--3">
@@ -2430,7 +2472,7 @@ class WeCoop_DataEntry {
                             <?php $this->render_input('cu_contributi_previdenziali', 'Contributi previdenziali', $defaults['cu_contributi_previdenziali']); ?>
                             <?php $this->render_input('cu_trattamento_integrativo', 'Trattamento integrativo', $defaults['cu_trattamento_integrativo']); ?>
                         </div>
-                    </div>
+                    </details>
 
                     <div class="wecoop-section">
                         <h2>7. Situazione finanziaria</h2>
