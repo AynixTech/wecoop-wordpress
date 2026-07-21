@@ -1,3 +1,48 @@
+    /**
+     * Registra endpoint REST per la cancellazione dell'account utente autenticato.
+     */
+    public static function register_rest_account_routes() {
+        register_rest_route('wecoop/v1', '/users/me', array(
+            'methods' => 'DELETE',
+            'permission_callback' => function ($request) {
+                return is_user_logged_in();
+            },
+            'callback' => [__CLASS__, 'rest_delete_current_user'],
+        ));
+    }
+
+    /**
+     * Cancella definitivamente l'account utente autenticato via REST.
+     */
+    public static function rest_delete_current_user($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id || !get_userdata($user_id)) {
+            return new WP_Error('no_user', 'Utente non autenticato.', array('status' => 401));
+        }
+
+        $wp_user = get_user_by('ID', $user_id);
+        if (!$wp_user) {
+            return new WP_Error('no_user', 'Utente non trovato.', array('status' => 404));
+        }
+
+        // Eventuale clean dati custom (meta, relazioni, ecc.)
+        // Esempio: cancellazione meta personalizzati
+        $custom_meta_keys = array('prefix', 'telefono', 'telefono_completo', 'wecoop_phone_login_enabled');
+        foreach ($custom_meta_keys as $meta_key) {
+            delete_user_meta($user_id, $meta_key);
+        }
+
+        // Hook custom per altre pulizie se necessario
+        do_action('wecoop_before_delete_user_rest', $user_id);
+
+        require_once ABSPATH . 'wp-admin/includes/user.php'; // Funzione wp_delete_user
+        $result = wp_delete_user($user_id);
+        if (!$result) {
+            return new WP_Error('delete_failed', 'Errore durante la cancellazione utente.', array('status' => 500));
+        }
+
+        return array('success' => true, 'message' => 'Account eliminato definitivamente.');
+    }
 <?php
 /**
  * User Meta Handler

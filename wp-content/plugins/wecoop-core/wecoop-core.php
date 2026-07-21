@@ -85,6 +85,7 @@ class WeCoop_Core {
         WeCoop_Socio_Role::init();
         WeCoop_Auth_Handler::init();
         WeCoop_User_Meta::init();
+        add_action('rest_api_init', ['WeCoop_User_Meta', 'register_rest_account_routes']);
         // WeCoop_REST_Charset_Handler::init(); // TODO: Fix conflict
     }
     
