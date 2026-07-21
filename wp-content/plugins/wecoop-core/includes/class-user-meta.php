@@ -278,6 +278,23 @@ class WeCoop_User_Meta {
                 'cap',
                 'provincia',
                 'nazione',
+                'cu_azienda_codice_fiscale',
+                'cu_azienda_denominazione',
+                'cu_azienda_indirizzo',
+                'cu_azienda_cap',
+                'cu_azienda_citta',
+                'cu_azienda_provincia',
+                'cu_azienda_codice_attivita',
+                'cu_data_inizio_rapporto',
+                'cu_data_fine_rapporto',
+                'cu_redditi_lavoro_dipendente',
+                'cu_redditi_assimilati',
+                'cu_redditi_pensione',
+                'cu_ritenute_irpef',
+                'cu_addizionale_regionale',
+                'cu_addizionale_comunale',
+                'cu_contributi_previdenziali',
+                'cu_trattamento_integrativo',
                 'numero_figli',
                 'figli_minori',
                 'figli_minori_numero',
@@ -292,6 +309,28 @@ class WeCoop_User_Meta {
                 'prestiti_attivi',
                 'rate_mensili',
                 'ritardi_pagamenti',
+                'tipo_abitazione',
+                'canone_affitto_mensile',
+                'spese_condominiali_mensili',
+                'numero_conviventi',
+                'reddito_netto_mensile_dichiarato',
+                'entrate_ricorrenti_mensili',
+                'spese_abitative_mensili',
+                'altre_spese_ricorrenti_mensili',
+                'disponibilita_mensile_dichiarata',
+                'fonte_reddito',
+                'anno_riferimento_reddito',
+                'tipologie_impegni_finanziari',
+                'data_fine_impegni_finanziari',
+                'cessione_quinto',
+                'assegno_mantenimento',
+                'assegno_mantenimento_mensile',
+                'fascia_risparmi',
+                'garanzie_disponibili',
+                'stato_verifica_finanziaria',
+                'data_verifica_finanziaria',
+                'note_verifica_finanziaria',
+                'consenso_dati_finanziari',
                 'doc_carta_identita',
                 'doc_codice_fiscale',
                 'doc_cu',
@@ -498,16 +537,30 @@ class WeCoop_User_Meta {
         $text_fields = [
             'nome', 'cognome', 'sesso', 'data_nascita', 'luogo_nascita', 'codice_fiscale',
             'nazionalita', 'stato_civile', 'telefono', 'prefix', 'telefono_completo',
-            'indirizzo', 'civico', 'citta', 'cap', 'provincia', 'nazione', 'numero_figli',
+            'indirizzo', 'civico', 'citta', 'cap', 'provincia', 'nazione', 'cu_azienda_codice_fiscale',
+            'cu_azienda_denominazione', 'cu_azienda_indirizzo', 'cu_azienda_cap', 'cu_azienda_citta',
+            'cu_azienda_provincia', 'cu_azienda_codice_attivita', 'cu_data_inizio_rapporto',
+            'cu_data_fine_rapporto', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati',
+            'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale',
+            'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'numero_figli',
             'figli_minori', 'figli_minori_numero', 'persone_a_carico', 'tipo_lavoro',
             'contratto', 'settore', 'anni_lavoro', 'reddito_annuo', 'reddito_mensile',
-            'rate_mensili', 'categoria_profilazione', 'capacita_economica', 'interesse',
+            'rate_mensili', 'tipo_abitazione', 'canone_affitto_mensile', 'spese_condominiali_mensili',
+            'numero_conviventi', 'reddito_netto_mensile_dichiarato', 'entrate_ricorrenti_mensili',
+            'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili', 'disponibilita_mensile_dichiarata',
+            'fonte_reddito', 'anno_riferimento_reddito', 'tipologie_impegni_finanziari',
+            'data_fine_impegni_finanziari', 'assegno_mantenimento_mensile', 'fascia_risparmi',
+            'garanzie_disponibili', 'stato_verifica_finanziaria', 'data_verifica_finanziaria',
+            'note_verifica_finanziaria', 'categoria_profilazione', 'capacita_economica', 'interesse',
             'professione', 'paese_provenienza', 'note_dataentry',
         ];
 
         $boolean_fields = [
             'altri_redditi',
             'prestiti_attivi',
+            'cessione_quinto',
+            'assegno_mantenimento',
+            'consenso_dati_finanziari',
             'doc_carta_identita',
             'doc_codice_fiscale',
             'doc_cu',
@@ -527,11 +580,11 @@ class WeCoop_User_Meta {
 
             if ($field === 'codice_fiscale') {
                 $value = strtoupper(self::normalize_text($value));
-            } elseif (in_array($field, ['provincia'], true)) {
+            } elseif (in_array($field, ['provincia', 'cu_azienda_provincia'], true)) {
                 $value = strtoupper(self::normalize_text($value));
-            } elseif (in_array($field, ['numero_figli', 'figli_minori_numero', 'persone_a_carico', 'anni_lavoro', 'rate_mensili'], true)) {
+            } elseif (in_array($field, ['numero_figli', 'figli_minori_numero', 'persone_a_carico', 'anni_lavoro', 'numero_conviventi', 'anno_riferimento_reddito'], true)) {
                 $value = self::normalize_text($value);
-            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile'], true)) {
+            } elseif (in_array($field, ['reddito_annuo', 'reddito_mensile', 'rate_mensili', 'canone_affitto_mensile', 'spese_condominiali_mensili', 'reddito_netto_mensile_dichiarato', 'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili', 'disponibilita_mensile_dichiarata', 'assegno_mantenimento_mensile', 'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali', 'cu_trattamento_integrativo'], true)) {
                 $value = self::normalize_money($value);
             } elseif ($field === 'note_dataentry') {
                 $value = self::normalize_textarea($value);

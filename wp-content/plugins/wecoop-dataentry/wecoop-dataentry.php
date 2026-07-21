@@ -3,7 +3,7 @@
  * Plugin Name: WeCoop Data Entry
  * Plugin URI: https://www.wecoop.org
  * Description: Inserimento utenti con modello dati WECOOP compatibile con i moduli CRM esistenti.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: WeCoop Team
  * Author URI: https://www.wecoop.org
  * Text Domain: wecoop-dataentry
@@ -27,15 +27,25 @@ class WeCoop_DataEntry {
 
     // Handler AJAX per importazione automatica dati anagrafici CU (PDF)
     public function ajax_importa_cu_pdf() {
+        error_log('[CU_IMPORT_HANDLER] Azione AJAX ricevuta: '.date('c'));
         if (empty($_FILES['cu_pdf_file']) || $_FILES['cu_pdf_file']['error'] !== UPLOAD_ERR_OK) {
+            error_log('[CU_IMPORT_HANDLER] Nessun file PDF valido o errore upload!');
             wp_send_json_error(['error' => 'Nessun file PDF valido.']);
         }
         $file = $_FILES['cu_pdf_file']['tmp_name'];
+        error_log('[CU_IMPORT_HANDLER] File PDF caricato: '.$file);
         require_once __DIR__ . '/pdf_cu_importer.php';
-        $estratti = estrai_dati_cu_pdf($file);
+        $estratti = estrai_dati_cu_pdf($file, wp_basename((string) $_FILES['cu_pdf_file']['name']));
+        error_log('[CU_IMPORT_HANDLER] Estratti: '.print_r($estratti, true));
+        if (!empty($estratti['__error'])) {
+            error_log('[CU_IMPORT_HANDLER] ERRORE parser: ' . $estratti['__error']);
+            wp_send_json_error(['error' => $estratti['__error']]);
+        }
         if (empty($estratti['nome']) || empty($estratti['cognome']) || empty($estratti['codice_fiscale'])) {
+            error_log('[CU_IMPORT_HANDLER] PDF non riconosciuto come Certificazione Unica valida!');
             wp_send_json_error(['error' => 'PDF non riconosciuto come Certificazione Unica valida']);
         }
+        error_log('[CU_IMPORT_HANDLER] PDF ok, estratti: '.print_r($estratti, true));
         wp_send_json_success($estratti);
     }
 
@@ -167,22 +177,21 @@ class WeCoop_DataEntry {
         wp_enqueue_style('wecoop-dataentry-admin');
         wp_add_inline_style('wecoop-dataentry-admin', $this->get_inline_css());
 
-        wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
+        wp_register_script('wecoop-dataentry-admin', false, [], '1.1.0', true);
         wp_enqueue_script('wecoop-dataentry-admin');
-        // JavaScript per controllo permesso soggiorno (utente straniero)
         $conditional_js = <<<'JS'
         document.addEventListener('DOMContentLoaded', function () {
-            // Permesso soggiorno campo visibile solo se straniero
             function updatePermessoVisibility() {
                 var nazionalita = document.querySelector('[name="nazionalita"]');
-                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
-                if(!nazionalita || !permessoRow) return;
+                var permesso = document.querySelector('[name="tipologia_permesso_soggiorno"]');
+                var permessoRow = permesso ? permesso.closest('.wecoop-grid,div') : null;
+                if(!nazionalita || !permesso || !permessoRow) return;
                 var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
                 if (val && val !== 'italiana' && val !== 'italia') {
                     permessoRow.style.display = '';
                 } else {
                     permessoRow.style.display = 'none';
-                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
+                    permesso.value = '';
                 }
             }
             var nazioFld = document.querySelector('[name="nazionalita"]');
@@ -191,60 +200,123 @@ class WeCoop_DataEntry {
                 updatePermessoVisibility();
             }
 
-            // --- Importazione CU PDF ---
+            function setImportLoading(panel, button, result, isLoading) {
+                if (panel) panel.classList.toggle('is-loading', isLoading);
+                if (button) {
+                    button.disabled = isLoading;
+                    button.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+                }
+                if (result) result.setAttribute('aria-live', 'polite');
+            }
+
+            function renderImportSummary(data) {
+                var summary = document.getElementById('cu-import-summary');
+                if (!summary) return;
+
+                var labels = {
+                    cu_azienda_denominazione: 'Azienda rilevata',
+                    reddito_annuo: 'Reddito annuo CU',
+                    cu_redditi_lavoro_dipendente: 'Reddito da lavoro dipendente',
+                    cu_redditi_assimilati: 'Reddito assimilato',
+                    cu_redditi_pensione: 'Reddito da pensione',
+                    numero_figli: 'Numero figli verificato'
+                };
+                var list = document.createElement('ul');
+                var found = 0;
+                Object.keys(labels).forEach(function (key) {
+                    if (!data[key]) return;
+                    var item = document.createElement('li');
+                    item.textContent = labels[key] + ': ' + data[key];
+                    list.appendChild(item);
+                    found++;
+                });
+
+                summary.replaceChildren();
+                var title = document.createElement('strong');
+                title.textContent = 'Importazione CU completata';
+                var text = document.createElement('p');
+                text.textContent = Object.keys(data).filter(function (key) { return data[key] !== ''; }).length + ' campi compilati. Verifica i dati prima del salvataggio.';
+                summary.appendChild(title);
+                summary.appendChild(text);
+                if (found) summary.appendChild(list);
+                summary.hidden = false;
+            }
+
+            function normalizeAmountForInput(value) {
+                var normalized = String(value || '').trim().replace(/\s/g, '');
+                if (normalized.indexOf(',') !== -1 && normalized.indexOf('.') !== -1) {
+                    normalized = normalized.replace(/\./g, '');
+                }
+                return normalized.replace(',', '.');
+            }
+
             var importBtn = document.getElementById('importa-cu-pdf-btn');
             if(importBtn){
                 importBtn.addEventListener('click', function() {
                     var fileInput = document.getElementById('cu_pdf_file');
                     var resEl = document.getElementById('importa-cu-result');
-                    if(!fileInput || !fileInput.files[0]){resEl.textContent='Seleziona un file PDF'; return;}
+                    var panel = document.getElementById('cu-import-panel');
+                    if(!fileInput || !fileInput.files[0]){
+                        console.warn('[CU_IMPORT] Nessun PDF selezionato');
+                        if (resEl) resEl.textContent='Seleziona un file PDF';
+                        return;
+                    }
+                    var selectedFile = fileInput.files[0];
+                    console.info('[CU_IMPORT] Avvio importazione', {
+                        name: selectedFile.name,
+                        size: selectedFile.size,
+                        type: selectedFile.type
+                    });
                     var fd = new FormData();
-                    fd.append('cu_pdf_file', fileInput.files[0]);
+                    fd.append('cu_pdf_file', selectedFile);
                     fd.append('action', 'wecoop_importa_cu_pdf');
-                    resEl.textContent = 'Analisi in corso...';
+                    if (resEl) resEl.textContent = 'Analisi in corso...';
+                    setImportLoading(panel, importBtn, resEl, true);
                     fetch(ajaxurl, {
                         method: 'POST',
                         credentials: 'same-origin',
                         body: fd
-                    }).then(resp => resp.json()).then(function(data){
+                    }).then(function(resp) {
+                        console.info('[CU_IMPORT] Risposta HTTP', {
+                            status: resp.status,
+                            statusText: resp.statusText,
+                            ok: resp.ok
+                        });
+                        return resp.text().then(function(body) {
+                            console.info('[CU_IMPORT] Corpo risposta AJAX', body);
+                            try {
+                                return JSON.parse(body);
+                            } catch (error) {
+                                throw new Error('Risposta server non JSON (HTTP ' + resp.status + '): ' + body.substring(0, 500));
+                            }
+                        });
+                    }).then(function(data){
+                        console.info('[CU_IMPORT] Risposta elaborata', data);
                         if(data && data.success && data.data){
                             // Setta i campi form!
                             for(var k in data.data){
                                 var fld = document.querySelector('[name="'+k+'"]');
-                                if(fld) fld.value = data.data[k];
+                                if(fld) {
+                                    fld.value = fld.type === 'number'
+                                        ? normalizeAmountForInput(data.data[k])
+                                        : data.data[k];
+                                }
                             }
-                            resEl.textContent = "Dati importati!";
+                            if (resEl) resEl.textContent = "Dati importati!";
+                            renderImportSummary(data.data);
+                            var cuDetails = document.getElementById('cu-certified-details');
+                            if (cuDetails) cuDetails.open = true;
                         }else{
-                            resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
+                            console.error('[CU_IMPORT] Importazione rifiutata dal server', data);
+                            if (resEl) resEl.textContent = data && data.data && data.data.error ? data.data.error : 'Errore nel parsing del PDF';
                         }
-                    }).catch(function(e){ resEl.textContent = 'Errore server: '+e; });
+                    }).catch(function(e){
+                        console.error('[CU_IMPORT] Errore richiesta AJAX', e);
+                        if (resEl) resEl.textContent = 'Errore server: '+e.message;
+                    }).finally(function() {
+                        setImportLoading(panel, importBtn, resEl, false);
+                    });
                 });
-            }
-        });
-        JS;
-        wp_add_inline_script('wecoop-dataentry-admin', $this->get_inline_js() . "\n" . $conditional_js);
-
-        wp_register_script('wecoop-dataentry-admin', false, [], '1.0.0', true);
-        wp_enqueue_script('wecoop-dataentry-admin');
-        // JavaScript per controllo permesso soggiorno (utente straniero)
-        $conditional_js = <<<'JS'
-        document.addEventListener('DOMContentLoaded', function () {
-            function updatePermessoVisibility() {
-                var nazionalita = document.querySelector('[name="nazionalita"]');
-                var permessoRow = document.querySelector('[name="tipologia_permesso_soggiorno"]').closest('.wecoop-grid,div');
-                if(!nazionalita || !permessoRow) return;
-                var val = nazionalita.value ? nazionalita.value.trim().toLowerCase() : '';
-                if (val && val !== 'italiana' && val !== 'italia') {
-                    permessoRow.style.display = '';
-                } else {
-                    permessoRow.style.display = 'none';
-                    document.querySelector('[name="tipologia_permesso_soggiorno"]').value = '';
-                }
-            }
-            var nazioFld = document.querySelector('[name="nazionalita"]');
-            if(nazioFld){
-                nazioFld.addEventListener('input', updatePermessoVisibility);
-                updatePermessoVisibility();
             }
         });
         JS;
@@ -491,6 +563,23 @@ class WeCoop_DataEntry {
             'cap' => '',
             'provincia' => '',
             'nazione' => '',
+            'cu_azienda_codice_fiscale' => '',
+            'cu_azienda_denominazione' => '',
+            'cu_azienda_indirizzo' => '',
+            'cu_azienda_cap' => '',
+            'cu_azienda_citta' => '',
+            'cu_azienda_provincia' => '',
+            'cu_azienda_codice_attivita' => '',
+            'cu_data_inizio_rapporto' => '',
+            'cu_data_fine_rapporto' => '',
+            'cu_redditi_lavoro_dipendente' => '',
+            'cu_redditi_assimilati' => '',
+            'cu_redditi_pensione' => '',
+            'cu_ritenute_irpef' => '',
+            'cu_addizionale_regionale' => '',
+            'cu_addizionale_comunale' => '',
+            'cu_contributi_previdenziali' => '',
+            'cu_trattamento_integrativo' => '',
             'numero_figli' => '',
             'figli_minori' => '',
             'figli_minori_numero' => '',
@@ -505,6 +594,28 @@ class WeCoop_DataEntry {
             'prestiti_attivi' => '',
             'rate_mensili' => '',
             'ritardi_pagamenti' => '',
+            'tipo_abitazione' => '',
+            'canone_affitto_mensile' => '',
+            'spese_condominiali_mensili' => '',
+            'numero_conviventi' => '',
+            'reddito_netto_mensile_dichiarato' => '',
+            'entrate_ricorrenti_mensili' => '',
+            'spese_abitative_mensili' => '',
+            'altre_spese_ricorrenti_mensili' => '',
+            'disponibilita_mensile_dichiarata' => '',
+            'fonte_reddito' => '',
+            'anno_riferimento_reddito' => '',
+            'tipologie_impegni_finanziari' => '',
+            'data_fine_impegni_finanziari' => '',
+            'cessione_quinto' => '',
+            'assegno_mantenimento' => '',
+            'assegno_mantenimento_mensile' => '',
+            'fascia_risparmi' => '',
+            'garanzie_disponibili' => '',
+            'stato_verifica_finanziaria' => 'da_verificare',
+            'data_verifica_finanziaria' => '',
+            'note_verifica_finanziaria' => '',
+            'consenso_dati_finanziari' => '',
             'doc_carta_identita' => '',
             'doc_codice_fiscale' => '',
             'doc_cu' => '',
@@ -747,6 +858,20 @@ class WeCoop_DataEntry {
             .wecoop-dataentry-wrap .wecoop-section { margin-top:24px; padding-top:24px; border-top:1px solid #eef0f2; }
             .wecoop-dataentry-wrap .wecoop-section h2 { margin:0 0 8px; }
             .wecoop-dataentry-wrap .wecoop-help { color:#646970; margin:0; }
+            .wecoop-dataentry-wrap .wecoop-cu-import { display:flex; align-items:center; gap:16px; flex-wrap:wrap; padding:18px; border:1px solid #b8dfc5; border-radius:10px; background:#edf8f0; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__file { display:flex; flex:1 1 280px; flex-direction:column; gap:6px; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+            .wecoop-dataentry-wrap .wecoop-cu-import__loader { display:none; width:18px; height:18px; border:3px solid #c3c4c7; border-top-color:#2271b1; border-radius:50%; animation:wecoop-spin .8s linear infinite; }
+            .wecoop-dataentry-wrap .wecoop-cu-import.is-loading .wecoop-cu-import__loader { display:inline-block; }
+            .wecoop-dataentry-wrap .wecoop-cu-import.is-loading .button { cursor:wait; opacity:.7; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary { margin-top:14px; padding:14px 16px; border-left:4px solid #1a8a3e; background:#f0f9f2; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary p { margin:5px 0; }
+            .wecoop-dataentry-wrap .wecoop-cu-summary ul { margin:8px 0 0 18px; }
+            .wecoop-dataentry-wrap .wecoop-cu-details { margin-top:24px; padding:18px; border:1px solid #dcdcde; border-radius:10px; background:#fff; }
+            .wecoop-dataentry-wrap .wecoop-cu-details > summary { cursor:pointer; font-size:18px; font-weight:600; }
+            .wecoop-dataentry-wrap .wecoop-cu-details[open] > summary { margin-bottom:14px; }
+            .wecoop-dataentry-wrap .wecoop-cu-details h3 { margin:20px 0 10px; }
+            @keyframes wecoop-spin { to { transform:rotate(360deg); } }
             .wecoop-dataentry-wrap .wecoop-actions { display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap; }
             .wecoop-dataentry-wrap .wecoop-notice { margin:16px 0 0; }
             .wecoop-dataentry-wrap .wecoop-badge-link { font-weight:600; }
@@ -956,14 +1081,26 @@ class WeCoop_DataEntry {
         $text_fields = [
             'nome', 'cognome', 'sesso', 'data_nascita', 'luogo_nascita', 'codice_fiscale',
             'nazionalita', 'stato_civile', 'telefono', 'prefix', 'indirizzo', 'civico',
-            'citta', 'cap', 'provincia', 'nazione', 'numero_figli', 'figli_minori_numero',
+            'citta', 'cap', 'provincia', 'nazione', 'cu_azienda_codice_fiscale', 'cu_azienda_denominazione',
+            'cu_azienda_indirizzo', 'cu_azienda_cap', 'cu_azienda_citta', 'cu_azienda_provincia',
+            'cu_azienda_codice_attivita', 'cu_data_inizio_rapporto', 'cu_data_fine_rapporto',
+            'cu_redditi_lavoro_dipendente', 'cu_redditi_assimilati', 'cu_redditi_pensione',
+            'cu_ritenute_irpef', 'cu_addizionale_regionale', 'cu_addizionale_comunale',
+            'cu_contributi_previdenziali', 'cu_trattamento_integrativo', 'numero_figli', 'figli_minori_numero',
             'persone_a_carico', 'tipo_lavoro', 'contratto', 'settore', 'anni_lavoro',
-            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'categoria_profilazione',
+            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'tipo_abitazione', 'canone_affitto_mensile',
+            'spese_condominiali_mensili', 'numero_conviventi', 'reddito_netto_mensile_dichiarato',
+            'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili',
+            'disponibilita_mensile_dichiarata', 'fonte_reddito', 'anno_riferimento_reddito',
+            'tipologie_impegni_finanziari', 'data_fine_impegni_finanziari', 'assegno_mantenimento_mensile',
+            'fascia_risparmi', 'garanzie_disponibili', 'stato_verifica_finanziaria',
+            'data_verifica_finanziaria', 'categoria_profilazione',
             'capacita_economica', 'interesse', 'professione', 'paese_provenienza',
         ];
 
         $boolean_fields = [
-            'figli_minori', 'altri_redditi', 'prestiti_attivi', 'doc_carta_identita',
+            'figli_minori', 'altri_redditi', 'prestiti_attivi', 'cessione_quinto', 'assegno_mantenimento',
+            'consenso_dati_finanziari', 'doc_carta_identita',
             'doc_codice_fiscale', 'doc_cu', 'doc_dichiarazione_redditi',
         ];
 
@@ -977,6 +1114,7 @@ class WeCoop_DataEntry {
 
         $payload['ritardi_pagamenti'] = sanitize_text_field($_POST['ritardi_pagamenti'] ?? '');
         $payload['note_dataentry'] = isset($_POST['note_dataentry']) ? sanitize_textarea_field(wp_unslash($_POST['note_dataentry'])) : '';
+        $payload['note_verifica_finanziaria'] = isset($_POST['note_verifica_finanziaria']) ? sanitize_textarea_field(wp_unslash($_POST['note_verifica_finanziaria'])) : '';
 
         $payload['telefono_completo'] = WeCoop_User_Meta::build_phone_complete($payload);
 
@@ -1076,6 +1214,24 @@ class WeCoop_DataEntry {
     }
 
     private function render_input($name, $label, $value = '', $type = 'text', $extra = '') {
+        $money_fields = [
+            'reddito_annuo', 'reddito_mensile', 'rate_mensili', 'cu_redditi_lavoro_dipendente',
+            'cu_redditi_assimilati', 'cu_redditi_pensione', 'cu_ritenute_irpef',
+            'cu_addizionale_regionale', 'cu_addizionale_comunale', 'cu_contributi_previdenziali',
+            'cu_trattamento_integrativo', 'assegno_mantenimento_mensile', 'canone_affitto_mensile',
+            'spese_condominiali_mensili', 'reddito_netto_mensile_dichiarato',
+            'entrate_ricorrenti_mensili', 'spese_abitative_mensili', 'altre_spese_ricorrenti_mensili',
+            'disponibilita_mensile_dichiarata',
+        ];
+        if (in_array($name, $money_fields, true)) {
+            $type = 'number';
+            $number_value = trim((string) $value);
+            if (strpos($number_value, ',') !== false && strpos($number_value, '.') !== false) {
+                $number_value = str_replace('.', '', $number_value);
+            }
+            $value = str_replace(',', '.', $number_value);
+            $extra = trim($extra . ' min="0" step="0.01" inputmode="decimal" placeholder="Es. 1250.00"');
+        }
         echo '<div class="wecoop-field">';
         echo '<label for="' . esc_attr($name) . '">' . esc_html($label) . '</label>';
         echo '<input type="' . esc_attr($type) . '" id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" value="' . esc_attr($value) . '" ' . $extra . '>';
@@ -1501,6 +1657,14 @@ class WeCoop_DataEntry {
                 'Nazione' => $profile['nazione'] ?? '',
                 'Paese di provenienza' => $profile['paese_provenienza'] ?? '',
             ],
+            'Nucleo familiare' => [
+                'Numero figli' => $profile['numero_figli'] ?? '',
+                'Figli minori' => $profile['figli_minori'] ?? '',
+                'Numero figli minori' => $profile['figli_minori_numero'] ?? '',
+                'Persone a carico' => $profile['persone_a_carico'] ?? '',
+                'Categorie fiscali a carico' => $profile['categoria_persona_carico'] ?? '',
+                'Percentuale a carico' => $profile['percentuale_carico'] ?? '',
+            ],
             'Lavoro e reddito' => [
                 'Tipo lavoro' => $profile['tipo_lavoro'] ?? '',
                 'Contratto' => $profile['contratto'] ?? '',
@@ -1513,6 +1677,49 @@ class WeCoop_DataEntry {
                 'Prestiti attivi' => $profile['prestiti_attivi'] ?? '',
                 'Rate mensili' => $profile['rate_mensili'] ?? '',
                 'Ritardi pagamenti' => $profile['ritardi_pagamenti'] ?? '',
+            ],
+            'Quadro economico dichiarato' => [
+                'Tipo abitazione' => $profile['tipo_abitazione'] ?? '',
+                'Canone affitto / rata mutuo' => $profile['canone_affitto_mensile'] ?? '',
+                'Spese condominiali' => $profile['spese_condominiali_mensili'] ?? '',
+                'Conviventi' => $profile['numero_conviventi'] ?? '',
+                'Reddito netto mensile dichiarato' => $profile['reddito_netto_mensile_dichiarato'] ?? '',
+                'Entrate ricorrenti aggiuntive' => $profile['entrate_ricorrenti_mensili'] ?? '',
+                'Spese abitative mensili' => $profile['spese_abitative_mensili'] ?? '',
+                'Altre spese ricorrenti' => $profile['altre_spese_ricorrenti_mensili'] ?? '',
+                'Disponibilità mensile dichiarata' => $profile['disponibilita_mensile_dichiarata'] ?? '',
+                'Impegni finanziari' => $profile['tipologie_impegni_finanziari'] ?? '',
+                'Fine impegni' => $profile['data_fine_impegni_finanziari'] ?? '',
+                'Cessione del quinto' => $profile['cessione_quinto'] ?? '',
+                'Assegno di mantenimento' => $profile['assegno_mantenimento'] ?? '',
+                'Importo mantenimento' => $profile['assegno_mantenimento_mensile'] ?? '',
+                'Fascia risparmi dichiarata' => $profile['fascia_risparmi'] ?? '',
+                'Garanzie dichiarate' => $profile['garanzie_disponibili'] ?? '',
+                'Fonte reddito' => $profile['fonte_reddito'] ?? '',
+                'Anno riferimento reddito' => $profile['anno_riferimento_reddito'] ?? '',
+                'Stato verifica' => $profile['stato_verifica_finanziaria'] ?? '',
+                'Data verifica' => $profile['data_verifica_finanziaria'] ?? '',
+                'Note verifica' => $profile['note_verifica_finanziaria'] ?? '',
+                'Informativa/base giuridica registrata' => $profile['consenso_dati_finanziari'] ?? '',
+            ],
+            'Dati certificati CU' => [
+                'Azienda / sostituto' => $profile['cu_azienda_denominazione'] ?? '',
+                'CF / P. IVA azienda' => $profile['cu_azienda_codice_fiscale'] ?? '',
+                'Indirizzo azienda' => $profile['cu_azienda_indirizzo'] ?? '',
+                'Città azienda' => $profile['cu_azienda_citta'] ?? '',
+                'CAP azienda' => $profile['cu_azienda_cap'] ?? '',
+                'Provincia azienda' => $profile['cu_azienda_provincia'] ?? '',
+                'Codice attività ATECO' => $profile['cu_azienda_codice_attivita'] ?? '',
+                'Inizio rapporto CU' => $profile['cu_data_inizio_rapporto'] ?? '',
+                'Fine rapporto CU' => $profile['cu_data_fine_rapporto'] ?? '',
+                'Redditi lavoro dipendente' => $profile['cu_redditi_lavoro_dipendente'] ?? '',
+                'Redditi assimilati' => $profile['cu_redditi_assimilati'] ?? '',
+                'Redditi pensione' => $profile['cu_redditi_pensione'] ?? '',
+                'Ritenute IRPEF' => $profile['cu_ritenute_irpef'] ?? '',
+                'Addizionale regionale' => $profile['cu_addizionale_regionale'] ?? '',
+                'Addizionale comunale' => $profile['cu_addizionale_comunale'] ?? '',
+                'Contributi previdenziali' => $profile['cu_contributi_previdenziali'] ?? '',
+                'Trattamento integrativo' => $profile['cu_trattamento_integrativo'] ?? '',
             ],
             'Documenti e profiling' => [
                 'Carta identita' => $profile['doc_carta_identita'] ?? '',
@@ -2195,6 +2402,22 @@ class WeCoop_DataEntry {
                     <?php endif; ?>
 
                     <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
+                        <div class="wecoop-cu-import" id="cu-import-panel">
+                            <div class="wecoop-cu-import__file">
+                                <label for="cu_pdf_file"><strong>Importa da Certificazione Unica (PDF italiana)</strong></label>
+                                <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
+                                <span class="wecoop-help">Carica una CU leggibile. I dati importati devono essere verificati prima del salvataggio.</span>
+                            </div>
+                            <div class="wecoop-cu-import__actions">
+                                <span class="wecoop-cu-import__loader" aria-hidden="true"></span>
+                                <button type="button" class="button button-primary" id="importa-cu-pdf-btn">Importa dal PDF</button>
+                                <span id="importa-cu-result" style="font-weight:bold;color:#288941" aria-live="polite"></span>
+                            </div>
+                        </div>
+                        <div class="wecoop-cu-summary" id="cu-import-summary" hidden></div>
+                    </div>
+
+                    <div class="wecoop-section" style="border-top:none;padding-top:0;margin-top:0;">
                         <h2>Dati account</h2>
                         <p class="wecoop-help">Il username viene generato automaticamente se non presente.</p>
                         <div class="wecoop-grid wecoop-grid--3">
@@ -2307,29 +2530,114 @@ class WeCoop_DataEntry {
                         </div>
                     </div>
 
+                    <details class="wecoop-cu-details" id="cu-certified-details">
+                        <summary>6. Dati certificati CU <span class="wecoop-help">(opzionali)</span></summary>
+                        <p class="wecoop-help">Valori documentali estratti dalla Certificazione Unica. Verificare i dati prima dell'uso; non costituiscono una valutazione automatica per prestiti, mutui o altri prodotti finanziari.</p>
+                        <h3>Sostituto d'imposta / azienda</h3>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_input('cu_azienda_denominazione', 'Denominazione azienda', $defaults['cu_azienda_denominazione']); ?>
+                            <?php $this->render_input('cu_azienda_codice_fiscale', 'CF / P. IVA azienda', $defaults['cu_azienda_codice_fiscale']); ?>
+                            <?php $this->render_input('cu_azienda_codice_attivita', 'Codice attività ATECO', $defaults['cu_azienda_codice_attivita']); ?>
+                            <?php $this->render_input('cu_azienda_indirizzo', 'Indirizzo azienda', $defaults['cu_azienda_indirizzo']); ?>
+                            <?php $this->render_input('cu_azienda_cap', 'CAP azienda', $defaults['cu_azienda_cap']); ?>
+                            <?php $this->render_input('cu_azienda_citta', 'Città azienda', $defaults['cu_azienda_citta']); ?>
+                            <?php $this->render_input('cu_azienda_provincia', 'Provincia azienda', $defaults['cu_azienda_provincia'], 'text', 'maxlength="2" style="text-transform:uppercase"'); ?>
+                            <?php $this->render_input('cu_data_inizio_rapporto', 'Data inizio rapporto CU', $defaults['cu_data_inizio_rapporto'], 'date'); ?>
+                            <?php $this->render_input('cu_data_fine_rapporto', 'Data fine rapporto CU', $defaults['cu_data_fine_rapporto'], 'date'); ?>
+                        </div>
+                        <h3>Valori fiscali certificati</h3>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_input('cu_redditi_lavoro_dipendente', 'Redditi lavoro dipendente', $defaults['cu_redditi_lavoro_dipendente']); ?>
+                            <?php $this->render_input('cu_redditi_assimilati', 'Redditi assimilati', $defaults['cu_redditi_assimilati']); ?>
+                            <?php $this->render_input('cu_redditi_pensione', 'Redditi pensione', $defaults['cu_redditi_pensione']); ?>
+                            <?php $this->render_input('cu_ritenute_irpef', 'Ritenute IRPEF', $defaults['cu_ritenute_irpef']); ?>
+                            <?php $this->render_input('cu_addizionale_regionale', 'Addizionale regionale', $defaults['cu_addizionale_regionale']); ?>
+                            <?php $this->render_input('cu_addizionale_comunale', 'Addizionale comunale', $defaults['cu_addizionale_comunale']); ?>
+                            <?php $this->render_input('cu_contributi_previdenziali', 'Contributi previdenziali', $defaults['cu_contributi_previdenziali']); ?>
+                            <?php $this->render_input('cu_trattamento_integrativo', 'Trattamento integrativo', $defaults['cu_trattamento_integrativo']); ?>
+                        </div>
+                    </details>
+
                     <div class="wecoop-section">
-                        <h2>6. Situazione finanziaria</h2>
+                        <h2>7. Situazione finanziaria</h2>
+                        <p class="wecoop-help">Dati dichiarativi da verificare separatamente dalla CU. Non vengono usati per decisioni automatiche su prodotti finanziari.</p>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_yes_no_select('prestiti_attivi', 'Prestiti attivi', $defaults['prestiti_attivi']); ?>
-                            <?php $this->render_input('rate_mensili', 'Rate mensili', $defaults['rate_mensili']); ?>
+                            <?php $this->render_input('rate_mensili', 'Rate mensili complessive', $defaults['rate_mensili']); ?>
                             <?php $this->render_select('ritardi_pagamenti', 'Ritardi pagamenti', [
                                 '' => 'Seleziona',
                                 'si' => 'SI',
                                 'no' => 'NO',
                                 'non_noto' => 'NON NOTO',
                             ], $defaults['ritardi_pagamenti']); ?>
+                            <?php $this->render_input('tipologie_impegni_finanziari', 'Tipologia impegni finanziari', $defaults['tipologie_impegni_finanziari'], 'text', 'placeholder="Es. prestito, leasing"'); ?>
+                            <?php $this->render_input('data_fine_impegni_finanziari', 'Fine impegni finanziari', $defaults['data_fine_impegni_finanziari'], 'date'); ?>
+                            <?php $this->render_yes_no_select('cessione_quinto', 'Cessione del quinto', $defaults['cessione_quinto']); ?>
+                            <?php $this->render_yes_no_select('assegno_mantenimento', 'Assegno di mantenimento', $defaults['assegno_mantenimento']); ?>
+                            <?php $this->render_input('assegno_mantenimento_mensile', 'Importo mantenimento mensile', $defaults['assegno_mantenimento_mensile']); ?>
                         </div>
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>7. Documenti</h2>
+                        <h2>8. Abitazione e budget mensile dichiarato</h2>
+                        <p class="wecoop-help">Importi dichiarati dall'interessato. Compilare solo con informativa e base giuridica adeguate.</p>
                         <div class="wecoop-grid wecoop-grid--3">
-                            <div style="grid-column: 1/-1; margin-bottom: 18px; background: #eaf5ea; padding: 10px; border-radius:6px;">
-                                <label for="cu_pdf_file"><strong>Importa dati anagrafici da Certificazione Unica (PDF italiana)</strong></label><br>
-                                <input type="file" name="cu_pdf_file" id="cu_pdf_file" accept="application/pdf">
-                                <button type="button" class="button" id="importa-cu-pdf-btn">Importa dal PDF</button>
-                                <span id="importa-cu-result" style="margin-left:12px;font-weight:bold;color:#288941"></span>
-                            </div>
+                            <?php $this->render_select('tipo_abitazione', 'Tipo abitazione', [
+                                '' => 'Seleziona',
+                                'proprieta' => 'Proprietà',
+                                'affitto' => 'Affitto',
+                                'comodato' => 'Comodato',
+                                'ospitalita' => 'Ospitalità',
+                                'altro' => 'Altro',
+                            ], $defaults['tipo_abitazione']); ?>
+                            <?php $this->render_input('canone_affitto_mensile', 'Canone affitto / rata mutuo', $defaults['canone_affitto_mensile']); ?>
+                            <?php $this->render_input('spese_condominiali_mensili', 'Spese condominiali mensili', $defaults['spese_condominiali_mensili']); ?>
+                            <?php $this->render_input('numero_conviventi', 'Numero conviventi', $defaults['numero_conviventi'], 'number', 'min="0" step="1"'); ?>
+                            <?php $this->render_input('reddito_netto_mensile_dichiarato', 'Reddito netto mensile dichiarato', $defaults['reddito_netto_mensile_dichiarato']); ?>
+                            <?php $this->render_input('entrate_ricorrenti_mensili', 'Entrate ricorrenti aggiuntive', $defaults['entrate_ricorrenti_mensili']); ?>
+                            <?php $this->render_input('spese_abitative_mensili', 'Spese abitative mensili totali', $defaults['spese_abitative_mensili']); ?>
+                            <?php $this->render_input('altre_spese_ricorrenti_mensili', 'Altre spese ricorrenti', $defaults['altre_spese_ricorrenti_mensili']); ?>
+                            <?php $this->render_input('disponibilita_mensile_dichiarata', 'Disponibilità mensile dichiarata', $defaults['disponibilita_mensile_dichiarata']); ?>
+                        </div>
+                    </div>
+
+                    <div class="wecoop-section">
+                        <h2>9. Fonti, patrimonio e verifica</h2>
+                        <div class="wecoop-grid wecoop-grid--3">
+                            <?php $this->render_select('fonte_reddito', 'Fonte principale del reddito', [
+                                '' => 'Seleziona',
+                                'cu' => 'Certificazione Unica',
+                                'busta_paga' => 'Busta paga',
+                                'dichiarazione_redditi' => 'Dichiarazione redditi',
+                                'dichiarazione_interessato' => 'Dichiarazione dell’interessato',
+                            ], $defaults['fonte_reddito']); ?>
+                            <?php $this->render_input('anno_riferimento_reddito', 'Anno di riferimento reddito', $defaults['anno_riferimento_reddito'], 'number', 'min="2000" max="2100" step="1"'); ?>
+                            <?php $this->render_select('fascia_risparmi', 'Fascia risparmi dichiarata', [
+                                '' => 'Non dichiarata',
+                                'nessuna' => 'Nessuna',
+                                'fino_5000' => 'Fino a 5.000 €',
+                                'da_5001_20000' => 'Da 5.001 a 20.000 €',
+                                'oltre_20000' => 'Oltre 20.000 €',
+                            ], $defaults['fascia_risparmi']); ?>
+                            <?php $this->render_input('garanzie_disponibili', 'Garanzie dichiarate disponibili', $defaults['garanzie_disponibili']); ?>
+                            <?php $this->render_select('stato_verifica_finanziaria', 'Stato verifica dati', [
+                                'da_verificare' => 'Da verificare',
+                                'verificato' => 'Verificato',
+                                'incompleto' => 'Incompleto',
+                            ], $defaults['stato_verifica_finanziaria']); ?>
+                            <?php $this->render_input('data_verifica_finanziaria', 'Data verifica', $defaults['data_verifica_finanziaria'], 'date'); ?>
+                        </div>
+                        <div class="wecoop-grid" style="margin-top:16px;">
+                            <?php $this->render_textarea('note_verifica_finanziaria', 'Note di verifica', $defaults['note_verifica_finanziaria']); ?>
+                        </div>
+                        <p style="margin-top:12px;">
+                            <label><input type="checkbox" name="consenso_dati_finanziari" value="1" <?php checked($defaults['consenso_dati_finanziari'], '1'); ?>> Ho registrato l'informativa e la base giuridica applicabile per questi dati.</label>
+                        </p>
+                    </div>
+
+                    <div class="wecoop-section">
+                        <h2>10. Documenti</h2>
+                        <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('doc_carta_identita', 'Carta identità', ['' => 'Seleziona', '1' => 'Presente', '0' => 'Mancante'], $defaults['doc_carta_identita']); ?>
                             <?php $this->render_input('doc_carta_identita_rilascio', 'Data rilascio CI', $defaults['doc_carta_identita_rilascio'] ?? '', 'date'); ?>
                             <?php $this->render_input('doc_carta_identita_scadenza', 'Data scadenza CI', $defaults['doc_carta_identita_scadenza'] ?? '', 'date'); ?>
@@ -2347,7 +2655,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>8. Profilazione (operatore)</h2>
+                        <h2>11. Profilazione (operatore)</h2>
                         <div class="wecoop-grid wecoop-grid--3">
                             <?php $this->render_select('categoria_profilazione', 'Categoria', [
                                 '' => 'Seleziona',
@@ -2371,7 +2679,7 @@ class WeCoop_DataEntry {
                     </div>
 
                     <div class="wecoop-section">
-                        <h2>9. Note</h2>
+                        <h2>12. Note</h2>
                         <div class="wecoop-grid">
                             <?php $this->render_textarea('note_dataentry', 'Note', $defaults['note_dataentry']); ?>
                         </div>
