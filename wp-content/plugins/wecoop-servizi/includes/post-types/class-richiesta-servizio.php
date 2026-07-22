@@ -281,6 +281,8 @@ class WECOOP_Richiesta_Servizio_CPT {
                     <option value="paid" <?php selected($stato, 'paid'); ?>>Pagato</option>
                     <option value="awaiting_signature" <?php selected($stato, 'awaiting_signature'); ?>>Da Firmare</option>
                     <option value="integrazione_documentale" <?php selected($stato, 'integrazione_documentale'); ?>>Integrazione Documentale</option>
+                    <option value="awaiting_appointment" <?php selected($stato, 'awaiting_appointment'); ?>>In Attesa Appuntamento</option>
+                    <option value="appointment_confirmed" <?php selected($stato, 'appointment_confirmed'); ?>>Appuntamento Confermato</option>
                     <option value="processing" <?php selected($stato, 'processing'); ?>>In Lavorazione</option>
                     <option value="completed" <?php selected($stato, 'completed'); ?>>Completata</option>
                     <option value="cancelled" <?php selected($stato, 'cancelled'); ?>>Annullata</option>
