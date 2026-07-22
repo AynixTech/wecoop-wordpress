@@ -138,6 +138,17 @@ class Addons {
 			$addons = json_decode( $addons );
 		}
 
+		// Ensure we always have an array before filtering/iterating.
+		// Under some conditions (e.g. cached/remote data returned as an object),
+		// $addons can be a stdClass which would break array_filter().
+		if ( is_object( $addons ) ) {
+			$addons = (array) $addons;
+		}
+
+		if ( ! is_array( $addons ) ) {
+			$addons = $defaultAddons;
+		}
+
 		$addons = array_filter( $addons, function( $addon ) {
 			return ! is_object( $addon ) || 'aioseo-redirects' !== $addon->sku;
 		} );
