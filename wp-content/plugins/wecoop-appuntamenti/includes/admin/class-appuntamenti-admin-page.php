@@ -140,6 +140,62 @@ class WeCoop_Appuntamenti_Admin_Page {
     }
 
     /**
+     * Box con i dettagli principali della richiesta di servizio.
+     */
+    private static function render_richiesta_details($richiesta_id, $post) {
+        $servizio       = get_post_meta($richiesta_id, 'servizio', true);
+        $categoria      = get_post_meta($richiesta_id, 'categoria', true);
+        $stato          = get_post_meta($richiesta_id, 'stato', true);
+        $numero_pratica = get_post_meta($richiesta_id, 'numero_pratica', true);
+        $user_id        = (int) get_post_meta($richiesta_id, 'user_id', true);
+        $socio_id       = get_post_meta($richiesta_id, 'socio_id', true);
+        $dati           = json_decode((string) get_post_meta($richiesta_id, 'dati', true), true) ?: [];
+
+        $utente = '';
+        if ($user_id) {
+            $u = get_userdata($user_id);
+            $utente = $u ? ($u->display_name . ' (' . $u->user_email . ')') : ('ID ' . $user_id);
+        }
+
+        echo '<div style="background:#f0f6fc;border:1px solid #c3d9ed;border-left:4px solid #2271b1;border-radius:6px;padding:14px;margin-bottom:16px;max-width:900px;">';
+        echo '<h3 style="margin:0 0 10px;">Dettagli richiesta</h3>';
+        echo '<table class="widefat" style="background:transparent;border:0;"><tbody>';
+        self::detail_row('Numero pratica', $numero_pratica ?: '&mdash;');
+        self::detail_row('Servizio', $servizio ?: '&mdash;');
+        self::detail_row('Categoria', $categoria ?: '&mdash;');
+        self::detail_row('Stato', $stato ? '<code>' . esc_html($stato) . '</code>' : '&mdash;', true);
+        self::detail_row('Utente', $utente ?: '&mdash;');
+        if ($socio_id) {
+            self::detail_row('Socio ID', $socio_id);
+        }
+        self::detail_row('Data richiesta', get_the_date('d/m/Y H:i', $post) ?: '&mdash;');
+
+        if (!empty($dati) && is_array($dati)) {
+            $rows = '';
+            foreach ($dati as $k => $v) {
+                if (is_array($v)) {
+                    $v = implode(', ', array_map('strval', $v));
+                }
+                $rows .= '<tr><td style="padding:2px 8px;color:#555;">' . esc_html((string) $k) . '</td><td style="padding:2px 8px;">' . esc_html((string) $v) . '</td></tr>';
+            }
+            if ($rows !== '') {
+                echo '<tr><th style="vertical-align:top;text-align:left;">Dati modulo</th><td>';
+                echo '<table style="border-collapse:collapse;">' . $rows . '</table>';
+                echo '</td></tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+        echo '</div>';
+    }
+
+    private static function detail_row($label, $value, $is_html = false) {
+        echo '<tr><th style="width:180px;text-align:left;">' . esc_html($label) . '</th><td>';
+        echo $is_html ? $value : esc_html((string) $value);
+        echo '</td></tr>';
+    }
+
+    /**
      * Gestione appuntamento di una singola richiesta.
      */
     private static function render_single($richiesta_id) {
@@ -157,6 +213,9 @@ class WeCoop_Appuntamenti_Admin_Page {
         echo '<p><a href="' . esc_url(admin_url('admin.php?page=' . self::MENU_SLUG)) . '">&larr; Torna all\'elenco</a></p>';
         echo '<h2>' . esc_html(get_the_title($richiesta_id) ?: ('Richiesta #' . $richiesta_id)) . ' <span style="color:#888;">(#' . (int) $richiesta_id . ')</span></h2>';
         echo '<p><a href="' . esc_url(get_edit_post_link($richiesta_id)) . '">Apri la richiesta completa</a></p>';
+
+        // Dettagli della richiesta.
+        self::render_richiesta_details($richiesta_id, $post);
 
         // Appuntamento confermato
         if ($appuntamento) {
@@ -219,7 +278,16 @@ class WeCoop_Appuntamenti_Admin_Page {
         echo '<input type="hidden" name="action" value="wecoop_page_add_slot">';
         echo '<input type="hidden" name="richiesta_id" value="' . (int) $richiesta_id . '">';
         echo '<table class="form-table"><tbody>';
-        echo '<tr><th><label>Data e ora</label></th><td><input type="datetime-local" name="data_ora" required></td></tr>';
+        echo '<tr><th><label>Orari proposti</label></th><td>';
+        echo '<div id="wecoop-page-orari">';
+        echo '<div class="wecoop-orario-row" style="margin-bottom:6px;display:flex;gap:6px;align-items:center;">';
+        echo '<input type="datetime-local" name="data_ora[]" required>';
+        echo '<button type="button" class="button wecoop-remove-orario" style="color:#b32d2e;" title="Rimuovi">&times;</button>';
+        echo '</div>';
+        echo '</div>';
+        echo '<button type="button" class="button" id="wecoop-page-add-orario">+ Aggiungi orario</button>';
+        echo '<p class="description">Puoi proporre pi&ugrave; orari: verranno creati come slot separati con la stessa durata/sede/note.</p>';
+        echo '</td></tr>';
         echo '<tr><th><label>Durata (min)</label></th><td><input type="number" name="durata_min" value="30" min="5" step="5"></td></tr>';
         echo '<tr><th><label for="wecoop_sede_id">Sede salvata</label></th><td>';
         WeCoop_Appuntamenti_Sedi::render_select('sede_id', 'wecoop_page_sede', 'wecoop_page_indirizzo');
@@ -231,6 +299,10 @@ class WeCoop_Appuntamenti_Admin_Page {
         echo '</tbody></table>';
         submit_button('Proponi slot', 'primary', 'submit', false);
         echo '</form>';
+
+        if (class_exists('WeCoop_Appuntamenti_Admin')) {
+            WeCoop_Appuntamenti_Admin::render_orari_js('wecoop-page-orari', 'wecoop-page-add-orario');
+        }
     }
 
     /* ---------------------------------------------------------------------
@@ -247,41 +319,55 @@ class WeCoop_Appuntamenti_Admin_Page {
             wp_die('Nonce non valido');
         }
 
-        $data_ora_raw = isset($_POST['data_ora']) ? sanitize_text_field($_POST['data_ora']) : '';
-        $ts = $data_ora_raw ? strtotime($data_ora_raw) : false;
+        $data_ora_raw = isset($_POST['data_ora']) ? $_POST['data_ora'] : [];
+        if (!is_array($data_ora_raw)) {
+            $data_ora_raw = [$data_ora_raw];
+        }
 
-        if ($ts) {
-            // Se e' stata scelta una sede salvata e i campi testo sono vuoti,
-            // popola sede/indirizzo dal record sede (fallback lato server).
-            $sede      = isset($_POST['sede']) ? sanitize_text_field($_POST['sede']) : '';
-            $indirizzo = isset($_POST['indirizzo']) ? sanitize_text_field($_POST['indirizzo']) : '';
-            $sede_id   = isset($_POST['sede_id']) ? (int) $_POST['sede_id'] : 0;
+        // Se e' stata scelta una sede salvata e i campi testo sono vuoti,
+        // popola sede/indirizzo dal record sede (fallback lato server).
+        $sede      = isset($_POST['sede']) ? sanitize_text_field($_POST['sede']) : '';
+        $indirizzo = isset($_POST['indirizzo']) ? sanitize_text_field($_POST['indirizzo']) : '';
+        $sede_id   = isset($_POST['sede_id']) ? (int) $_POST['sede_id'] : 0;
 
-            if ($sede_id && ($sede === '' || $indirizzo === '')) {
-                $sede_post = get_post($sede_id);
-                if ($sede_post && $sede_post->post_type === WeCoop_Appuntamenti_Sedi::POST_TYPE) {
-                    if ($sede === '') {
-                        $sede = $sede_post->post_title;
-                    }
-                    if ($indirizzo === '') {
-                        $indirizzo = WeCoop_Appuntamenti_Sedi::full_address([
-                            'indirizzo' => get_post_meta($sede_id, 'indirizzo', true),
-                            'citta'     => get_post_meta($sede_id, 'citta', true),
-                        ]);
-                    }
+        if ($sede_id && ($sede === '' || $indirizzo === '')) {
+            $sede_post = get_post($sede_id);
+            if ($sede_post && $sede_post->post_type === WeCoop_Appuntamenti_Sedi::POST_TYPE) {
+                if ($sede === '') {
+                    $sede = $sede_post->post_title;
+                }
+                if ($indirizzo === '') {
+                    $indirizzo = WeCoop_Appuntamenti_Sedi::full_address([
+                        'indirizzo' => get_post_meta($sede_id, 'indirizzo', true),
+                        'citta'     => get_post_meta($sede_id, 'citta', true),
+                    ]);
                 }
             }
+        }
 
+        $durata = isset($_POST['durata_min']) ? (int) $_POST['durata_min'] : 30;
+        $note   = isset($_POST['note']) ? sanitize_textarea_field($_POST['note']) : null;
+
+        $created = 0;
+        foreach ($data_ora_raw as $raw) {
+            $raw = sanitize_text_field($raw);
+            $ts  = $raw ? strtotime($raw) : false;
+            if (!$ts) {
+                continue;
+            }
             WeCoop_Appuntamenti_Repository::create_slot([
                 'richiesta_id' => $richiesta_id,
                 'data_ora'     => date('Y-m-d H:i:s', $ts),
-                'durata_min'   => isset($_POST['durata_min']) ? (int) $_POST['durata_min'] : 30,
+                'durata_min'   => $durata,
                 'sede'         => $sede !== '' ? $sede : null,
                 'indirizzo'    => $indirizzo !== '' ? $indirizzo : null,
-                'note'         => isset($_POST['note']) ? sanitize_textarea_field($_POST['note']) : null,
+                'note'         => $note,
                 'created_by'   => get_current_user_id(),
             ]);
+            $created++;
+        }
 
+        if ($created > 0) {
             $stato_corrente = get_post_meta($richiesta_id, 'stato', true);
             if ($stato_corrente !== WECOOP_Appuntamenti_Plugin::STATO_CONFIRMED) {
                 $old = $stato_corrente;
@@ -291,7 +377,10 @@ class WeCoop_Appuntamenti_Admin_Page {
             do_action('wecoop_appuntamento_slot_proposti', $richiesta_id, [], get_current_user_id());
         }
 
-        self::redirect_single($richiesta_id, 'Slot proposto correttamente.');
+        $msg = $created > 0
+            ? sprintf('%d slot proposti correttamente.', $created)
+            : 'Nessun orario valido inserito.';
+        self::redirect_single($richiesta_id, $msg);
     }
 
     public static function handle_delete_slot() {
