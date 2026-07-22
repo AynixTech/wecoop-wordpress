@@ -1549,7 +1549,7 @@ class WECOOP_Servizi_Management {
                 </button>
                 <?php if (current_user_can('wecoop_appuntamenti_manage') || current_user_can('manage_options')): ?>
                     <a class="button button-small"
-                       href="<?php echo esc_url(admin_url('post.php?post=' . $post_id . '&action=edit')); ?>"
+                       href="<?php echo esc_url(admin_url('admin.php?page=wecoop-appuntamenti&richiesta_id=' . $post_id)); ?>"
                        style="margin-top: 5px; background: #00897b; color: white; border-color: #00897b;"
                        title="Proponi date per l'appuntamento fisico">
                         📅 Appuntamento
