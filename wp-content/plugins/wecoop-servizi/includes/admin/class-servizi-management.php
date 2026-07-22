@@ -123,10 +123,16 @@ class WECOOP_Servizi_Management {
      * Menu admin
      */
     public static function add_admin_menu() {
+        // Capability per accedere al menu principale e alla lista richieste.
+        // Consente anche agli operatori (che hanno wecoop_appuntamenti_manage)
+        // di raggiungere le richieste per proporre gli slot appuntamento.
+        // Le altre voci (dashboard, prezzi, firme, ecc.) restano riservate agli admin.
+        $list_cap = current_user_can('manage_options') ? 'manage_options' : 'wecoop_appuntamenti_manage';
+
         add_menu_page(
             'WeCoop Richieste Servizi',
             'WeCoop Servizi',
-            'manage_options',
+            $list_cap,
             'wecoop-richieste-servizi',
             [__CLASS__, 'render_list'],
             'dashicons-clipboard',
@@ -148,7 +154,7 @@ class WECOOP_Servizi_Management {
             'wecoop-richieste-servizi',
             'Tutte le Richieste',
             '📋 Tutte le Richieste',
-            'manage_options',
+            $list_cap,
             'wecoop-richieste-servizi',
             [__CLASS__, 'render_list']
         );
@@ -1541,6 +1547,14 @@ class WECOOP_Servizi_Management {
                 <button class="button button-small edit-richiesta" data-id="<?php echo $post_id; ?>">
                     👁️ Dettagli
                 </button>
+                <?php if (current_user_can('wecoop_appuntamenti_manage') || current_user_can('manage_options')): ?>
+                    <a class="button button-small"
+                       href="<?php echo esc_url(admin_url('post.php?post=' . $post_id . '&action=edit')); ?>"
+                       style="margin-top: 5px; background: #00897b; color: white; border-color: #00897b;"
+                       title="Proponi date per l'appuntamento fisico">
+                        📅 Appuntamento
+                    </a>
+                <?php endif; ?>
                 <?php if (!in_array($stato, ['completed', 'cancelled'], true)): ?>
                     <?php $integrazione_attiva = ($stato === 'integrazione_documentale'); ?>
                     <button class="button button-small request-document-integration"

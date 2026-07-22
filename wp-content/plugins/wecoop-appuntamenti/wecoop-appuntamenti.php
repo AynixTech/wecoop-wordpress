@@ -43,6 +43,10 @@ class WECOOP_Appuntamenti_Plugin {
         // Assicura schema DB aggiornato.
         add_action('plugins_loaded', ['WeCoop_Appuntamenti_Repository', 'maybe_upgrade']);
 
+        // Consente agli operatori (wecoop_appuntamenti_manage) di aprire/salvare
+        // l'editor del CPT richiesta_servizio, senza dare accesso agli altri post.
+        add_filter('map_meta_cap', [__CLASS__, 'map_richiesta_cap'], 10, 4);
+
         // Endpoint REST.
         WECOOP_Appuntamenti_Endpoint::init();
 
@@ -99,6 +103,40 @@ class WECOOP_Appuntamenti_Plugin {
      */
     public static function timezone() {
         return wp_timezone();
+    }
+
+    /**
+     * Concede a chi ha la capability appuntamenti il permesso di
+     * modificare/leggere i post del CPT richiesta_servizio (che usa
+     * capability_type 'post'), senza esporre gli altri contenuti.
+     */
+    public static function map_richiesta_cap($caps, $cap, $user_id, $args) {
+        $target_caps = [
+            'edit_post', 'edit_posts', 'edit_others_posts', 'edit_published_posts',
+            'read_post', 'publish_posts',
+        ];
+        if (!in_array($cap, $target_caps, true)) {
+            return $caps;
+        }
+
+        // Gli admin passano dai controlli standard.
+        if (user_can($user_id, 'manage_options')) {
+            return $caps;
+        }
+        if (!user_can($user_id, self::CAPABILITY)) {
+            return $caps;
+        }
+
+        // Se il cap riguarda uno specifico post, deve essere una richiesta_servizio.
+        if (!empty($args[0])) {
+            $post = get_post((int) $args[0]);
+            if (!$post || $post->post_type !== 'richiesta_servizio') {
+                return $caps;
+            }
+        }
+
+        // Concedi il permesso mappandolo alla capability appuntamenti.
+        return [self::CAPABILITY];
     }
 }
 
