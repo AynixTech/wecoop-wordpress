@@ -20,8 +20,12 @@ require_once WECOOP_APPUNTAMENTI_PATH . 'includes/api/class-appuntamenti-endpoin
 require_once WECOOP_APPUNTAMENTI_PATH . 'includes/class-appuntamenti-notifications.php';
 
 if (is_admin()) {
+    require_once WECOOP_APPUNTAMENTI_PATH . 'includes/admin/class-appuntamenti-admin-page.php';
     require_once WECOOP_APPUNTAMENTI_PATH . 'includes/admin/class-appuntamenti-admin.php';
 }
+
+// Sedi: CPT + helper (serve anche fuori dall'admin per il salvataggio slot lato server).
+require_once WECOOP_APPUNTAMENTI_PATH . 'includes/class-appuntamenti-sedi.php';
 
 /**
  * Bootstrap del plugin.
@@ -53,9 +57,19 @@ class WECOOP_Appuntamenti_Plugin {
         // Notifiche push + email.
         WeCoop_Appuntamenti_Notifications::init();
 
+        // Sedi (CPT + helper) sempre attive.
+        if (class_exists('WeCoop_Appuntamenti_Sedi')) {
+            WeCoop_Appuntamenti_Sedi::init();
+        }
+
         // Back-office operatore.
-        if (is_admin() && class_exists('WeCoop_Appuntamenti_Admin')) {
-            WeCoop_Appuntamenti_Admin::init();
+        if (is_admin()) {
+            if (class_exists('WeCoop_Appuntamenti_Admin_Page')) {
+                WeCoop_Appuntamenti_Admin_Page::init();
+            }
+            if (class_exists('WeCoop_Appuntamenti_Admin')) {
+                WeCoop_Appuntamenti_Admin::init();
+            }
         }
     }
 

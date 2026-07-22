@@ -106,8 +106,14 @@ class WeCoop_Appuntamenti_Admin {
         echo '<table class="form-table"><tbody>';
         echo '<tr><th><label>Data e ora</label></th><td><input type="datetime-local" name="data_ora" required></td></tr>';
         echo '<tr><th><label>Durata (min)</label></th><td><input type="number" name="durata_min" value="30" min="5" step="5"></td></tr>';
-        echo '<tr><th><label>Sede</label></th><td><input type="text" name="sede" class="regular-text" placeholder="Es. Sportello WECOOP Milano"></td></tr>';
-        echo '<tr><th><label>Indirizzo</label></th><td><input type="text" name="indirizzo" class="regular-text" placeholder="Via ..., Citta"></td></tr>';
+        if (class_exists('WeCoop_Appuntamenti_Sedi')) {
+            echo '<tr><th><label for="sede_id">Sede salvata</label></th><td>';
+            WeCoop_Appuntamenti_Sedi::render_select('sede_id', 'wecoop_mb_sede', 'wecoop_mb_indirizzo');
+            echo '<p class="description">Seleziona una sede per compilare i campi automaticamente.</p>';
+            echo '</td></tr>';
+        }
+        echo '<tr><th><label for="wecoop_mb_sede">Sede</label></th><td><input type="text" id="wecoop_mb_sede" name="sede" class="regular-text" placeholder="Es. Sportello WECOOP Milano"></td></tr>';
+        echo '<tr><th><label for="wecoop_mb_indirizzo">Indirizzo</label></th><td><input type="text" id="wecoop_mb_indirizzo" name="indirizzo" class="regular-text" placeholder="Via ..., Citta"></td></tr>';
         echo '<tr><th><label>Note</label></th><td><textarea name="note" class="large-text" rows="2"></textarea></td></tr>';
         echo '</tbody></table>';
         submit_button('Proponi slot', 'primary', 'submit', false);
@@ -129,12 +135,31 @@ class WeCoop_Appuntamenti_Admin {
         $data_ora_raw = isset($_POST['data_ora']) ? sanitize_text_field($_POST['data_ora']) : '';
         $ts = $data_ora_raw ? strtotime($data_ora_raw) : false;
         if ($ts) {
+            $sede      = isset($_POST['sede']) ? sanitize_text_field($_POST['sede']) : '';
+            $indirizzo = isset($_POST['indirizzo']) ? sanitize_text_field($_POST['indirizzo']) : '';
+            $sede_id   = isset($_POST['sede_id']) ? (int) $_POST['sede_id'] : 0;
+
+            if ($sede_id && class_exists('WeCoop_Appuntamenti_Sedi') && ($sede === '' || $indirizzo === '')) {
+                $sede_post = get_post($sede_id);
+                if ($sede_post && $sede_post->post_type === WeCoop_Appuntamenti_Sedi::POST_TYPE) {
+                    if ($sede === '') {
+                        $sede = $sede_post->post_title;
+                    }
+                    if ($indirizzo === '') {
+                        $indirizzo = WeCoop_Appuntamenti_Sedi::full_address([
+                            'indirizzo' => get_post_meta($sede_id, 'indirizzo', true),
+                            'citta'     => get_post_meta($sede_id, 'citta', true),
+                        ]);
+                    }
+                }
+            }
+
             WeCoop_Appuntamenti_Repository::create_slot([
                 'richiesta_id' => $post_id,
                 'data_ora'     => date('Y-m-d H:i:s', $ts),
                 'durata_min'   => isset($_POST['durata_min']) ? (int) $_POST['durata_min'] : 30,
-                'sede'         => isset($_POST['sede']) ? sanitize_text_field($_POST['sede']) : null,
-                'indirizzo'    => isset($_POST['indirizzo']) ? sanitize_text_field($_POST['indirizzo']) : null,
+                'sede'         => $sede !== '' ? $sede : null,
+                'indirizzo'    => $indirizzo !== '' ? $indirizzo : null,
                 'note'         => isset($_POST['note']) ? sanitize_textarea_field($_POST['note']) : null,
                 'created_by'   => get_current_user_id(),
             ]);
