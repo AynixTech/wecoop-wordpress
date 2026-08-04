@@ -5,6 +5,11 @@ RewriteEngine On
 # Anteprima annuncio condivisibile (WhatsApp/social): /annunci/123 -> annunci.php?id=123
 RewriteRule ^annunci/(\d+)/?$ /annunci.php?id=$1 [L,QSA]
 
+# Anteprima condivisibile per eventi / offerte lavoro / offerte formative.
+RewriteRule ^eventi/(\d+)/?$ /share.php?tipo=eventi&id=$1 [L,QSA]
+RewriteRule ^offerte-lavoro/(\d+)/?$ /share.php?tipo=offerte-lavoro&id=$1 [L,QSA]
+RewriteRule ^offerte-formative/(\d+)/?$ /share.php?tipo=offerte-formative&id=$1 [L,QSA]
+
 # File di associazione app (Universal Link iOS / App Link Android).
 # Servono senza estensione e come JSON puro.
 RewriteRule ^\.well-known/apple-app-site-association$ /.well-known/apple-app-site-association [L]

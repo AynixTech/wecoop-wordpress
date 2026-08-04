@@ -4,7 +4,7 @@
     "details": [
       {
         "appID": "24WMU2S6JX.org.wecoop.app",
-        "paths": [ "/annunci/*" ]
+        "paths": [ "/annunci/*", "/eventi/*", "/offerte-lavoro/*", "/offerte-formative/*" ]
       }
     ]
   }
