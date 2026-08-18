@@ -21,7 +21,7 @@
 const WECOOP_BACKEND_URL = 'https://wecoop-backend-s9gl.onrender.com/api';
 
 // Link agli store (da aggiornare con gli ID reali quando disponibili).
-const WECOOP_APPSTORE_URL = 'https://apps.apple.com/app/id6766248437';
+const WECOOP_APPSTORE_URL = 'https://apps.apple.com/us/app/wecoop/id6766248437';
 const WECOOP_PLAYSTORE_URL = 'https://play.google.com/store/apps/details?id=org.wecoop.app';
 
 /** Ricava l'id annuncio da ?id= oppure dal path /annunci/123. */

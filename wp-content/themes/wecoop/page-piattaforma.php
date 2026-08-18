@@ -187,10 +187,10 @@ wecoop_ws_page_shell_start($tr('platform.aria.page', 'Piattaforma Digitale WECOO
                 <?php echo esc_html($tr('platform.cta.microcopy', 'Ti guidiamo passo dopo passo.')); ?>
             </p>
             <div class="ws-store-badges" style="margin-top:20px; display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;">
-                <a href="https://play.google.com/store/apps/details?id=com.wecoop.app" target="_blank" rel="noopener noreferrer" aria-label="Scarica su Google Play">
+                <a href="https://play.google.com/store/apps/details?id=org.wecoop.app" target="_blank" rel="noopener noreferrer" aria-label="Scarica su Google Play">
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/badges/playstore.svg'); ?>" alt="Google Play" style="height:44px;">
                 </a>
-                <a href="https://apps.apple.com/app/id6766248437" target="_blank" rel="noopener noreferrer" aria-label="Scarica su App Store">
+                <a href="https://apps.apple.com/us/app/wecoop/id6766248437" target="_blank" rel="noopener noreferrer" aria-label="Scarica su App Store">
                     <img src="<?php echo esc_url(get_template_directory_uri() . '/assets/images/badges/appstpre.png'); ?>" alt="App Store" style="height:44px;">
                 </a>
             </div>
