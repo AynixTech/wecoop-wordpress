@@ -313,7 +313,7 @@ class WeCoop_Storico_Pratiche_Admin {
 
         echo '<div class="wrap">';
         echo '<h1>Storico Pratiche</h1>';
-        echo '<p>Cerca il cliente, apri la scheda e carica i documenti (730, ISEE, ...). Il cliente li trovera\' nella sezione "Storico pratiche" dell\'app.</p>';
+        echo '<p>Cerca il cliente, apri la scheda e carica i documenti (730, CU, ISEE, ...). Il cliente li trovera\' nella sezione "Storico pratiche" dell\'app.</p>';
 
         if ($status === 'uploaded' || $status === 'deleted') {
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html($msg) . '</p></div>';

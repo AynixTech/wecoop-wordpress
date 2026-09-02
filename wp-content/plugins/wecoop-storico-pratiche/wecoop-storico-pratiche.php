@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WeCoop Storico Pratiche
  * Plugin URI: https://www.wecoop.org
- * Description: Archivio documentale per cliente (730, ISEE, ...). Gli operatori caricano i documenti dal back-office; il cliente li consulta e scarica dall'app tramite REST API protette.
+ * Description: Archivio documentale per cliente (730, CU, ISEE, ...). Gli operatori caricano i documenti dal back-office; il cliente li consulta e scarica dall'app tramite REST API protette.
  * Version: 1.0.0
  * Author: WeCoop Team
  * Author URI: https://www.wecoop.org
@@ -31,6 +31,7 @@ require_once WECOOP_STORICO_PRATICHE_DIR . 'includes/api/class-storico-pratiche-
 function wecoop_storico_pratiche_tipi() {
     return apply_filters('wecoop_storico_pratiche_tipi', [
         '730'  => 'Modello 730',
+        'cu'   => 'Certificazione Unica',
         'isee' => 'ISEE',
     ]);
 }
