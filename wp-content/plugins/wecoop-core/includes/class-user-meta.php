@@ -308,6 +308,7 @@ class WeCoop_User_Meta {
     }
 
     public static function get_required_profile_fields() {
+        // codice_fiscale non obbligatorio: utenti in attesa di ottenimento CF.
         return [
             'nome',
             'cognome',
@@ -315,7 +316,6 @@ class WeCoop_User_Meta {
             'telefono',
             'citta',
             'indirizzo',
-            'codice_fiscale',
             'data_nascita',
             'nazionalita',
         ];
@@ -570,7 +570,6 @@ class WeCoop_User_Meta {
             'telefono' => get_user_meta($user_id, 'telefono', true),
             'citta' => get_user_meta($user_id, 'citta', true),
             'indirizzo' => get_user_meta($user_id, 'indirizzo', true),
-            'codice_fiscale' => get_user_meta($user_id, 'codice_fiscale', true),
             'data_nascita' => get_user_meta($user_id, 'data_nascita', true),
             'nazionalita' => get_user_meta($user_id, 'nazionalita', true),
         ];

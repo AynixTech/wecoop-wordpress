@@ -1128,7 +1128,8 @@ class WeCoop_DataEntry {
             $errors[] = 'L\'email e\' obbligatoria e deve essere valida.';
         }
 
-        foreach (['first_name', 'last_name', 'telefono', 'citta', 'indirizzo', 'codice_fiscale', 'data_nascita', 'nazionalita'] as $field) {
+        // codice_fiscale non obbligatorio: utenti in attesa di ottenimento CF.
+        foreach (['first_name', 'last_name', 'telefono', 'citta', 'indirizzo', 'data_nascita', 'nazionalita'] as $field) {
             if (trim((string) ($payload[$field] ?? '')) === '') {
                 $errors[] = sprintf('Il campo %s e\' obbligatorio.', $field);
             }
@@ -2444,7 +2445,7 @@ class WeCoop_DataEntry {
                             <?php $this->render_input('cognome', 'Cognome', $defaults['last_name']); ?>
                             <?php $this->render_select('sesso', 'Sesso', ['' => 'Seleziona', 'M' => 'M', 'F' => 'F'], $defaults['sesso']); ?>
                             <?php $this->render_input('data_nascita', 'Data nascita', $defaults['data_nascita'], 'date'); ?>
-                            <?php $this->render_input('codice_fiscale', 'Codice fiscale *', $defaults['codice_fiscale'], 'text', 'style="text-transform:uppercase" maxlength="16"'); ?>
+                            <?php $this->render_input('codice_fiscale', 'Codice fiscale', $defaults['codice_fiscale'], 'text', 'style="text-transform:uppercase" maxlength="16"'); ?>
                             <?php $this->render_input('nazionalita', 'Nazionalita *', $defaults['nazionalita']); ?>
                             <?php $this->render_select('stato_civile', 'Stato civile', [
                                 '' => 'Seleziona',
