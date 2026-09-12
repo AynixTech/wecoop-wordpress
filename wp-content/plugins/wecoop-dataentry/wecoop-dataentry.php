@@ -1438,6 +1438,7 @@ class WeCoop_DataEntry {
                             <option value="giovane" <?php selected($categoria, 'giovane'); ?>>Giovane</option>
                             <option value="lavoratore" <?php selected($categoria, 'lavoratore'); ?>>Lavoratore</option>
                             <option value="famiglia" <?php selected($categoria, 'famiglia'); ?>>Famiglia</option>
+                            <option value="pensionato" <?php selected($categoria, 'pensionato'); ?>>PENSIONATO</option>
                         </select>
                     </label>
                     <label class="wecoop-filters__field">
@@ -2449,6 +2450,7 @@ class WeCoop_DataEntry {
                             <?php $this->render_input('nazionalita', 'Nazionalita *', $defaults['nazionalita']); ?>
                             <?php $this->render_select('stato_civile', 'Stato civile', [
                                 '' => 'Seleziona',
+                                'libero' => 'Libero/a',
                                 'celibe' => 'Celibe',
                                 'nubile' => 'Nubile',
                                 'coniugato' => 'Coniugato/a',
@@ -2509,6 +2511,7 @@ class WeCoop_DataEntry {
                                 'autonomo' => 'Autonomo',
                                 'disoccupato' => 'Disoccupato',
                                 'studente' => 'Studente',
+                                'pensionato' => 'Pensionato',
                             ], $defaults['tipo_lavoro']); ?>
                             <?php $this->render_select('contratto', 'Contratto', [
                                 '' => 'Seleziona',
@@ -2663,6 +2666,7 @@ class WeCoop_DataEntry {
                                 'giovane' => 'Giovane',
                                 'lavoratore' => 'Lavoratore',
                                 'famiglia' => 'Famiglia',
+                                'pensionato' => 'PENSIONATO',
                             ], $defaults['categoria_profilazione']); ?>
                             <?php $this->render_select('capacita_economica', 'Capacita economica', [
                                 '' => 'Seleziona',
