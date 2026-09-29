@@ -737,3 +737,53 @@ function wecoop_autocreate_pages(): void {
 }
 add_action( 'after_switch_theme', 'wecoop_autocreate_pages' );
 add_action( 'init', 'wecoop_autocreate_pages' );  // also runs on current requests until page exists
+
+/**
+ * Base URL API WeCoop (notizie / posts).
+ * Override in wp-config.php: define('WECOOP_API_URL', 'https://…/api');
+ */
+function wecoop_api_base_url() {
+    if (defined('WECOOP_API_URL') && WECOOP_API_URL) {
+        return rtrim((string) WECOOP_API_URL, '/');
+    }
+    return 'https://wecoop-backend-s9gl.onrender.com/api';
+}
+
+/**
+ * Fetch notizie pubblicate dal backend (cache transient 10 min).
+ *
+ * @param int $per_page
+ * @return array<int, array<string, mixed>>
+ */
+function wecoop_fetch_news_posts($per_page = 20) {
+    $per_page = max(1, min(50, (int) $per_page));
+    $cache_key = 'wecoop_news_posts_' . $per_page;
+    $cached = get_transient($cache_key);
+    if (is_array($cached)) {
+        return $cached;
+    }
+
+    $url = wecoop_api_base_url() . '/posts?per_page=' . $per_page;
+    $response = wp_remote_get($url, [
+        'timeout' => 15,
+        'headers' => [
+            'Accept' => 'application/json',
+        ],
+    ]);
+
+    if (is_wp_error($response)) {
+        return [];
+    }
+    $code = (int) wp_remote_retrieve_response_code($response);
+    if ($code < 200 || $code >= 300) {
+        return [];
+    }
+
+    $body = json_decode(wp_remote_retrieve_body($response), true);
+    if (!is_array($body)) {
+        return [];
+    }
+
+    set_transient($cache_key, $body, 10 * MINUTE_IN_SECONDS);
+    return $body;
+}
