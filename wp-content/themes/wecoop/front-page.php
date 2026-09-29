@@ -29,10 +29,10 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
             </a>
             <div id="ws-main-nav-home" class="ws-links" aria-label="<?php echo esc_attr($tr('frontpage.nav.main_aria', 'Main navigation')); ?>">
                 <a href="#que-es"><?php echo esc_html($tr('frontpage.nav.about', $lang_default('Cos\'e WECOOP', 'What is WECOOP', 'Que es WECOOP'))); ?></a>
+                <a href="#notizie"><?php echo esc_html($tr('frontpage.nav.news', $lang_default('Notizie', 'News', 'Noticias'))); ?></a>
                 <a href="#servizi"><?php echo esc_html($tr('frontpage.nav.services', $lang_default('Servizi', 'Services', 'Servicios'))); ?></a>
                 <a href="#come-funziona"><?php echo esc_html($tr('frontpage.nav.how', $lang_default('Come funziona', 'How it works', 'Como funciona'))); ?></a>
                 <a href="#passaparola"><?php echo esc_html($tr('frontpage.nav.passaparola', $lang_default('Passaparola', 'Passaparola', 'Passaparola'))); ?></a>
-                <a href="#notizie"><?php echo esc_html($tr('frontpage.nav.news', $lang_default('Notizie', 'News', 'Noticias'))); ?></a>
                 <a href="<?php echo esc_url(home_url('/impatto/')); ?>"><?php echo esc_html($tr('frontpage.nav.impact', 'Impatto')); ?></a>
                 <a href="#plataforma"><?php echo esc_html($tr('frontpage.nav.platform', $lang_default('Piattaforma Digitale', 'Digital Platform', 'Plataforma Digital'))); ?></a>
                 <a href="#contacto"><?php echo esc_html($tr('frontpage.nav.contact', $lang_default('Contatti', 'Contact', 'Contacto'))); ?></a>
@@ -107,7 +107,64 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         </div>
     </section>
 
-    <section id="modello-sistema" class="ws-section ws-section--soft">
+    <section id="notizie" class="ws-section ws-section--soft">
+        <div class="ws-container">
+            <h2><?php echo esc_html($tr('frontpage.news.title', $lang_default('Ultime notizie', 'Latest news', 'Últimas noticias'))); ?></h2>
+            <p class="ws-lead"><?php echo esc_html($tr('frontpage.news.lead', $lang_default(
+                'Leggi, documenti, lavoro e diritti: aggiornamenti utili per chi vive in Italia.',
+                'Laws, documents, work and rights: useful updates for people living in Italy.',
+                'Leyes, documentos, trabajo y derechos: novedades útiles para quien vive en Italia.'
+            ))); ?></p>
+            <?php
+            $home_news = function_exists('wecoop_fetch_news_posts') ? wecoop_fetch_news_posts(6) : [];
+            if (!empty($home_news)) :
+                ?>
+                <div class="ws-grid-3 ws-news-grid">
+                    <?php foreach ($home_news as $post) :
+                        $title = isset($post['title']) ? (string) $post['title'] : '';
+                        $excerpt = isset($post['excerpt']) ? wp_strip_all_tags((string) $post['excerpt']) : '';
+                        $link = !empty($post['link']) ? (string) $post['link'] : '';
+                        $image = !empty($post['image_url']) ? (string) $post['image_url'] : '';
+                        $source = !empty($post['source_name']) ? (string) $post['source_name'] : '';
+                        if ($title === '' || $link === '') {
+                            continue;
+                        }
+                        ?>
+                        <article class="ws-card ws-news-card">
+                            <?php if ($image !== '') : ?>
+                                <a class="ws-news-card__thumb" href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer">
+                                    <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" loading="lazy">
+                                </a>
+                            <?php endif; ?>
+                            <?php if ($source !== '') : ?>
+                                <span class="ws-news-card__source"><?php echo esc_html($source); ?></span>
+                            <?php endif; ?>
+                            <h3><a href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($title); ?></a></h3>
+                            <?php if ($excerpt !== '') : ?>
+                                <p><?php echo esc_html(wp_trim_words($excerpt, 22)); ?></p>
+                            <?php endif; ?>
+                            <a class="ws-link" href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer">
+                                <?php echo esc_html($tr('frontpage.news.read_more', $lang_default('Leggi di più', 'Read more', 'Leer más'))); ?>
+                            </a>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+                <div class="ws-section-cta">
+                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/news/')); ?>">
+                        <?php echo esc_html($tr('frontpage.news.all', $lang_default('Tutte le notizie', 'All news', 'Todas las noticias'))); ?>
+                    </a>
+                </div>
+            <?php else : ?>
+                <p><?php echo esc_html($tr('frontpage.news.empty', $lang_default(
+                    'Nessuna notizia disponibile al momento.',
+                    'No news available at the moment.',
+                    'No hay noticias disponibles por el momento.'
+                ))); ?></p>
+            <?php endif; ?>
+        </div>
+    </section>
+
+    <section id="servizi" class="ws-section ws-section--soft">
         <div class="ws-container">
             <div class="ws-model-intro">
                 <h2><?php echo esc_html($tr('frontpage.model.title', 'Un sistema fisico + digitale')); ?></h2>
@@ -229,63 +286,6 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
                 <a class="ws-btn ws-btn--primary" href="<?php echo esc_url(home_url('/impatto/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta1', 'Scopri il nostro impatto')); ?></a>
                 <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/sostieni-wecoop/')); ?>"><?php echo esc_html($tr('frontpage.impact.cta2', 'Collabora con noi')); ?></a>
             </div>
-        </div>
-    </section>
-
-    <section id="notizie" class="ws-section ws-section--soft">
-        <div class="ws-container">
-            <h2><?php echo esc_html($tr('frontpage.news.title', $lang_default('Notizie', 'News', 'Noticias'))); ?></h2>
-            <p class="ws-lead"><?php echo esc_html($tr('frontpage.news.lead', $lang_default(
-                'Leggi, documenti, lavoro e diritti: aggiornamenti utili per chi vive in Italia.',
-                'Laws, documents, work and rights: useful updates for people living in Italy.',
-                'Leyes, documentos, trabajo y derechos: novedades útiles para quien vive en Italia.'
-            ))); ?></p>
-            <?php
-            $home_news = function_exists('wecoop_fetch_news_posts') ? wecoop_fetch_news_posts(6) : [];
-            if (!empty($home_news)) :
-                ?>
-                <div class="ws-grid-3 ws-news-grid">
-                    <?php foreach ($home_news as $post) :
-                        $title = isset($post['title']) ? (string) $post['title'] : '';
-                        $excerpt = isset($post['excerpt']) ? wp_strip_all_tags((string) $post['excerpt']) : '';
-                        $link = !empty($post['link']) ? (string) $post['link'] : '';
-                        $image = !empty($post['image_url']) ? (string) $post['image_url'] : '';
-                        $source = !empty($post['source_name']) ? (string) $post['source_name'] : '';
-                        if ($title === '' || $link === '') {
-                            continue;
-                        }
-                        ?>
-                        <article class="ws-card ws-news-card">
-                            <?php if ($image !== '') : ?>
-                                <a class="ws-news-card__thumb" href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer">
-                                    <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" loading="lazy">
-                                </a>
-                            <?php endif; ?>
-                            <?php if ($source !== '') : ?>
-                                <span class="ws-news-card__source"><?php echo esc_html($source); ?></span>
-                            <?php endif; ?>
-                            <h3><a href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html($title); ?></a></h3>
-                            <?php if ($excerpt !== '') : ?>
-                                <p><?php echo esc_html(wp_trim_words($excerpt, 22)); ?></p>
-                            <?php endif; ?>
-                            <a class="ws-link" href="<?php echo esc_url($link); ?>" target="_blank" rel="noopener noreferrer">
-                                <?php echo esc_html($tr('frontpage.news.read_more', $lang_default('Leggi di più', 'Read more', 'Leer más'))); ?>
-                            </a>
-                        </article>
-                    <?php endforeach; ?>
-                </div>
-                <div class="ws-section-cta">
-                    <a class="ws-btn ws-btn--ghost" href="<?php echo esc_url(home_url('/news/')); ?>">
-                        <?php echo esc_html($tr('frontpage.news.all', $lang_default('Tutte le notizie', 'All news', 'Todas las noticias'))); ?>
-                    </a>
-                </div>
-            <?php else : ?>
-                <p><?php echo esc_html($tr('frontpage.news.empty', $lang_default(
-                    'Nessuna notizia disponibile al momento.',
-                    'No news available at the moment.',
-                    'No hay noticias disponibles por el momento.'
-                ))); ?></p>
-            <?php endif; ?>
         </div>
     </section>
 
