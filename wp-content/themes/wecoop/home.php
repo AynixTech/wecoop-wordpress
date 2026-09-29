@@ -4,9 +4,9 @@ get_header();
 $posts = wecoop_fetch_news_posts(20);
 $lang = function_exists('wecoop_language') ? wecoop_language() : 'it';
 $headings = [
-    'it' => ['title' => 'Notizie', 'sub' => 'Aggiornamenti su immigrazione in Italia e servizi WeCoop.'],
-    'es' => ['title' => 'Noticias', 'sub' => 'Actualizaciones sobre inmigración en Italia y servicios WeCoop.'],
-    'en' => ['title' => 'News', 'sub' => 'Updates on immigration in Italy and WeCoop services.'],
+    'it' => ['title' => 'Notizie', 'sub' => 'Leggi, documenti, lavoro e diritti: aggiornamenti utili per chi vive in Italia.'],
+    'es' => ['title' => 'Noticias', 'sub' => 'Leyes, documentos, trabajo y derechos: novedades útiles para quien vive en Italia.'],
+    'en' => ['title' => 'News', 'sub' => 'Laws, documents, work and rights: useful updates for people living in Italy.'],
 ];
 $h = $headings[$lang] ?? $headings['it'];
 ?>

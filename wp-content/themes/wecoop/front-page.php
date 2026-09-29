@@ -236,9 +236,9 @@ $lang_default = static function($it, $en, $es) use ($current_lang) {
         <div class="ws-container">
             <h2><?php echo esc_html($tr('frontpage.news.title', $lang_default('Notizie', 'News', 'Noticias'))); ?></h2>
             <p class="ws-lead"><?php echo esc_html($tr('frontpage.news.lead', $lang_default(
-                'Aggiornamenti su immigrazione in Italia e servizi WeCoop.',
-                'Updates on immigration in Italy and WeCoop services.',
-                'Actualizaciones sobre inmigración en Italia y servicios WeCoop.'
+                'Leggi, documenti, lavoro e diritti: aggiornamenti utili per chi vive in Italia.',
+                'Laws, documents, work and rights: useful updates for people living in Italy.',
+                'Leyes, documentos, trabajo y derechos: novedades útiles para quien vive en Italia.'
             ))); ?></p>
             <?php
             $home_news = function_exists('wecoop_fetch_news_posts') ? wecoop_fetch_news_posts(6) : [];
