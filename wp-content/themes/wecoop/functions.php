@@ -706,6 +706,30 @@ function wecoop_autocreate_pages(): void {
             'template' => 'page-elimina-account.php',
         ],
         [
+            'slug'     => 'gdpr-app',
+            'title'    => 'GDPR – Uso dei dati nell\'app',
+            'status'   => 'publish',
+            'template' => 'page-gdpr-app.php',
+        ],
+        [
+            'slug'     => 'privacy-policy',
+            'title'    => 'Privacy Policy',
+            'status'   => 'publish',
+            'template' => 'page-privacy-policy.php',
+        ],
+        [
+            'slug'     => 'cookie-policy',
+            'title'    => 'Cookie Policy',
+            'status'   => 'publish',
+            'template' => 'page-cookie-policy.php',
+        ],
+        [
+            'slug'     => 'note-legali',
+            'title'    => 'Note Legali',
+            'status'   => 'publish',
+            'template' => 'page-note-legali.php',
+        ],
+        [
             'slug'     => 'sostieni-wecoop',
             'title'    => 'Sostieni WECOOP',
             'status'   => 'publish',
@@ -803,7 +827,26 @@ function wecoop_news_same_story($a, $b) {
     }
     $jaccard = $inter / $union;
     $overlap = $inter / min(count($ta), count($tb));
-    return $jaccard >= 0.55 || $overlap >= 0.75;
+    if ($jaccard >= 0.45 || $overlap >= 0.7) {
+        return true;
+    }
+    $rare = [];
+    foreach ($ta as $w) {
+        if (mb_strlen($w) >= 7 && in_array($w, $tb, true)) {
+            $rare[] = $w;
+        }
+    }
+    if ($rare) {
+        $theme =
+            (in_array('cittadinanza', $ta, true) && in_array('cittadinanza', $tb, true)) ||
+            (in_array('immigrazione', $ta, true) && in_array('immigrazione', $tb, true)) ||
+            (in_array('migranti', $ta, true) && in_array('migranti', $tb, true)) ||
+            (in_array('soggiorno', $ta, true) && in_array('soggiorno', $tb, true));
+        if ($theme && $inter >= 3) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
