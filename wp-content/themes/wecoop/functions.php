@@ -749,21 +749,113 @@ function wecoop_api_base_url() {
     return 'https://wecoop-backend-s9gl.onrender.com/api';
 }
 
+/** Rimuove " - Fonte" / " | Fonte" in coda al titolo. */
+function wecoop_news_strip_publisher($title) {
+    $title = wp_strip_all_tags((string) $title);
+    $cleaned = preg_replace('/\s+[-–|]\s+[^|\-]{2,80}$/u', '', $title);
+    return is_string($cleaned) ? trim($cleaned) : trim($title);
+}
+
+/** Nasconde excerpt che ripete solo il titolo. */
+function wecoop_news_clean_excerpt($title, $excerpt) {
+    $title = mb_strtolower(wecoop_news_strip_publisher($title));
+    $excerpt = wp_strip_all_tags((string) $excerpt);
+    $excerpt = wecoop_news_strip_publisher($excerpt);
+    $norm = mb_strtolower(preg_replace('/\s+/u', ' ', $excerpt) ?? '');
+    $norm = trim($norm);
+    if ($norm === '' || $norm === $title) {
+        return '';
+    }
+    if (mb_strpos($norm, $title) === 0 || mb_strpos($title, mb_substr($norm, 0, min(40, mb_strlen($norm)))) === 0) {
+        return '';
+    }
+    return $excerpt;
+}
+
 /**
- * Fetch notizie pubblicate dal backend (cache transient 10 min).
+ * Token grezzi per confrontare titoli (dedup lato tema).
+ *
+ * @return string[]
+ */
+function wecoop_news_story_tokens($title) {
+    $core = mb_strtolower(wecoop_news_strip_publisher($title));
+    $core = preg_replace('/[^a-z0-9\s]/u', ' ', $core) ?? '';
+    $stop = ['della', 'delle', 'degli', 'dell', 'che', 'per', 'con', 'una', 'uno', 'del', 'il', 'la', 'lo', 'le', 'gli', 'di', 'da', 'in', 'un', 'al', 'nel', 'alla', 'sul', 'sulla', 'tra', 'dopo', 'come', 'anche', 'sono', 'stato', 'stata', 'poi', 'the', 'and', 'for', 'with', 'from'];
+    $out = [];
+    foreach (preg_split('/\s+/u', trim($core)) ?: [] as $w) {
+        if (mb_strlen($w) > 3 && !in_array($w, $stop, true)) {
+            $out[$w] = true;
+        }
+    }
+    return array_keys($out);
+}
+
+function wecoop_news_same_story($a, $b) {
+    $ta = wecoop_news_story_tokens($a);
+    $tb = wecoop_news_story_tokens($b);
+    if (!$ta || !$tb) {
+        return false;
+    }
+    $inter = count(array_intersect($ta, $tb));
+    $union = count($ta) + count($tb) - $inter;
+    if ($union <= 0) {
+        return false;
+    }
+    $jaccard = $inter / $union;
+    $overlap = $inter / min(count($ta), count($tb));
+    return $jaccard >= 0.55 || $overlap >= 0.75;
+}
+
+/**
+ * Normalizza titoli/excerpt e toglie storie duplicate.
+ *
+ * @param array<int, array<string, mixed>> $posts
+ * @return array<int, array<string, mixed>>
+ */
+function wecoop_normalize_news_posts($posts) {
+    $out = [];
+    foreach ($posts as $post) {
+        if (!is_array($post)) {
+            continue;
+        }
+        $title = wecoop_news_strip_publisher(isset($post['title']) ? (string) $post['title'] : '');
+        if ($title === '') {
+            continue;
+        }
+        $dup = false;
+        foreach ($out as $kept) {
+            if (wecoop_news_same_story((string) $kept['title'], $title)) {
+                $dup = true;
+                break;
+            }
+        }
+        if ($dup) {
+            continue;
+        }
+        $post['title'] = $title;
+        $post['excerpt'] = wecoop_news_clean_excerpt($title, isset($post['excerpt']) ? (string) $post['excerpt'] : '');
+        $out[] = $post;
+    }
+    return $out;
+}
+
+/**
+ * Fetch notizie pubblicate dal backend (cache transient 5 min).
  *
  * @param int $per_page
  * @return array<int, array<string, mixed>>
  */
 function wecoop_fetch_news_posts($per_page = 20) {
     $per_page = max(1, min(50, (int) $per_page));
-    $cache_key = 'wecoop_news_posts_' . $per_page;
+    $cache_key = 'wecoop_news_posts_v2_' . $per_page;
     $cached = get_transient($cache_key);
     if (is_array($cached)) {
-        return $cached;
+        return wecoop_normalize_news_posts($cached);
     }
 
-    $url = wecoop_api_base_url() . '/posts?per_page=' . $per_page;
+    // Richiedi più item così dopo dedup restano abbastanza card.
+    $request_n = min(50, max($per_page * 3, $per_page + 10));
+    $url = wecoop_api_base_url() . '/posts?per_page=' . $request_n;
     $response = wp_remote_get($url, [
         'timeout' => 15,
         'headers' => [
@@ -784,6 +876,8 @@ function wecoop_fetch_news_posts($per_page = 20) {
         return [];
     }
 
-    set_transient($cache_key, $body, 10 * MINUTE_IN_SECONDS);
-    return $body;
+    $normalized = wecoop_normalize_news_posts($body);
+    $sliced = array_slice($normalized, 0, $per_page);
+    set_transient($cache_key, $sliced, 5 * MINUTE_IN_SECONDS);
+    return $sliced;
 }
