@@ -835,5 +835,9 @@
   "donations.free.item4": "coinvolgere studenti e volontari",
   "donations.free.item5": "ampliare la rete territoriale",
   "donations.free.closing": "Ogni contributo aiuta WECOOP a costruire un impatto reale e sostenibile.",
-  "donations.free.cta": "Sostieni"
+  "donations.free.cta": "Sostieni",
+  "footer.bottom.gdpr": "GDPR App",
+  "gdpr.title": "GDPR – Uso dei dati nell'app",
+  "gdpr.hero.desc": "Come trattiamo i tuoi dati personali nell'applicazione mobile WeCoop.",
+  "gdpr.s11.delete_link": "Elimina account"
 }

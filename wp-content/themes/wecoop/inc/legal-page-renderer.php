@@ -3,7 +3,7 @@
  * Partial condiviso per le pagine legali.
  *
  * Variabili attese dal template chiamante:
- *   string   $wl_slug      – slug della pagina ('privacy-policy'|'cookie-policy'|'note-legali')
+ *   string   $wl_slug      – slug della pagina ('privacy-policy'|'cookie-policy'|'note-legali'|'gdpr-app')
  *   array    $wl_sections  – array di sezioni [ ['title'=>'', 'blocks'=>[...]], ... ]
  *
  * Ogni blocco può essere:
@@ -23,6 +23,7 @@ $icons = [
     'privacy-policy' => 'fa-shield-halved',
     'cookie-policy'  => 'fa-cookie-bite',
     'note-legali'    => 'fa-scale-balanced',
+    'gdpr-app'       => 'fa-mobile-screen-button',
 ];
 $icon = $icons[ $wl_slug ] ?? 'fa-file-lines';
 
@@ -30,6 +31,7 @@ $hero_descs = [
     'privacy-policy' => $_t('privacy.hero.desc', 'Come raccogliamo, usiamo e proteggiamo i tuoi dati personali.'),
     'cookie-policy'  => $_t('cookie.hero.desc', 'Informazioni sui cookie e tecnologie di tracciamento usate su questo sito.'),
     'note-legali'    => $_t('legal.hero.desc', 'Informazioni legali, proprietà intellettuale e responsabilità.'),
+    'gdpr-app'       => $_t('gdpr.hero.desc', 'Come trattiamo i tuoi dati personali nell\'applicazione mobile WeCoop.'),
 ];
 $hero_desc = $hero_descs[ $wl_slug ] ?? '';
 ?>
@@ -127,6 +129,12 @@ $hero_desc = $hero_descs[ $wl_slug ] ?? '';
                 <div class="wl-related">
                     <p class="wl-related__label"><?php echo esc_html($_t('legal.related.label', 'Documenti correlati')); ?></p>
                     <div class="wl-related__links">
+                        <?php if ($wl_slug !== 'gdpr-app') : ?>
+                        <a href="<?php echo esc_url(home_url('/gdpr-app/')); ?>" class="wl-related__card">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                            <span><?php echo esc_html($_t('gdpr.title', 'GDPR App')); ?></span>
+                        </a>
+                        <?php endif; ?>
                         <?php if ($wl_slug !== 'privacy-policy') : ?>
                         <a href="<?php echo esc_url(home_url('/privacy-policy/')); ?>" class="wl-related__card">
                             <i class="fa-solid fa-shield-halved"></i>

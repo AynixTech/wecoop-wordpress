@@ -87,6 +87,8 @@
             <div class="ws-footer-bottom">
                 <p><?php echo esc_html('© ' . gmdate('Y') . ' WECOOP. ' . $_ftr('footer.bottom.rights', 'Tutti i diritti riservati.')); ?></p>
                 <nav class="ws-footer-legal" aria-label="<?php echo esc_attr($_ftr('footer.bottom.legal_aria', 'Link legali')); ?>">
+                    <a href="<?php echo esc_url(home_url('/gdpr-app/')); ?>"><?php echo esc_html($_ftr('footer.bottom.gdpr', 'GDPR App')); ?></a>
+                    <span aria-hidden="true">·</span>
                     <a href="<?php echo esc_url(home_url('/privacy-policy/')); ?>"><?php echo esc_html($_ftr('footer.bottom.privacy', 'Privacy Policy')); ?></a>
                     <span aria-hidden="true">·</span>
                     <a href="<?php echo esc_url(home_url('/cookie-policy/')); ?>"><?php echo esc_html($_ftr('footer.bottom.cookie', 'Cookie Policy')); ?></a>
