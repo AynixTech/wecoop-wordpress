@@ -21,7 +21,7 @@ $h = $headings[$lang] ?? $headings['it'];
         <?php if (!empty($posts)) : ?>
             <?php foreach ($posts as $post) :
                 $title = isset($post['title']) ? (string) $post['title'] : '';
-                $excerpt = isset($post['excerpt']) ? (string) $post['excerpt'] : '';
+                $excerpt = isset($post['excerpt']) ? wp_strip_all_tags((string) $post['excerpt']) : '';
                 $link = !empty($post['link']) ? (string) $post['link'] : '';
                 $image = !empty($post['image_url']) ? (string) $post['image_url'] : '';
                 $source = !empty($post['source_name']) ? (string) $post['source_name'] : '';
