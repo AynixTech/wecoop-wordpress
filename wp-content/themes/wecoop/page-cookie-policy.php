@@ -90,7 +90,7 @@ $wl_sections = [
     [
         'title'  => $_t('cp.s5.title', 'Modifiche alla Cookie Policy'),
         'blocks' => [
-            [ 'p' => $_t('cp.s5.p1', 'WeCoop si riserva il diritto di aggiornare questa Cookie Policy. Le modifiche saranno effettive dalla data di pubblicazione su questa pagina.') . ' ' . $_t('cp.s5.contact', 'Per domande:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+            [ 'p' => $_t('cp.s5.p1', 'WeCoop si riserva il diritto di aggiornare questa Cookie Policy. Le modifiche saranno effettive dalla data di pubblicazione su questa pagina.') . ' ' . $_t('cp.s5.contact', 'Per domande:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
         ],
     ],
 ];

@@ -28,8 +28,8 @@ $wl_sections = [
     [
         'title'  => $_t( 'gdpr.s2.title', '2. Titolare del trattamento' ),
         'blocks' => [
-            [ 'p' => '<strong>WECOOP APS</strong><br>Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a><br>Tel: +39 351 511 2113' ],
-            [ 'p' => $_t( 'gdpr.s2.p2', 'Per qualsiasi richiesta relativa al trattamento dei dati personali (accesso, rettifica, cancellazione, opposizione, portabilità, reclamo) scrivere a privacy@wecoop.org.' ) ],
+            [ 'p' => '<strong>WECOOP APS</strong><br>Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113' ],
+            [ 'p' => $_t( 'gdpr.s2.p2', 'Per qualsiasi richiesta relativa al trattamento dei dati personali (accesso, rettifica, cancellazione, opposizione, portabilità, reclamo) scrivere a info@wecoop.org.' ) ],
         ],
     ],
     [
@@ -131,7 +131,7 @@ $wl_sections = [
                 $_t( 'gdpr.s11.li6', 'Revocare i consensi prestati, senza pregiudicare la liceità del trattamento precedente' ),
                 $_t( 'gdpr.s11.li7', 'Proporre reclamo al Garante per la protezione dei dati personali (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">garanteprivacy.it</a>)' ),
             ]],
-            [ 'p' => $_t( 'gdpr.s11.p2', 'Per esercitare i diritti:' ) . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>. ' . $_t( 'gdpr.s11.p3', 'Per richiedere l\'eliminazione dell\'account dall\'app o dal sito:' ) . ' <a href="' . esc_url( $delete_url ) . '">' . esc_html( $_t( 'gdpr.s11.delete_link', 'Elimina account' ) ) . '</a>.' ],
+            [ 'p' => $_t( 'gdpr.s11.p2', 'Per esercitare i diritti:' ) . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>. ' . $_t( 'gdpr.s11.p3', 'Per richiedere l\'eliminazione dell\'account dall\'app o dal sito:' ) . ' <a href="' . esc_url( $delete_url ) . '">' . esc_html( $_t( 'gdpr.s11.delete_link', 'Elimina account' ) ) . '</a>.' ],
         ],
     ],
     [
@@ -144,7 +144,7 @@ $wl_sections = [
     [
         'title'  => $_t( 'gdpr.s13.title', '13. Minori' ),
         'blocks' => [
-            [ 'p' => $_t( 'gdpr.s13.p1', 'I servizi dell\'app WeCoop non sono destinati a minori di 16 anni. Non raccogliamo consapevolmente dati di minori. Se ritieni che un minore abbia fornito dati personali, contattaci immediatamente a privacy@wecoop.org per la rimozione.' ) ],
+            [ 'p' => $_t( 'gdpr.s13.p1', 'I servizi dell\'app WeCoop non sono destinati a minori di 16 anni. Non raccogliamo consapevolmente dati di minori. Se ritieni che un minore abbia fornito dati personali, contattaci immediatamente a info@wecoop.org per la rimozione.' ) ],
         ],
     ],
     [

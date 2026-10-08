@@ -52,7 +52,7 @@ add_action( 'init', function() {
     $user_body    = "Ciao {$user_display},\n\n"
                    . "Abbiamo ricevuto la tua richiesta di eliminazione dell'account e di tutti i dati associati.\n\n"
                    . "Il nostro team la elaborerà entro 30 giorni come previsto dal Regolamento Generale sulla Protezione dei Dati (GDPR).\n\n"
-                   . "Se hai domande, contattaci a: privacy@wecoop.org\n\n"
+                   . "Se hai domande, contattaci a: info@wecoop.org\n\n"
                    . "-- WeCoop Team";
     wp_mail( $user_email, $user_subject, $user_body );
 

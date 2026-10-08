@@ -19,7 +19,7 @@ $wl_sections = [
     [
         'title'  => $_t('pp.s1.title', '1. Titolare del Trattamento'),
         'blocks' => [
-            [ 'p' => '<strong>WECOOP</strong> | Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a><br>Tel: +39 351 511 2113' ],
+            [ 'p' => '<strong>WECOOP</strong> | Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113' ],
         ],
     ],
     [
@@ -76,7 +76,7 @@ $wl_sections = [
                 $_t('pp.s8.li5', 'Revocare il consenso in qualsiasi momento'),
                 $_t('pp.s8.li6', 'Proporre reclamo al Garante Privacy (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">garanteprivacy.it</a>)'),
             ]],
-            [ 'p' => $_t('pp.s8.contact', 'Per esercitare i propri diritti:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+            [ 'p' => $_t('pp.s8.contact', 'Per esercitare i propri diritti:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
         ],
     ],
     [

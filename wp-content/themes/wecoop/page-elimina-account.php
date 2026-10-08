@@ -63,7 +63,7 @@ $privacy_url  = get_privacy_policy_url() ?: home_url( '/privacy-policy/' );
                 <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
                 <div>
                     <strong><?php echo esc_html( $tr( 'delete_account.status.error.title', 'Si è verificato un errore' ) ); ?></strong>
-                    <p><?php echo esc_html( $tr( 'delete_account.status.error.body', 'Non è stato possibile elaborare la richiesta. Contattaci a privacy@wecoop.org.' ) ); ?></p>
+                    <p><?php echo esc_html( $tr( 'delete_account.status.error.body', 'Non è stato possibile elaborare la richiesta. Contattaci a info@wecoop.org.' ) ); ?></p>
                 </div>
             </div>
         <?php endif; ?>
@@ -132,7 +132,7 @@ $privacy_url  = get_privacy_policy_url() ?: home_url( '/privacy-policy/' );
                     <div class="wda-sent-state">
                         <i class="fa-solid fa-circle-check wda-sent-icon" aria-hidden="true"></i>
                         <h2><?php echo esc_html( $tr( 'delete_account.sent.title', 'Richiesta ricevuta' ) ); ?></h2>
-                        <p><?php echo esc_html( $tr( 'delete_account.sent.body', 'Controlla la tua email per la conferma. Se non ricevi nulla entro pochi minuti, scrivi a privacy@wecoop.org.' ) ); ?></p>
+                        <p><?php echo esc_html( $tr( 'delete_account.sent.body', 'Controlla la tua email per la conferma. Se non ricevi nulla entro pochi minuti, scrivi a info@wecoop.org.' ) ); ?></p>
                         <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="ws-btn ws-btn--primary wda-home-btn">
                             <i class="fa-solid fa-house" aria-hidden="true"></i>
                             <?php echo esc_html( $tr( 'delete_account.sent.home_cta', 'Torna alla home' ) ); ?>
@@ -151,7 +151,7 @@ $privacy_url  = get_privacy_policy_url() ?: home_url( '/privacy-policy/' );
                         </a>
                         <p class="wda-alt-contact">
                             <?php echo esc_html( $tr( 'delete_account.not_logged.alt', 'Non hai un account? Scrivi direttamente a' ) ); ?>
-                            <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>
+                            <a href="mailto:info@wecoop.org">info@wecoop.org</a>
                         </p>
                     </div>
 
@@ -205,9 +205,9 @@ $privacy_url  = get_privacy_policy_url() ?: home_url( '/privacy-policy/' );
     <div class="ws-container wda-contact-inner">
         <h2><?php echo esc_html( $tr( 'delete_account.contact.title', 'Hai bisogno di assistenza?' ) ); ?></h2>
         <p><?php echo esc_html( $tr( 'delete_account.contact.body', 'Se hai domande sulla cancellazione dei tuoi dati o preferisci contattarci direttamente, il nostro team Privacy è disponibile per aiutarti.' ) ); ?></p>
-        <a href="mailto:privacy@wecoop.org" class="ws-btn ws-btn--primary">
+        <a href="mailto:info@wecoop.org" class="ws-btn ws-btn--primary">
             <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-            privacy@wecoop.org
+            info@wecoop.org
         </a>
     </div>
 </section>

@@ -65,7 +65,7 @@ $wl_sections = [
     [
         'title'  => $_t('nl.s6.title', 'Contatti'),
         'blocks' => [
-            [ 'p' => $_t('nl.s6.p1', 'Per segnalazioni o richieste di natura legale:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+            [ 'p' => $_t('nl.s6.p1', 'Per segnalazioni o richieste di natura legale:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
         ],
     ],
 ];

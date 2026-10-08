@@ -81,9 +81,9 @@ $hero_desc = $hero_descs[ $wl_slug ] ?? '';
                         <?php endforeach; ?>
                     </nav>
                     <div class="wl-toc__links">
-                        <a href="mailto:privacy@wecoop.org" class="wl-toc__contact">
+                        <a href="mailto:info@wecoop.org" class="wl-toc__contact">
                             <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-                            privacy@wecoop.org
+                            info@wecoop.org
                         </a>
                     </div>
                 </div>

@@ -71,7 +71,7 @@ if ( $slug === 'privacy-policy' ) :
         [
             'title'  => $_t('pp.s1.title', '1. Titolare del Trattamento'),
             'blocks' => [
-                [ 'p' => '<strong>WECOOP</strong> | Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a><br>Tel: +39 351 511 2113' ],
+                [ 'p' => '<strong>WECOOP</strong> | Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113' ],
             ],
         ],
         [
@@ -128,7 +128,7 @@ if ( $slug === 'privacy-policy' ) :
                     $_t('pp.s8.li5', 'Revocare il consenso in qualsiasi momento'),
                     $_t('pp.s8.li6', 'Proporre reclamo al Garante Privacy (<a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer">garanteprivacy.it</a>)'),
                 ]],
-                [ 'p' => $_t('pp.s8.contact', 'Per esercitare i propri diritti:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+                [ 'p' => $_t('pp.s8.contact', 'Per esercitare i propri diritti:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
             ],
         ],
         [
@@ -232,7 +232,7 @@ elseif ( $slug === 'cookie-policy' ) :
         [
             'title'  => $_t('cp.s5.title', 'Modifiche alla Cookie Policy'),
             'blocks' => [
-                [ 'p' => $_t('cp.s5.p1', 'WeCoop si riserva il diritto di aggiornare questa Cookie Policy. Le modifiche saranno effettive dalla data di pubblicazione su questa pagina.') . ' ' . $_t('cp.s5.contact', 'Per domande:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+                [ 'p' => $_t('cp.s5.p1', 'WeCoop si riserva il diritto di aggiornare questa Cookie Policy. Le modifiche saranno effettive dalla data di pubblicazione su questa pagina.') . ' ' . $_t('cp.s5.contact', 'Per domande:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
             ],
         ],
     ];
@@ -274,7 +274,7 @@ elseif ( $slug === 'note-legali' ) :
         [
             'title'  => $_t('nl.s6.title', 'Contatti'),
             'blocks' => [
-                [ 'p' => $_t('nl.s6.p1', 'Per segnalazioni o richieste di natura legale:') . ' <a href="mailto:privacy@wecoop.org">privacy@wecoop.org</a>' ],
+                [ 'p' => $_t('nl.s6.p1', 'Per segnalazioni o richieste di natura legale:') . ' <a href="mailto:info@wecoop.org">info@wecoop.org</a>' ],
             ],
         ],
     ];
@@ -329,9 +329,9 @@ endif;
                         <?php endforeach; ?>
                     </nav>
                     <div class="wl-toc__links">
-                        <a href="mailto:privacy@wecoop.org" class="wl-toc__contact">
+                        <a href="mailto:info@wecoop.org" class="wl-toc__contact">
                             <i class="fa-regular fa-envelope" aria-hidden="true"></i>
-                            privacy@wecoop.org
+                            info@wecoop.org
                         </a>
                     </div>
                 </div>
