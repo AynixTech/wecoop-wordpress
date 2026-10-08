@@ -28,7 +28,7 @@ $wl_sections = [
     [
         'title'  => $_t( 'gdpr.s2.title', '2. Titolare del trattamento' ),
         'blocks' => [
-            [ 'p' => '<strong>WECOOP APS</strong><br>Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113' ],
+            [ 'p' => wecoop_org_titolare_html() ],
             [ 'p' => $_t( 'gdpr.s2.p2', 'Per qualsiasi richiesta relativa al trattamento dei dati personali (accesso, rettifica, cancellazione, opposizione, portabilità, reclamo) scrivere a info@wecoop.org.' ) ],
         ],
     ],

@@ -646,6 +646,10 @@ function wecoop_ws_page_shell_end() {
     <?php
 }
 
+if (file_exists(get_template_directory() . '/inc/wecoop-org.php')) {
+    require_once get_template_directory() . '/inc/wecoop-org.php';
+}
+
 if (file_exists(get_template_directory() . '/inc/custom-functions.php')) {
     require_once get_template_directory() . '/inc/custom-functions.php';
 }

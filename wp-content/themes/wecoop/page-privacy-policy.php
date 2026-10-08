@@ -19,7 +19,7 @@ $wl_sections = [
     [
         'title'  => $_t('pp.s1.title', '1. Titolare del Trattamento'),
         'blocks' => [
-            [ 'p' => '<strong>WECOOP</strong> | Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113' ],
+            [ 'p' => wecoop_org_titolare_html() ],
         ],
     ],
     [
