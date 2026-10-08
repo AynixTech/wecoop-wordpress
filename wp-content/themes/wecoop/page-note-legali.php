@@ -4,7 +4,6 @@
  * Template Post Type: page
  *
  * Contenuto hardcoded — nessuna dipendenza dal DB.
- * Include sezione "Fatturazione Servizi" con dati completi KINTI SRL.
  * URL: /note-legali/
  *
  * @package WeCoop
@@ -21,20 +20,6 @@ $wl_sections = [
         'title'  => $_t('nl.s1.title', 'Informazioni Societarie'),
         'blocks' => [
             [ 'p' => '<strong>WECOOP</strong><br>Via Populonia 8, 20133 Milano (MI), Italia<br>Email: <a href="mailto:info@wecoop.org">info@wecoop.org</a><br>Tel: +39 351 511 2113<br>' . $_t('nl.s1.web', 'Sito web:') . ' <a href="https://wecoop.org">wecoop.org</a>' ],
-        ],
-    ],
-    [
-        'title'  => $_t('nl.s_kinti.title', 'Fatturazione Servizi'),
-        'blocks' => [
-            [ 'p' => $_t('nl.s_kinti.p1', 'Per i servizi a pagamento erogati nell\'ambito del progetto WECOOP, la gestione economica e la fatturazione sono a cura di <strong>KINTI SRL</strong>.') ],
-            [ 'ul' => [
-                '<strong>' . $_t('nl.s_kinti.sede', 'Sede legale:') . '</strong> Via San Martino di Tours, 2 - 20900 Monza (MB)',
-                '<strong>' . $_t('nl.s_kinti.ufficio', 'Ufficio:') . '</strong> Via Populonia, 8 - 20159 Milano (MI)',
-                '<strong>' . $_t('nl.s_kinti.cf', 'CF/P.IVA:') . '</strong> 12201260960',
-                '<strong>SDI:</strong> T9K4ZHO',
-                '<strong>' . $_t('nl.s_kinti.tel', 'Telefono:') . '</strong> +39 331 393 5170',
-                '<strong>Email:</strong> <a href="mailto:info@kinti.it">info@kinti.it</a>',
-            ]],
         ],
     ],
     [
