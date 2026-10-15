@@ -22,6 +22,7 @@ if ( ! function_exists( 'wecoop_org' ) ) {
 		$data = [
 			'name'            => 'WECOOP APS',
 			'codice_fiscale'  => '97977210158',
+			'partita_iva'     => '14933240963',
 			'runts'           => 'n. 142852',
 			'sede_legale'     => "Via Benefattori dell'Ospedale 3, 20159 Milano (MI)",
 			'sede_operativa'  => 'Via Populonia 8, Milano',
@@ -42,6 +43,7 @@ if ( ! function_exists( 'wecoop_org_titolare_html' ) ) {
 		$o = wecoop_org();
 		return '<strong>' . esc_html( $o['name'] ) . '</strong><br>'
 			. 'Codice fiscale: ' . esc_html( $o['codice_fiscale'] ) . '<br>'
+			. 'P.IVA: ' . esc_html( $o['partita_iva'] ) . '<br>'
 			. 'RUNTS: ' . esc_html( $o['runts'] ) . '<br>'
 			. 'Sede: ' . esc_html( $o['sede_legale'] ) . '<br>'
 			. 'E-mail: <a href="mailto:' . esc_attr( $o['email'] ) . '">' . esc_html( $o['email'] ) . '</a>';
@@ -58,6 +60,7 @@ if ( ! function_exists( 'wecoop_org_anagrafica_html' ) ) {
 			. 'Sede legale: ' . esc_html( $o['sede_legale'] ) . '<br>'
 			. 'Sede operativa / Sportello: ' . esc_html( $o['sede_operativa'] ) . '<br>'
 			. 'Codice fiscale: ' . esc_html( $o['codice_fiscale'] ) . '<br>'
+			. 'P.IVA: ' . esc_html( $o['partita_iva'] ) . '<br>'
 			. 'RUNTS: ' . esc_html( $o['runts'] ) . '<br>'
 			. 'Tel.: ' . esc_html( $o['phone'] ) . '<br>'
 			. 'E-mail: <a href="mailto:' . esc_attr( $o['email'] ) . '">' . esc_html( $o['email'] ) . '</a><br>'

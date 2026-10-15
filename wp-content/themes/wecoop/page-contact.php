@@ -95,6 +95,27 @@ $wa_url     = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
                                 </a>
                             </div>
                         </li>
+                        <?php
+                        $org = function_exists('wecoop_org') ? wecoop_org() : [];
+                        if ( ! empty( $org['codice_fiscale'] ) ) :
+                        ?>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.cf.label', 'C.F.')); ?></strong>
+                                <span><?php echo esc_html( $org['codice_fiscale'] ); ?></span>
+                            </div>
+                        </li>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $org['partita_iva'] ) ) : ?>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.piva.label', 'P.IVA')); ?></strong>
+                                <span><?php echo esc_html( $org['partita_iva'] ); ?></span>
+                            </div>
+                        </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
 

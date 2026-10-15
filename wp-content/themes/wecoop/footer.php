@@ -48,6 +48,7 @@
                 <!-- Col 4: Contatti -->
                 <div class="ws-footer-col">
                     <h4><?php echo esc_html($_ftr('footer.col4.title', 'Contatti')); ?></h4>
+                    <?php $org = function_exists('wecoop_org') ? wecoop_org() : []; ?>
                     <ul class="ws-footer-contact-list">
                         <li>
                             <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
@@ -61,6 +62,18 @@
                             <i class="fa-solid fa-phone" aria-hidden="true"></i>
                             <a href="tel:+393515112113">+39 351 511 2113</a>
                         </li>
+                        <?php if ( ! empty( $org['codice_fiscale'] ) ) : ?>
+                        <li>
+                            <i class="fa-solid fa-id-card" aria-hidden="true"></i>
+                            <span>C.F. <?php echo esc_html( $org['codice_fiscale'] ); ?></span>
+                        </li>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $org['partita_iva'] ) ) : ?>
+                        <li>
+                            <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+                            <span>P.IVA <?php echo esc_html( $org['partita_iva'] ); ?></span>
+                        </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
 
