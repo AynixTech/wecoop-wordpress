@@ -116,6 +116,15 @@ $wa_url     = 'https://wa.me/' . $wa_phone . '?text=' . $wa_message;
                             </div>
                         </li>
                         <?php endif; ?>
+                        <?php if ( ! empty( $org['runts'] ) ) : ?>
+                        <li>
+                            <span class="ws-contact-list__icon"><i class="fa-solid fa-building-columns" aria-hidden="true"></i></span>
+                            <div>
+                                <strong><?php echo esc_html($tr('contact.info.runts.label', 'RUNTS')); ?></strong>
+                                <span><?php echo esc_html( $org['runts'] ); ?></span>
+                            </div>
+                        </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
 

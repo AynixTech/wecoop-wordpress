@@ -14,11 +14,25 @@
 
                 <!-- Col 1: Identità -->
                 <div class="ws-footer-col">
+                    <?php $org = function_exists( 'wecoop_org' ) ? wecoop_org() : []; ?>
                     <div class="ws-footer-brand">
                         <img class="ws-footer-logo" src="<?php echo esc_url(get_template_directory_uri() . '/assets/img/refactor/wecooplogo2.png'); ?>" alt="WECOOP">
                         <span>WECOOP</span>
                     </div>
                     <p class="ws-footer-desc"><?php echo esc_html($_ftr('footer.col1.desc', 'Un ecosistema di servizi, formazione e opportunità per l\'inclusione sociale e lavorativa.')); ?></p>
+                    <?php if ( ! empty( $org['codice_fiscale'] ) || ! empty( $org['partita_iva'] ) || ! empty( $org['runts'] ) ) : ?>
+                    <p class="ws-footer-fiscal" aria-label="<?php echo esc_attr( $_ftr( 'footer.col1.fiscal_aria', 'Dati fiscali WECOOP APS' ) ); ?>">
+                        <?php if ( ! empty( $org['codice_fiscale'] ) ) : ?>
+                            <span>C.F. <?php echo esc_html( $org['codice_fiscale'] ); ?></span>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $org['partita_iva'] ) ) : ?>
+                            <span>P.IVA <?php echo esc_html( $org['partita_iva'] ); ?></span>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $org['runts'] ) ) : ?>
+                            <span>RUNTS <?php echo esc_html( $org['runts'] ); ?></span>
+                        <?php endif; ?>
+                    </p>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Col 2: Navigazione -->
@@ -48,7 +62,6 @@
                 <!-- Col 4: Contatti -->
                 <div class="ws-footer-col">
                     <h4><?php echo esc_html($_ftr('footer.col4.title', 'Contatti')); ?></h4>
-                    <?php $org = function_exists('wecoop_org') ? wecoop_org() : []; ?>
                     <ul class="ws-footer-contact-list">
                         <li>
                             <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
@@ -62,18 +75,6 @@
                             <i class="fa-solid fa-phone" aria-hidden="true"></i>
                             <a href="tel:+393515112113">+39 351 511 2113</a>
                         </li>
-                        <?php if ( ! empty( $org['codice_fiscale'] ) ) : ?>
-                        <li>
-                            <i class="fa-solid fa-id-card" aria-hidden="true"></i>
-                            <span>C.F. <?php echo esc_html( $org['codice_fiscale'] ); ?></span>
-                        </li>
-                        <?php endif; ?>
-                        <?php if ( ! empty( $org['partita_iva'] ) ) : ?>
-                        <li>
-                            <i class="fa-solid fa-receipt" aria-hidden="true"></i>
-                            <span>P.IVA <?php echo esc_html( $org['partita_iva'] ); ?></span>
-                        </li>
-                        <?php endif; ?>
                     </ul>
                 </div>
 

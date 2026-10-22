@@ -2366,6 +2366,20 @@ body.home {
     margin-top: 8px;
 }
 
+.ws-footer-fiscal {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 10px 0 0;
+    font-size: .82rem;
+    line-height: 1.45;
+    opacity: .72;
+}
+
+.ws-footer-fiscal span {
+    display: block;
+}
+
 .ws-footer-contact-list {
     list-style: none;
     padding: 0;
