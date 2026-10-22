@@ -24,6 +24,8 @@ if ( ! function_exists( 'wecoop_org' ) ) {
 			'codice_fiscale'  => '97977210158',
 			'partita_iva'     => '14933240963',
 			'runts'           => 'n. 142852',
+			'ateco'           => '94.99.10',
+			'data_inizio_iva' => '2026-10-14',
 			'sede_legale'     => "Via Benefattori dell'Ospedale 3, 20159 Milano (MI)",
 			'sede_operativa'  => 'Via Populonia 8, Milano',
 			'phone'           => '+39 351 511 2113',
@@ -45,6 +47,7 @@ if ( ! function_exists( 'wecoop_org_titolare_html' ) ) {
 			. 'Codice fiscale: ' . esc_html( $o['codice_fiscale'] ) . '<br>'
 			. 'P.IVA: ' . esc_html( $o['partita_iva'] ) . '<br>'
 			. 'RUNTS: ' . esc_html( $o['runts'] ) . '<br>'
+			. 'Codice ATECO: ' . esc_html( $o['ateco'] ) . '<br>'
 			. 'Sede: ' . esc_html( $o['sede_legale'] ) . '<br>'
 			. 'E-mail: <a href="mailto:' . esc_attr( $o['email'] ) . '">' . esc_html( $o['email'] ) . '</a>';
 	}
@@ -62,6 +65,7 @@ if ( ! function_exists( 'wecoop_org_anagrafica_html' ) ) {
 			. 'Codice fiscale: ' . esc_html( $o['codice_fiscale'] ) . '<br>'
 			. 'P.IVA: ' . esc_html( $o['partita_iva'] ) . '<br>'
 			. 'RUNTS: ' . esc_html( $o['runts'] ) . '<br>'
+			. 'Codice ATECO: ' . esc_html( $o['ateco'] ) . '<br>'
 			. 'Tel.: ' . esc_html( $o['phone'] ) . '<br>'
 			. 'E-mail: <a href="mailto:' . esc_attr( $o['email'] ) . '">' . esc_html( $o['email'] ) . '</a><br>'
 			. 'Web: <a href="' . esc_url( $o['web_url'] ) . '">' . esc_html( $o['web'] ) . '</a>';

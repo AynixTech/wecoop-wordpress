@@ -319,13 +319,23 @@ class WECOOP_Documento_Unico_PDF {
             <img src="<?php echo WECOOP_SERVIZI_PLUGIN_DIR; ?>assets/img/wecooplogo.png" alt="WECOOP Logo" style="max-width: 60px; height: auto;">
         </div>
         
-        <!-- Informazioni organizzazione -->
+        <!-- Informazioni organizzazione (anagrafica istituzionale; nuovi PDF) -->
         <div class="footer-info">
-            <p><strong>WECOOP</strong></p>
+            <?php
+            $org = function_exists( 'wecoop_org' ) ? wecoop_org() : [
+                'name'           => 'WECOOP APS',
+                'sede_legale'    => "Via Benefattori dell'Ospedale 3, 20159 Milano (MI)",
+                'phone'          => '+39 351 511 2113',
+                'email'          => 'info@wecoop.org',
+                'codice_fiscale' => '97977210158',
+                'partita_iva'    => '14933240963',
+            ];
+            ?>
+            <p><strong><?php echo esc_html( $org['name'] ); ?></strong></p>
             <p>Associazione di Promozione Sociale</p>
-            <p>Via Benefattori dell'Ospedale, 3 – 20159 Milano (MI)</p>
-            <p>Mob. 334 1390175 – info@wecoop.org</p>
-            <p>CF 97977210158</p>
+            <p><?php echo esc_html( $org['sede_legale'] ); ?></p>
+            <p>Tel. <?php echo esc_html( $org['phone'] ); ?> – <?php echo esc_html( $org['email'] ); ?></p>
+            <p>CF <?php echo esc_html( $org['codice_fiscale'] ); ?> – P.IVA <?php echo esc_html( $org['partita_iva'] ); ?></p>
         </div>
     </div>
 </body>
